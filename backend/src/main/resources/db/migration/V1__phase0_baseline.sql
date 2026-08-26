@@ -1,0 +1,10 @@
+-- GameLearn AI - Phase 0 infrastructure baseline.
+--
+-- This migration intentionally creates no business schema. The GameLearn
+-- database schema (users, learning profiles, quizzes, gamification, AI
+-- interactions) is owned by Phase 1+ migrations.
+--
+-- Purpose of this file:
+--   * Establishes the Flyway migration mechanism end-to-end
+--   * Verifies checksum tracking and schema history recording on startup
+--     against both MySQL (dev/prod) and H2 MySQL-compatibility mode (tests)

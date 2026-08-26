@@ -1,0 +1,51 @@
+# --- Secrets & local environment ---
+.env
+.env.*
+!.env.example
+.mcp-setup/
+
+# --- Build output ---
+target/
+build/
+out/
+
+# --- IDEs ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# --- OS noise ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Maven wrapper overrides ---
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/MavenWrapperDownloader.java
+
+# --- Test/tooling caches ---
+*.hprof
+.flattened-pom.xml
+
+# --- Rolling local handoff report (development details; not for the
+#     public baseline) ---
+report.txt
+
+# --- Local AI-tooling artifacts ---
+.playwright-mcp/
+.opencode/
+
+# --- Tool-generated modernization hooks (local only) ---
+.github/modernize/
+
+# --- Windows reserved-name artifact ---
+nul

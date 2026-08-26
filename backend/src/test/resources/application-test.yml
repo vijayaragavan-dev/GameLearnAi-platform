@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    # H2 in MySQL compatibility mode lets the full foundation
+    # (JPA + Flyway + health) start without external services.
+    # The ${random.uuid} suffix gives EVERY Spring test context its own
+    # physical database: contexts run against a freshly migrated + seeded
+    # schema instead of inheriting committed rows from other test classes
+    # (a shared named DB made global-count assertions order-dependent).
+    url: jdbc:h2:mem:gamelearn_test_${random.uuid};MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+
+gamelearn:
+  cors:
+    allowed-origins: http://localhost:[*]
+  security:
+    jwt:
+      # Test-only dummy signing key (NOT a real credential). Production
+      # supplies JWT_SECRET from the environment and fails fast without it.
+      secret: test-only-signing-secret-0123456789abcdef-NotARealSecret
+      expiration-minutes: 60
+      issuer: gamelearn-test
+  ai:
+    learning-path:
+      # AI-LP starts DISABLED for tests: contexts bind the deterministic
+      # mode and need no GEMINI_API_KEY (fail-fast stays a dev/prod
+      # concern). Pipeline tests override these properties inline.
+      enabled: false
+    tutor:
+      # AI-001 also starts DISABLED for tests (Tutor Specification section
+      # 10): integration tests enable it per test class via properties and
+      # stub the GeminiClient seam with fakes - never the real API.
+      enabled: false
+
+logging:
+  level:
+    root: warn
+    com.gamelearn: info

@@ -1,0 +1,34 @@
+# Secrets and local environment
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.jks
+**/*.keystore
+**/*credentials*
+**/local.properties
+
+# Local checkpoint and tooling artifacts
+**/report.txt
+**/.mcp-setup/
+**/.playwright-mcp/
+**/.opencode/
+.github/modernize/
+
+# Generated build and cache output
+**/target/
+**/build/
+**/.dart_tool/
+**/.gradle/
+**/ephemeral/
+
+# IDE and machine-local files
+**/.idea/
+**/.vscode/
+**/*.iml
+**/.classpath
+**/.factorypath
+**/.project
+**/.settings/

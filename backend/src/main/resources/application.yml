@@ -1,0 +1,98 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: gamelearn-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jpa:
+    # Schema ownership belongs to Flyway; Hibernate must never create or
+    # alter tables silently.
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        # Database Specification section 3: UUIDs are stored as CHAR(36),
+        # not BINARY(16) or a dialect-specific type. (hibernate.type.uuid_char
+        # was removed in Hibernate 6; this is its replacement.)
+        type.preferred_uuid_jdbc_type: char
+        # Database Specification section 4: all timestamps handled as UTC.
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+  shutdown: graceful
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      show-components: never
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%X{requestId:-none}] %logger{36} - %msg%n"
+  level:
+    root: info
+    com.gamelearn: info
+
+gamelearn:
+  security:
+    jwt:
+      # Signing secret MUST be injected from the environment (JWT_SECRET).
+      # Startup fails fast when it is missing or shorter than 32 characters.
+      secret: ${JWT_SECRET:}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+      issuer: gamelearn
+  ai:
+    gemini:
+      # Secrets come ONLY from the environment; never committed values.
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:}
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      connect-timeout: 3s
+      read-timeout: 15s
+    learning-path:
+      # PATH-002 feature flag (Learning Path AI Specification section 20):
+      # false routes generation straight to the deterministic SYSTEM path.
+      enabled: true
+      temperature: 0.3
+      max-output-tokens: 2048
+      deadline: 20s
+      retry:
+        max-retries: 1          # approved policy: exactly one automatic retry
+        backoff-base: 2s        # exponential with +/-25% jitter
+      rate-limit:
+        max-requests-per-hour: 10   # D10 - Gemini-backed calls only
+        window-minutes: 60
+    tutor:
+      # AI-001 (AI-TUTOR v1.0.0 APPROVED; API Contract v1.4.0 section 5D).
+      # Dedicated bucket and parameters - never shared with PATH-002.
+      enabled: true
+      temperature: 0.4
+      max-output-tokens: 1024
+      deadline: 15s
+      retry:
+        max-retries: 1          # approved policy: exactly one automatic retry
+        backoff-base: 2s        # exponential with +/-25% jitter
+      rate-limit:
+        max-requests-per-hour: 20   # OT-4 - dedicated tutor bucket
+        window-minutes: 60

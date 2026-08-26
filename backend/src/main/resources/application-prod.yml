@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+logging:
+  level:
+    root: warn
+    com.gamelearn: info
+
+gamelearn:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
