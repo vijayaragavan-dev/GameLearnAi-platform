@@ -12,7 +12,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/recommendation_card.dart'
-    show DifficultyPill;
+    show DifficultyPill, PriorityPill;
 
 /// PERFORMANCE -> AI ADAPTATION -> NEXT MISSION. Shows only approved
 /// backend fields (activity type, difficulty, reason) - no internals.
@@ -27,8 +27,6 @@ class RecommendationScreen extends ConsumerStatefulWidget {
 }
 
 class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
-  String? _topicSubjectHint;
-
   @override
   void initState() {
     super.initState();
@@ -38,6 +36,7 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final canStart = item.topicId != null;
     return Scaffold(
       appBar: AppBar(
         title: const Text('NEXT MISSION'),
@@ -93,6 +92,10 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        if (item.priority > 0) ...[
+                          PriorityPill(priority: item.priority),
+                          const SizedBox(width: 8),
+                        ],
                         DifficultyPill(difficulty: item.recommendedDifficulty),
                         const SizedBox(width: 8),
                         Container(
@@ -118,60 +121,62 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
                         ),
                       ],
                     ),
-                    if (_topicSubjectHint != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _topicSubjectHint!,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
             ],
 
-            // WHY - backend reason string, verbatim.
-            const SizedBox(height: 18),
-            const Row(
-              children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 14,
-                  color: AppColors.secondary,
-                ),
-                SizedBox(width: 7),
-                Text(
-                  'WHY THIS MISSION',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textTertiary,
+            if (item.reason.trim().isNotEmpty) ...[
+              // WHY - backend reason string, verbatim.
+              const SizedBox(height: 18),
+              const Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 14,
+                    color: AppColors.secondary,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            NovaMessageBubble(
-              message: item.reason.isNotEmpty
-                  ? item.reason
-                  : 'This mission matches your current mastery and keeps you in the growth zone.',
-              mood: NovaMood.speaking,
-              compact: true,
-            ),
+                  SizedBox(width: 7),
+                  Text(
+                    'WHY THIS MISSION',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              NovaMessageBubble(
+                message: item.reason,
+                mood: NovaMood.speaking,
+                compact: true,
+              ),
+            ] else ...[
+              const SizedBox(height: 18),
+              const Text(
+                'No explanation was provided for this recommendation.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12.5, color: AppColors.textTertiary),
+              ),
+            ],
 
             const SizedBox(height: 30),
             PrimaryGameButton(
-              label: 'Accept mission',
-              icon: Icons.play_arrow_rounded,
+              label: canStart ? 'Accept mission' : 'Back to command center',
+              icon: canStart
+                  ? Icons.play_arrow_rounded
+                  : Icons.dashboard_rounded,
               onTap: () {
                 ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
                 final topicId = item.topicId;
                 if (topicId != null) {
-                  context.pushReplacement(Routes.topic(topicId));
+                  final destination = item.activityType == 'CONTINUE_LESSON'
+                      ? Routes.lesson(topicId)
+                      : Routes.quiz(topicId);
+                  context.pushReplacement(destination);
                 } else {
                   context.go(Routes.home);
                 }

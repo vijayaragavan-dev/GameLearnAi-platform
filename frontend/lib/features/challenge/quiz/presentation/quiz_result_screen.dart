@@ -262,8 +262,13 @@ class _AdaptiveOutcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trendUp = adaptive.trend == 'IMPROVING';
+    final trendDown = adaptive.trend == 'DECLINING';
     return GameCardLike(
-      tint: trendUp ? AppColors.success : AppColors.secondary,
+      tint: trendDown
+          ? AppColors.warning
+          : trendUp
+          ? AppColors.success
+          : AppColors.secondary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -287,23 +292,34 @@ class _AdaptiveOutcomeCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
+          Wrap(
+            spacing: 18,
+            runSpacing: 10,
             children: [
               _Stat(
                 label: 'MASTERY',
-                value: '${adaptive.masteryScore.toStringAsFixed(0)}%',
+                value: '${adaptive.masteryScore.toStringAsFixed(2)}%',
               ),
-              const SizedBox(width: 18),
               _Stat(label: 'LEVEL', value: adaptive.masteryLevel),
-              const SizedBox(width: 18),
               _Stat(label: 'NEXT DIFFICULTY', value: adaptive.nextDifficulty),
             ],
           ),
+          if (adaptive.previousMasteryScore != null) ...[
+            const SizedBox(height: 16),
+            _MasteryTransition(
+              previous: adaptive.previousMasteryScore!,
+              current: adaptive.masteryScore,
+            ),
+          ],
           const SizedBox(height: 10),
           Row(
             children: [
               Icon(
-                trendUp ? Icons.north_east_rounded : Icons.drag_handle_rounded,
+                trendUp
+                    ? Icons.north_east_rounded
+                    : trendDown
+                    ? Icons.south_east_rounded
+                    : Icons.drag_handle_rounded,
                 size: 13,
                 color: AppColors.textSecondary,
               ),
@@ -326,11 +342,73 @@ class _AdaptiveOutcomeCard extends StatelessWidget {
   }
 }
 
+class _MasteryTransition extends StatelessWidget {
+  const _MasteryTransition({required this.previous, required this.current});
+
+  final double previous;
+  final double current;
+
+  @override
+  Widget build(BuildContext context) {
+    final delta = current - previous;
+    final deltaColor = delta > 0
+        ? AppColors.success
+        : delta < 0
+        ? AppColors.warning
+        : AppColors.textSecondary;
+    final deltaText = '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(2)}%';
+    return Semantics(
+      label:
+          'Mastery changed from ${previous.toStringAsFixed(2)} percent to '
+          '${current.toStringAsFixed(2)} percent, change $deltaText',
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _Stat(
+                label: 'BEFORE',
+                value: '${previous.toStringAsFixed(2)}%',
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_rounded,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _Stat(
+                label: 'AFTER',
+                value: '${current.toStringAsFixed(2)}%',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _Stat(
+                label: 'CHANGE',
+                value: deltaText,
+                color: deltaColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.label, required this.value, this.color});
 
   final String label;
   final String value;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -348,10 +426,11 @@ class _Stat extends StatelessWidget {
       const SizedBox(height: 2),
       Text(
         value,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: AppTypography.displayFamily,
           fontSize: 15,
           fontWeight: FontWeight.w700,
+          color: color,
         ),
       ),
     ],

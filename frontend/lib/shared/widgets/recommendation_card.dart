@@ -24,7 +24,7 @@ class RecommendationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, _) = EnumPresentation.activityType(item.activityType);
     final tint = _tintFor(item.activityType);
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -58,6 +58,8 @@ class RecommendationCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: AppTypography.bodyFamily,
                     fontSize: 10.5,
@@ -67,6 +69,10 @@ class RecommendationCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (item.priority > 0) ...[
+                PriorityPill(priority: item.priority),
+                const SizedBox(width: 7),
+              ],
               DifficultyPill(difficulty: item.recommendedDifficulty),
             ],
           ),
@@ -110,6 +116,14 @@ class RecommendationCard extends StatelessWidget {
         ],
       ),
     );
+    if (!compact) return card;
+    return Semantics(
+      button: true,
+      label: item.topicName == null
+          ? 'Open recommendation'
+          : 'Open recommendation for ${item.topicName}',
+      child: PressableScale(onTap: onStart, child: card),
+    );
   }
 
   IconData _activityIcon(String activity) => switch (activity) {
@@ -131,6 +145,44 @@ class RecommendationCard extends StatelessWidget {
     'PRACTICE' => AppColors.primary,
     _ => AppColors.primary,
   };
+}
+
+/// Backend-assigned recommendation priority. The client only displays it.
+class PriorityPill extends StatelessWidget {
+  const PriorityPill({super.key, required this.priority});
+
+  final int priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (priority) {
+      1 => AppColors.warning,
+      2 => AppColors.primaryBright,
+      3 => AppColors.secondary,
+      4 => AppColors.success,
+      _ => AppColors.textTertiary,
+    };
+    return Semantics(
+      label: 'Priority $priority',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+          color: color.withValues(alpha: 0.08),
+        ),
+        child: Text(
+          'P$priority',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.7,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Difficulty pill rendered from backend difficulty strings.

@@ -19,7 +19,8 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/nova_companion.dart';
-import '../../../shared/widgets/recommendation_card.dart';
+import '../../../shared/widgets/recommendation_card.dart'
+    show DifficultyPill, PriorityPill, RecommendationCard, SectionHeader;
 import '../../../shared/widgets/xp_bar.dart' show XPBar;
 import '../providers/dashboard_provider.dart';
 
@@ -175,6 +176,7 @@ class _DashboardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = dashboard;
+    final focus = _explainableRecommendation(d);
     var i = 0;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -206,6 +208,19 @@ class _DashboardBody extends StatelessWidget {
               ),
           const SizedBox(height: 8),
         ],
+
+        // Explain the backend recommendation only when its rationale is
+        // available. Mastery labels and values remain backend-owned.
+        if (focus != null)
+          _staggered(
+            i++,
+            _AdaptiveFocusCard(
+              dashboard: d,
+              recommendation: focus,
+              onStart: () => onOpenRecommendation(focus),
+            ),
+          ),
+        if (focus != null) const SizedBox(height: 8),
 
         // Assessment nudge when nothing assessed yet.
         if (d.assessment.assessedSubjects.isEmpty &&
@@ -291,6 +306,177 @@ class _DashboardBody extends StatelessWidget {
   }
 
   static String _snake(String code) => code.toLowerCase();
+
+  static RecommendationItem? _explainableRecommendation(Dashboard d) {
+    for (final item in d.recommendations) {
+      if (item.topicId != null &&
+          item.topicName?.trim().isNotEmpty == true &&
+          item.reason.trim().isNotEmpty) {
+        return item;
+      }
+    }
+    return null;
+  }
+}
+
+class _AdaptiveFocusCard extends StatelessWidget {
+  const _AdaptiveFocusCard({
+    required this.dashboard,
+    required this.recommendation,
+    required this.onStart,
+  });
+
+  final Dashboard dashboard;
+  final RecommendationItem recommendation;
+  final VoidCallback onStart;
+
+  RecentTopicMastery? get _recommendedMastery {
+    final topicId = recommendation.topicId;
+    if (topicId == null) return null;
+    for (final topic in dashboard.mastery.recentTopics) {
+      if (topic.topicId == topicId) return topic;
+    }
+    return null;
+  }
+
+  List<RecentTopicMastery> get _strongTopics => dashboard.mastery.recentTopics
+      .where(
+        (topic) =>
+            topic.topicName.isNotEmpty &&
+            (topic.masteryLevel == 'MASTERED' ||
+                topic.masteryLevel == 'PROFICIENT'),
+      )
+      .take(2)
+      .toList(growable: false);
+
+  bool get _needsPractice {
+    final mastery = _recommendedMastery;
+    return recommendation.activityType == 'REVIEW' ||
+        recommendation.activityType == 'REMEDIATION' ||
+        mastery?.masteryLevel == 'BEGINNER' ||
+        mastery?.trend == 'DECLINING';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mastery = _recommendedMastery;
+    final strongTopics = _strongTopics;
+    final tint = _needsPractice ? AppColors.warning : AppColors.secondary;
+    final topicName = recommendation.topicName!;
+    final difficulty = mastery?.currentDifficulty.isNotEmpty == true
+        ? mastery!.currentDifficulty
+        : recommendation.recommendedDifficulty;
+    final difficultyLabel = mastery?.currentDifficulty.isNotEmpty == true
+        ? 'CURRENT DIFFICULTY'
+        : 'RECOMMENDED DIFFICULTY';
+
+    return GlowCard(
+      glowColor: tint,
+      intensity: 0.18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.route_rounded, size: 16, color: tint),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'ADAPTIVE BRIEF',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w800,
+                    color: tint,
+                  ),
+                ),
+              ),
+              if (recommendation.priority > 0)
+                PriorityPill(priority: recommendation.priority),
+            ],
+          ),
+          if (strongTopics.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _FocusLine(
+              label: 'YOU ARE STRONG IN',
+              value: strongTopics
+                  .map(
+                    (topic) =>
+                        '${topic.topicName} (${Formatters.percent(topic.masteryScore)})',
+                  )
+                  .join('  ·  '),
+            ),
+          ],
+          if (_needsPractice) ...[
+            const SizedBox(height: 12),
+            _FocusLine(label: 'NEEDS PRACTICE', value: topicName),
+          ],
+          const SizedBox(height: 12),
+          _FocusLine(label: 'NEXT RECOMMENDED MISSION', value: topicName),
+          if (difficulty.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _FocusLine(label: difficultyLabel, value: difficulty),
+                ),
+                DifficultyPill(difficulty: difficulty),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          _FocusLine(label: 'WHY', value: recommendation.reason),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: GameChip(
+              label: recommendation.activityType == 'CONTINUE_LESSON'
+                  ? 'START RECOMMENDED TRAINING'
+                  : 'START RECOMMENDED CHALLENGE',
+              icon: Icons.play_arrow_rounded,
+              color: tint,
+              onTap: onStart,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FocusLine extends StatelessWidget {
+  const _FocusLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          fontSize: 9.5,
+          letterSpacing: 1.5,
+          fontWeight: FontWeight.w800,
+          color: AppColors.textTertiary,
+        ),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        value,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 13,
+          height: 1.35,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    ],
+  );
 }
 
 // ---------------------------------------------------------------------------
