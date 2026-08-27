@@ -52,77 +52,87 @@ class QuizOption extends StatelessWidget {
       ),
     };
 
-    return PressableScale(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppMotion.fast,
-        curve: AppMotion.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-        decoration: BoxDecoration(
-          color: fill,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: border,
-            width: state == QuizOptionState.idle ? 1.2 : 1.8,
-          ),
-          boxShadow: state == QuizOptionState.selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 18,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: glyphColor.withValues(alpha: 0.14),
-                border: Border.all(color: glyphColor.withValues(alpha: 0.5)),
-              ),
-              child: state == QuizOptionState.correct
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 15,
-                      color: AppColors.success,
-                    )
-                  : state == QuizOptionState.incorrect
-                  ? const Icon(
-                      Icons.close_rounded,
-                      size: 15,
-                      color: AppColors.error,
-                    )
-                  : Text(
-                      String.fromCharCode(65 + index), // A, B, C...
-                      style: TextStyle(
-                        fontFamily: AppTypography.displayFamily,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: glyphColor,
-                      ),
-                    ),
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isSelected = state == QuizOptionState.selected;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label:
+          'Option ${String.fromCharCode(65 + index)}: $label, ${isSelected ? 'selected' : 'not selected'}',
+      child: PressableScale(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: reduceMotion ? Duration.zero : AppMotion.fast,
+          curve: AppMotion.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: border,
+              width: state == QuizOptionState.idle ? 1.2 : 1.8,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: AppTypography.bodyFamily,
-                  fontSize: 14.5,
-                  fontWeight: state == QuizOptionState.idle
-                      ? FontWeight.w500
-                      : FontWeight.w600,
-                  height: 1.35,
-                  color: textColor,
+            boxShadow: state == QuizOptionState.selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 18,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: glyphColor.withValues(alpha: 0.14),
+                  border: Border.all(color: glyphColor.withValues(alpha: 0.5)),
+                ),
+                child: state == QuizOptionState.correct
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 15,
+                        color: AppColors.success,
+                      )
+                    : state == QuizOptionState.incorrect
+                    ? const Icon(
+                        Icons.close_rounded,
+                        size: 15,
+                        color: AppColors.error,
+                      )
+                    : Text(
+                        String.fromCharCode(65 + index), // A, B, C...
+                        style: TextStyle(
+                          fontFamily: AppTypography.displayFamily,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: glyphColor,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
+                    fontSize: 14.5,
+                    fontWeight: state == QuizOptionState.idle
+                        ? FontWeight.w500
+                        : FontWeight.w600,
+                    height: 1.35,
+                    color: textColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

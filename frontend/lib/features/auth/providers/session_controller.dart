@@ -65,14 +65,17 @@ class SessionController extends Notifier<SessionState> {
     }
     ref.read(sessionTokenProvider.notifier).set(token);
     try {
-      final session = await ref.read(authRepoProvider).validate();
-      _adopt(session);
+      final user = await ref.read(authRepoProvider).validate();
+      // Validate returns user only (token stays the stored one).
+      state = SessionState(phase: SessionPhase.authenticated, user: user);
+      _celebrateEnter();
     } on UnauthorizedException {
       await _wipe();
       state = const SessionState(phase: SessionPhase.unauthenticated);
     } catch (_) {
       // Cannot verify right now (offline/server down): keep the stored
       // identity optimistically; screens surface connectivity errors.
+      // Preserve the stored token for future retries.
       state = const SessionState(
         phase: SessionPhase.authenticated,
         offline: true,
@@ -99,9 +102,11 @@ class SessionController extends Notifier<SessionState> {
       });
 
   Future<bool> _authenticate(Future<AuthSession> Function() action) async {
+    final previousPhase = state.phase;
     state = state.copyWith(busy: true, clearError: true);
     try {
       final session = await action();
+      _discardLearnerState();
       state = state.copyWith(
         phase: SessionPhase.authenticated,
         user: session.user,
@@ -111,18 +116,29 @@ class SessionController extends Notifier<SessionState> {
       _celebrateEnter();
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(
-        phase: SessionPhase.unauthenticated,
-        busy: false,
-        error: describeError(e),
-      );
+      if (previousPhase == SessionPhase.authenticated) {
+        state = state.copyWith(busy: false, error: describeError(e));
+      } else {
+        state = state.copyWith(
+          phase: SessionPhase.unauthenticated,
+          busy: false,
+          error: describeError(e),
+        );
+      }
       return false;
     } catch (_) {
-      state = state.copyWith(
-        phase: SessionPhase.unauthenticated,
-        busy: false,
-        error: describeError(const NetworkException()),
-      );
+      if (previousPhase == SessionPhase.authenticated) {
+        state = state.copyWith(
+          busy: false,
+          error: describeError(const NetworkException()),
+        );
+      } else {
+        state = state.copyWith(
+          phase: SessionPhase.unauthenticated,
+          busy: false,
+          error: describeError(const NetworkException()),
+        );
+      }
       return false;
     }
   }
@@ -147,12 +163,6 @@ class SessionController extends Notifier<SessionState> {
   }
 
   void dismissError() => state = state.copyWith(clearError: true);
-
-  void _adopt(AuthSession session) {
-    ref.read(sessionTokenProvider.notifier).set(session.token);
-    state = SessionState(phase: SessionPhase.authenticated, user: session.user);
-    _celebrateEnter();
-  }
 
   Future<void> _persist(AuthSession session) async {
     ref.read(sessionTokenProvider.notifier).set(session.token);

@@ -128,201 +128,206 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           final selected = _answers[question.id];
           final isLast = _index == quiz.questions.length - 1;
 
+          final reduce =
+              MediaQuery.maybeOf(context)?.disableAnimations ?? false;
           return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => context.pop(),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'CHALLENGE ${_index + 1} / ${quiz.questions.length}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 2.2,
-                                color: AppColors.textTertiary,
+            child: FocusTraversalGroup(
+              policy: OrderedTraversalPolicy(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => context.pop(),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Text(
+                                'CHALLENGE ${_index + 1} / ${quiz.questions.length}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2.2,
+                                  color: AppColors.textTertiary,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            QuestionProgress(
-                              total: quiz.questions.length,
-                              current: _index,
-                              answeredFlags: [
-                                for (final q in quiz.questions)
-                                  _answers.containsKey(q.id),
-                              ],
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              QuestionProgress(
+                                total: quiz.questions.length,
+                                current: _index,
+                                answeredFlags: [
+                                  for (final q in quiz.questions)
+                                    _answers.containsKey(q.id),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      DifficultyBadge(difficulty: question.difficulty),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        tooltip: 'Ask Nova for a hint',
-                        onPressed: () {
-                          ref.read(audioManagerProvider).play(Sfx.buttonTap);
-                          context.push(Routes.tutor);
-                        },
-                        icon: const Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 18,
-                          color: AppColors.secondary,
+                        DifficultyBadge(difficulty: question.difficulty),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Ask Nova for a hint',
+                          onPressed: () {
+                            ref.read(audioManagerProvider).play(Sfx.buttonTap);
+                            context.push(Routes.tutor);
+                          },
+                          icon: const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 18,
+                            color: AppColors.secondary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    quiz.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.secondary,
+                      ],
                     ),
-                  ),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: AppMotion.normal,
-                      switchInCurve: AppMotion.easeOut,
-                      transitionBuilder: (child, anim) => FadeTransition(
-                        opacity: anim,
-                        child: SlideTransition(
-                          position: Tween(
-                            begin: const Offset(0.08, 0),
-                            end: Offset.zero,
-                          ).animate(anim),
-                          child: child,
-                        ),
+                    const SizedBox(height: 10),
+                    Text(
+                      quiz.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.secondary,
                       ),
-                      child: SingleChildScrollView(
-                        key: ValueKey(question.id),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              question.questionText,
-                              style: const TextStyle(
-                                fontFamily: AppTypography.displayFamily,
-                                fontSize: 21,
-                                fontWeight: FontWeight.w600,
-                                height: 1.3,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            for (var i = 0; i < question.options.length; i++)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: QuizOption(
-                                  index: i,
-                                  label: question.options[i],
-                                  state: selected == null
-                                      ? QuizOptionState.idle
-                                      : (selected == question.options[i]
-                                            ? QuizOptionState.selected
-                                            : QuizOptionState.idle),
-                                  onTap: () {
-                                    ref
-                                        .read(audioManagerProvider)
-                                        .play(Sfx.buttonTap);
-                                    ref.read(hapticsProvider).select();
-                                    setState(
-                                      () => _answers[question.id] =
-                                          question.options[i],
-                                    );
-                                  },
+                    ),
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: reduce ? Duration.zero : AppMotion.normal,
+                        switchInCurve: AppMotion.easeOut,
+                        transitionBuilder: (child, anim) => FadeTransition(
+                          opacity: anim,
+                          child: SlideTransition(
+                            position: Tween(
+                              begin: const Offset(0.08, 0),
+                              end: Offset.zero,
+                            ).animate(anim),
+                            child: child,
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          key: ValueKey(question.id),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                question.questionText,
+                                style: const TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
                                 ),
                               ),
-                            const SizedBox(height: 14),
-                            GestureDetector(
-                              onTap: () {
-                                ref
-                                    .read(audioManagerProvider)
-                                    .play(Sfx.buttonTap);
-                                context.push(Routes.tutor);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.secondary.withValues(
-                                    alpha: 0.09,
+                              const SizedBox(height: 24),
+                              for (var i = 0; i < question.options.length; i++)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: QuizOption(
+                                    index: i,
+                                    label: question.options[i],
+                                    state: selected == null
+                                        ? QuizOptionState.idle
+                                        : (selected == question.options[i]
+                                              ? QuizOptionState.selected
+                                              : QuizOptionState.idle),
+                                    onTap: () {
+                                      ref
+                                          .read(audioManagerProvider)
+                                          .play(Sfx.buttonTap);
+                                      ref.read(hapticsProvider).select();
+                                      setState(
+                                        () => _answers[question.id] =
+                                            question.options[i],
+                                      );
+                                    },
                                   ),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
+                                ),
+                              const SizedBox(height: 14),
+                              GestureDetector(
+                                onTap: () {
+                                  ref
+                                      .read(audioManagerProvider)
+                                      .play(Sfx.buttonTap);
+                                  context.push(Routes.tutor);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: AppColors.secondary.withValues(
-                                      alpha: 0.32,
+                                      alpha: 0.09,
                                     ),
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    NovaCompanion(
-                                      size: 20,
-                                      mood: NovaMood.idle,
-                                    ),
-                                    SizedBox(width: 7),
-                                    Text(
-                                      'Stuck? Ask Nova for a hint',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.secondary,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: AppColors.secondary.withValues(
+                                        alpha: 0.32,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      NovaCompanion(
+                                        size: 20,
+                                        mood: NovaMood.idle,
+                                      ),
+                                      SizedBox(width: 7),
+                                      Text(
+                                        'Stuck? Ask Nova for a hint',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.secondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      if (_index > 0)
-                        SecondaryGameButton(
-                          label: 'Back',
-                          expanded: false,
-                          onTap: () => setState(() => _index--),
+                    Row(
+                      children: [
+                        if (_index > 0)
+                          SecondaryGameButton(
+                            label: 'Back',
+                            expanded: false,
+                            onTap: () => setState(() => _index--),
+                          ),
+                        if (_index > 0) const SizedBox(width: 10),
+                        Expanded(
+                          child: PrimaryGameButton(
+                            label: selected == null
+                                ? 'Select an answer'
+                                : (isLast ? 'Submit challenge' : 'Next'),
+                            busy: _submitting,
+                            onTap: selected == null
+                                ? null
+                                : () {
+                                    if (isLast) {
+                                      FocusScope.of(context).unfocus();
+                                      _finish(quiz);
+                                    } else {
+                                      setState(() => _index++);
+                                    }
+                                  },
+                          ),
                         ),
-                      if (_index > 0) const SizedBox(width: 10),
-                      Expanded(
-                        child: PrimaryGameButton(
-                          label: selected == null
-                              ? 'Select an answer'
-                              : (isLast ? 'Submit challenge' : 'Next'),
-                          busy: _submitting,
-                          onTap: selected == null
-                              ? null
-                              : () {
-                                  if (isLast) {
-                                    FocusScope.of(context).unfocus();
-                                    _finish(quiz);
-                                  } else {
-                                    setState(() => _index++);
-                                  }
-                                },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

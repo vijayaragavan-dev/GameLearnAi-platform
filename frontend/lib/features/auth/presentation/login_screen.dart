@@ -38,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .login(_email.text, _password.text);
     if (!mounted) return;
     if (!ok) return;
+    if (mounted) context.go(Routes.home);
   }
 
   @override

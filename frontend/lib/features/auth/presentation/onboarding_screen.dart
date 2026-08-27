@@ -45,6 +45,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
   ];
 
+  Future<void> _completeOnboarding() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('onboarding_seen', true);
+    if (mounted) context.go(Routes.login);
+  }
+
   void _next() {
     ref.read(audioManagerProvider).play(Sfx.buttonTap);
     if (_page < _panels.length - 1) {
@@ -53,8 +59,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         curve: AppMotion.easeInOut,
       );
     } else {
-      context.go(Routes.login);
+      _completeOnboarding();
     }
+  }
+
+  Future<void> _skip() async {
+    ref.read(audioManagerProvider).play(Sfx.buttonTap);
+    await _completeOnboarding();
   }
 
   @override
@@ -162,10 +173,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           child: const Text('BACK'),
                         )
                       else
-                        TextButton(
-                          onPressed: () => context.go(Routes.login),
-                          child: const Text('SKIP'),
-                        ),
+                        TextButton(onPressed: _skip, child: const Text('SKIP')),
                       const SizedBox(width: 8),
                       Expanded(
                         child: PrimaryGameButton(

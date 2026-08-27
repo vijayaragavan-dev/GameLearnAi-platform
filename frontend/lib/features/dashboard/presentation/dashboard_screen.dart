@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
 import '../../../core/error/user_facing_error.dart';
+import '../../../core/models/content_models.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -43,6 +44,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final subject = d.currentSubject;
     if (subject != null) {
       ref.read(hapticsProvider).tap();
+      final path = d.learningPath;
+      // If a path exists, try to continue to the next actionable node.
+      if (path != null && path.nodes.isNotEmpty) {
+        // Prefer AVAILABLE, then IN_PROGRESS.
+        for (final n in path.nodes) {
+          if (n.status == 'AVAILABLE') {
+            ref.read(audioManagerProvider).play(Sfx.buttonTap);
+            context.push(Routes.topic(n.topicId));
+            return;
+          }
+        }
+        for (final n in path.nodes) {
+          if (n.status == 'IN_PROGRESS') {
+            ref.read(audioManagerProvider).play(Sfx.buttonTap);
+            context.push(Routes.topic(n.topicId));
+            return;
+          }
+        }
+        // All nodes completed or all locked — fall through to path map with a hint.
+        if (path.nodes.every((n) => n.status == 'COMPLETED')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'This world is complete! Explore another world or revisit topics.',
+              ),
+            ),
+          );
+        }
+      }
       final name = Uri.encodeComponent(subject.name);
       context.go('/${Routes.path(subject.id).substring(1)}?name=$name');
       return;
@@ -117,22 +147,28 @@ class _DashboardBody extends StatelessWidget {
   final void Function(RecommendationItem) onOpenRecommendation;
 
   Widget _staggered(int index, Widget child) {
-    final delayMs = (index * AppMotion.staggerUnit.inMilliseconds).clamp(
-      0,
-      500,
-    );
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: AppMotion.normal + Duration(milliseconds: delayMs),
-      curve: AppMotion.easeOut,
-      builder: (context, t, child) => Opacity(
-        opacity: t.clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, 18 * (1 - t)),
+    return Builder(
+      builder: (context) {
+        final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        if (reduce) return child;
+        final delayMs = (index * AppMotion.staggerUnit.inMilliseconds).clamp(
+          0,
+          500,
+        );
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: AppMotion.normal + Duration(milliseconds: delayMs),
+          curve: AppMotion.easeOut,
+          builder: (context, t, child) => Opacity(
+            opacity: t.clamp(0.0, 1.0),
+            child: Transform.translate(
+              offset: Offset(0, 18 * (1 - t)),
+              child: child,
+            ),
+          ),
           child: child,
-        ),
-      ),
-      child: child,
+        );
+      },
     );
   }
 
@@ -183,6 +219,17 @@ class _DashboardBody extends StatelessWidget {
           _staggered(i++, MasteryStrip(topics: d.mastery.recentTopics)),
           const SizedBox(height: 8),
         ],
+
+        // Phase 2: Recently Learned / Mastered / New — derived from DASH-001 only.
+        _staggered(i++, const SectionHeader(title: 'Recently learned')),
+        _staggered(i++, _RecentlyLearnedStrip(dashboard: d)),
+        const SizedBox(height: 8),
+        _staggered(i++, const SectionHeader(title: 'Mastered')),
+        _staggered(i++, _MasteredStrip(dashboard: d)),
+        const SizedBox(height: 8),
+        _staggered(i++, const SectionHeader(title: 'New worlds')),
+        _staggered(i++, _NewWorldsStrip(dashboard: d)),
+        const SizedBox(height: 8),
 
         // Recent achievement.
         if (d.achievements.recentUnlocks.isNotEmpty) ...[
@@ -496,6 +543,411 @@ class MasteryStrip extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: Recently Learned — derived verbatim from DASH-001 mastery.recentTopics
+// and recentActivity. Honest empty when insufficient data; no fake timestamps.
+class _RecentlyLearnedStrip extends StatelessWidget {
+  const _RecentlyLearnedStrip({required this.dashboard});
+
+  final Dashboard dashboard;
+
+  @override
+  Widget build(BuildContext context) {
+    final assessed = dashboard.assessment.assessedSubjects;
+    if (assessed.isNotEmpty) {
+      final slice = assessed.take(3).toList();
+      return Column(
+        children: slice.map((s) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () {
+                final name = Uri.encodeComponent(s.subjectName);
+                context.go(
+                  '/${Routes.path(s.subjectId).substring(1)}?name=$name',
+                );
+              },
+              child: GameCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 16,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        s.subjectName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: const Text(
+                        'ASSESSED',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+    final recentQuizzes = dashboard.recentActivity.quizzes;
+    if (recentQuizzes.isNotEmpty) {
+      final slice = recentQuizzes.take(3).toList();
+      return Column(
+        children: slice.map((q) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () => context.push(Routes.topic(q.topicId)),
+              child: GameCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                      ),
+                      child: Text(
+                        Formatters.percent(q.score),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryBright,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        q.topicName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+    final recentTopics = dashboard.mastery.recentTopics;
+    if (recentTopics.isNotEmpty) {
+      final slice = recentTopics.take(3).toList();
+      return Column(
+        children: slice.map((t) {
+          final (_, levelIcon) = EnumPresentationExt.masteryLevel(
+            t.masteryLevel,
+          );
+          final tint = switch (t.masteryLevel) {
+            'MASTERED' => AppColors.xp,
+            'PROFICIENT' => AppColors.success,
+            'DEVELOPING' => AppColors.warning,
+            _ => AppColors.secondaryDeep,
+          };
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () => context.push(Routes.topicPerformance(t.topicId)),
+              child: GameCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Icon(levelIcon, size: 16, color: tint),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        t.topicName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      Formatters.percent(t.masteryScore),
+                      style: TextStyle(
+                        fontFamily: AppTypography.displayFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: tint,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      t.trend.isEmpty ? 'NEW' : t.trend,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+    return const EmptyMiniCard(
+      text:
+          'No recent learning yet � take a scan or challenge to start your journey.',
+    );
+  }
+}
+
+class _MasteredStrip extends StatelessWidget {
+  const _MasteredStrip({required this.dashboard});
+
+  final Dashboard dashboard;
+
+  @override
+  Widget build(BuildContext context) {
+    final mastered = dashboard.mastery.recentTopics
+        .where((t) => t.masteryLevel == 'MASTERED')
+        .take(3)
+        .toList();
+    if (mastered.isEmpty) {
+      return const EmptyMiniCard(
+        text:
+            'No topics mastered yet — keep conquering missions to earn mastery.',
+      );
+    }
+    return Column(
+      children: mastered.map((t) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: GestureDetector(
+            onTap: () => context.push(Routes.topicPerformance(t.topicId)),
+            child: GameCard(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 16,
+                    color: AppColors.xp,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      t.topicName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.xp.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: AppColors.xp.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: const Text(
+                      'MASTERED',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.xp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// New worlds — presentation-only filter of SUBJ-001 catalog where id NOT IN
+// DASH-001 assessment.assessedSubjects. One fetch of the catalog, no per-filter request.
+class _NewWorldsStrip extends ConsumerStatefulWidget {
+  const _NewWorldsStrip({required this.dashboard});
+
+  final Dashboard dashboard;
+
+  @override
+  ConsumerState<_NewWorldsStrip> createState() => _NewWorldsStripState();
+}
+
+class _NewWorldsStripState extends ConsumerState<_NewWorldsStrip> {
+  late final Future<List<Subject>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ref.read(contentRepoProvider).subjects();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final assessedIds = widget.dashboard.assessment.assessedSubjects
+        .map((a) => a.subjectId)
+        .toSet();
+    return FutureBuilder<List<Subject>>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done && !snap.hasData) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: SizedBox(
+              width: double.infinity,
+              child: LinearProgressIndicator(minHeight: 3),
+            ),
+          );
+        }
+        if (snap.hasError) {
+          return const EmptyMiniCard(text: 'Cannot load worlds right now.');
+        }
+        final subjects = snap.data ?? const <Subject>[];
+        final newSubjects = subjects
+            .where((s) => !assessedIds.contains(s.id))
+            .take(3)
+            .toList();
+        if (newSubjects.isEmpty) {
+          if (subjects.isEmpty) {
+            return const EmptyMiniCard(text: 'No worlds available yet.');
+          }
+          return const EmptyMiniCard(
+            text: 'All worlds started — explore your path to discover more.',
+          );
+        }
+        return Column(
+          children: newSubjects.map((s) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GestureDetector(
+                onTap: () {
+                  final name = Uri.encodeComponent(s.name);
+                  context.go('/${Routes.path(s.id).substring(1)}?name=$name');
+                },
+                child: GameCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      SubjectGlyph(
+                        iconKey: s.iconKey,
+                        color: AppColors.primaryBright,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          s.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Text(
+                          'NEW',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }

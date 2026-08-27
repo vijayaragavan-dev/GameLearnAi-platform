@@ -92,10 +92,19 @@ CustomTransitionPage<void> _page({
   },
 );
 
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
 final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
+  final refreshNotifier = _RouterRefreshNotifier();
+  ref.listen(sessionProvider, (prev, next) => refreshNotifier.notify());
+  ref.onDispose(refreshNotifier.dispose);
+
   return GoRouter(
     initialLocation: Routes.splash,
     debugLogDiagnostics: false,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
       final session = ref.read(sessionProvider);
       final location = state.uri.path;

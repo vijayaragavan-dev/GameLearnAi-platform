@@ -300,17 +300,25 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                         ),
                     ],
                     const SizedBox(height: 18),
-                    for (final p in paragraphs) ...[
-                      Text(
-                        p,
-                        style: TextStyle(
-                          fontSize: 15,
-                          height: 1.7,
-                          color: AppColors.textPrimary.withValues(alpha: 0.92),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
+                    if (paragraphs.every((p) => p.isEmpty))
+                      const EmptyMiniCard(
+                        text: 'This training module has no content yet.',
+                      )
+                    else
+                      for (final p in paragraphs) ...[
+                        if (p.isNotEmpty)
+                          SelectableText(
+                            p,
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.7,
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.92,
+                              ),
+                            ),
+                          ),
+                        if (p.isNotEmpty) const SizedBox(height: 14),
+                      ],
                     if (lesson.summary.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Container(
@@ -345,7 +353,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
+                            SelectableText(
                               lesson.summary,
                               style: const TextStyle(
                                 fontSize: 13.5,

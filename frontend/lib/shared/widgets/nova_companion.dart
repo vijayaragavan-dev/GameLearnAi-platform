@@ -33,8 +33,20 @@ class _NovaCompanionState extends State<NovaCompanion>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_controller.isAnimating) _controller.stop();
+    } else {
+      if (!_controller.isAnimating) _controller.repeat();
+    }
+  }
+
+  @override
   void didUpdateWidget(NovaCompanion old) {
     super.didUpdateWidget(old);
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return;
     // React to mood transitions with a tempo shift.
     switch (widget.mood) {
       case NovaMood.celebrating || NovaMood.speaking:
@@ -63,6 +75,16 @@ class _NovaCompanionState extends State<NovaCompanion>
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: CustomPaint(
+          painter: _NovaPainter(progress: 0.0, mood: widget.mood, tint: _tint),
+        ),
+      );
+    }
     return RepaintBoundary(
       child: SizedBox(
         width: widget.size,

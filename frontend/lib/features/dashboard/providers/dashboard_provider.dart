@@ -43,9 +43,15 @@ class DashboardController extends Notifier<DashboardState> {
     state = state.copyWith(loading: true, clearError: true);
     try {
       final d = await ref.read(intelligenceRepoProvider).dashboard();
-      state = DashboardState(data: d);
+      if (!ref.mounted) return;
+      try {
+        state = DashboardState(data: d);
+      } catch (_) {}
     } catch (e) {
-      state = state.copyWith(loading: false, error: e);
+      if (!ref.mounted) return;
+      try {
+        state = state.copyWith(loading: false, error: e);
+      } catch (_) {}
     }
   }
 
@@ -54,9 +60,15 @@ class DashboardController extends Notifier<DashboardState> {
     state = state.copyWith(loading: true, clearError: true);
     try {
       final fresh = await ref.read(intelligenceRepoProvider).dashboard();
-      state = DashboardState(data: fresh);
+      if (!ref.mounted) return;
+      try {
+        state = DashboardState(data: fresh);
+      } catch (_) {}
     } catch (e) {
-      state = state.copyWith(loading: false, error: e);
+      if (!ref.mounted) return;
+      try {
+        state = state.copyWith(loading: false, error: e);
+      } catch (_) {}
     }
   }
 }

@@ -34,6 +34,17 @@ class _SkeletonBlockState extends State<SkeletonBlock>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_controller.isAnimating) _controller.stop();
+    } else {
+      if (!_controller.isAnimating) _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -41,6 +52,17 @@ class _SkeletonBlockState extends State<SkeletonBlock>
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(widget.radius),
+          color: AppColors.surfaceHigh.withValues(alpha: 0.55),
+        ),
+      );
+    }
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {

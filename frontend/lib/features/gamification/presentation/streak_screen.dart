@@ -52,7 +52,11 @@ class _StreakScreenState extends ConsumerState<StreakScreen> {
           future: Future.wait([_future, _summaryFuture]),
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                children: const [SkeletonList(itemCount: 3, itemHeight: 110)],
+              );
             }
             if (snap.hasError) {
               final err = describeError(snap.error!);

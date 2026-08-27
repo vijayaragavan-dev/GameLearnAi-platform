@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/assessment_models.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/providers.dart';
@@ -59,8 +60,19 @@ class AssessmentController extends Notifier<AssessmentState> {
     try {
       final delivery = await ref.read(assessmentRepoProvider).fetch(subjectId);
       state = state.copyWith(delivery: delivery, clearError: true);
+    } on NotFoundException catch (e) {
+      // Backend returns 404 "No assessable content" when subject has no active topics/questions.
+      // Show honest, safe message without exposing internals.
+      final msg = e.message.contains('No assessable content')
+          ? 'No scan questions available for this world yet. New content is being prepared.'
+          : describeError(e).message;
+      state = state.copyWith(error: msg);
+    } on ApiException catch (e) {
+      state = state.copyWith(error: describeError(e).message);
     } catch (_) {
-      state = state.copyWith(error: 'Could not load the scan');
+      state = state.copyWith(
+        error: 'Could not load the scan. Check your connection and try again.',
+      );
     }
   }
 
@@ -95,10 +107,16 @@ class AssessmentController extends Notifier<AssessmentState> {
         error: 'Your placement is already established.',
       );
       return false;
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        submitting: false,
+        error: describeError(e).message,
+      );
+      return false;
     } catch (_) {
       state = state.copyWith(
         submitting: false,
-        error: 'Submission failed. Try again.',
+        error: 'Submission failed. Check your connection and try again.',
       );
       return false;
     }

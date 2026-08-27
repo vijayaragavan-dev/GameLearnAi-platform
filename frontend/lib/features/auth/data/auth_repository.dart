@@ -1,5 +1,6 @@
 import '../../../core/models/auth_models.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
 
 /// AUTH-000..003.
 class AuthRepository {
@@ -29,8 +30,17 @@ class AuthRepository {
   }
 
   /// Session restore probe; throws UnauthorizedException on invalid tokens.
-  Future<AuthSession> validate() async =>
-      AuthSession.fromJson(await _client.getJson('/api/v1/auth/validate'));
+  /// Returns only the validated [SessionUser] — the backend's validate
+  /// endpoint intentionally returns `token: null` (no new token issued), so
+  /// we must not require a token here.
+  Future<SessionUser> validate() async {
+    final json = await _client.getJson('/api/v1/auth/validate');
+    final userJson = json['user'];
+    if (userJson is! Map<String, dynamic>) {
+      throw const MalformedResponseException();
+    }
+    return SessionUser.fromJson(userJson);
+  }
 
   Future<void> logout() =>
       _client.postJson('/api/v1/auth/logout', null, expectBody: false);

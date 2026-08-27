@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/providers.dart';
 import '../providers/session_controller.dart';
 import '../../../shared/widgets/nova_companion.dart';
 
@@ -37,12 +38,35 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         case SessionPhase.authenticated:
           context.go(Routes.home);
         case SessionPhase.unauthenticated:
-          context.go(Routes.onboarding);
+          final seen =
+              ref.read(sharedPreferencesProvider).getBool('onboarding_seen') ??
+              false;
+          if (seen) {
+            context.go(Routes.login);
+          } else {
+            context.go(Routes.onboarding);
+          }
         case SessionPhase.restoring:
           // Still restoring (offline probe); router redirect handles it.
           break;
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_controller.isAnimating) {
+        _controller.stop();
+      }
+      _controller.value = 1.0;
+    } else {
+      if (_controller.status == AnimationStatus.dismissed) {
+        _controller.forward();
+      }
+    }
   }
 
   @override
@@ -54,6 +78,59 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     ref.watch(sessionProvider); // react to phase changes
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      return Scaffold(
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: AppGradientsExt.backgroundDeep,
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const NovaCompanion(size: 110, mood: NovaMood.idle),
+                const SizedBox(height: 30),
+                const Text(
+                  'GAMELEARN',
+                  style: TextStyle(
+                    fontFamily: AppTypography.displayFamily,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 8,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ShaderMask(
+                  shaderCallback: (bounds) =>
+                      AppGradientsExt.cyan.createShader(bounds),
+                  child: const Text(
+                    'AI',
+                    style: TextStyle(
+                      fontFamily: AppTypography.displayFamily,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 42),
+                SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.primaryBright.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(

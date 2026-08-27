@@ -87,8 +87,18 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
   }
 
   Widget _buildBody(PathState state) {
+    if (state.showLoading) {
+      return const Center(child: SkeletonPath());
+    }
     if (state.generating && state.activePath == null) {
       return const _GeneratingPanel();
+    }
+    if (state.error != null && state.activePath == null) {
+      return ErrorState(
+        title: 'Path unavailable',
+        message: state.error!,
+        onRetry: () => ref.read(pathProvider(widget.subjectId).notifier).load(),
+      );
     }
     final path = state.activePath;
     if (path == null) {
@@ -130,6 +140,17 @@ class _StarfieldState extends State<_Starfield>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_c.isAnimating) _c.stop();
+    } else {
+      if (!_c.isAnimating) _c.repeat();
+    }
+  }
+
+  @override
   void dispose() {
     _c.dispose();
     super.dispose();
@@ -137,6 +158,13 @@ class _StarfieldState extends State<_Starfield>
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      return const CustomPaint(
+        painter: _StarfieldPainter(t: 0),
+        size: Size.infinite,
+      );
+    }
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _c,
@@ -239,7 +267,7 @@ class AdventureTrail extends StatelessWidget {
   final Map<int, ({String objective, String rationale})> aiMetadata;
   final void Function(PathNode) onNodeTap;
 
-  static const double _slotHeight = 148;
+  static const double _slotHeight = 160;
   static const double _nodeSize = 76;
 
   Offset _centerFor(int index, double width) {
@@ -247,6 +275,8 @@ class AdventureTrail extends StatelessWidget {
     final wobble = math.sin(index * 1.7) * width * 0.08;
     return Offset(lane + wobble, _slotHeight * index + _slotHeight / 2);
   }
+
+  double _captionWidth(double width) => (width * 0.38).clamp(130.0, 280.0);
 
   @override
   Widget build(BuildContext context) {
@@ -296,8 +326,8 @@ class AdventureTrail extends StatelessWidget {
                     right: _centerFor(i, width).dx >= width / 2
                         ? width - _centerFor(i, width).dx + _nodeSize / 2 + 10
                         : null,
-                    top: _centerFor(i, width).dy - 14,
-                    width: width * 0.34,
+                    top: _centerFor(i, width).dy - 18,
+                    width: _captionWidth(width),
                     child: Align(
                       alignment: _centerFor(i, width).dx < width / 2
                           ? Alignment.centerLeft
@@ -410,14 +440,35 @@ class _LearningNodeState extends State<LearningNode>
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     );
-    if (widget.node.status == 'AVAILABLE') _pulse.repeat();
+    // Do NOT query MediaQuery here — context is not attached to an
+    // InheritedWidget tree yet (would throw
+    // dependOnInheritedWidgetOfExactType<MediaQuery> before initState
+    // completed). Pulse gating is handled in didChangeDependencies.
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_pulse.isAnimating) _pulse.stop();
+    } else {
+      if (widget.node.status == 'AVAILABLE' && !_pulse.isAnimating) {
+        _pulse.repeat();
+      }
+    }
   }
 
   @override
   void didUpdateWidget(LearningNode old) {
     super.didUpdateWidget(old);
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      _pulse.stop();
+      return;
+    }
     if (widget.node.status == 'AVAILABLE') {
-      _pulse.repeat();
+      if (!_pulse.isAnimating) _pulse.repeat();
     } else {
       _pulse.stop();
     }
@@ -446,6 +497,7 @@ class _LearningNodeState extends State<LearningNode>
   @override
   Widget build(BuildContext context) {
     final node = widget.node;
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return Semantics(
       button: true,
       label: '${node.topicName}, ${_stateLabel(node.status)}',
@@ -456,12 +508,14 @@ class _LearningNodeState extends State<LearningNode>
         onTap: widget.onTap,
         child: AnimatedScale(
           scale: _down ? 0.9 : 1,
-          duration: AppMotion.fast,
+          duration: reduce ? Duration.zero : AppMotion.fast,
           curve: AppMotion.easeOut,
           child: AnimatedBuilder(
             animation: _pulse,
             builder: (context, _) {
-              final ring = node.status == 'AVAILABLE' ? _pulse.value : 0.0;
+              final ring = node.status == 'AVAILABLE' && !reduce
+                  ? _pulse.value
+                  : 0.0;
               return Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -470,7 +524,9 @@ class _LearningNodeState extends State<LearningNode>
                       color: tint.withValues(
                         alpha: node.status == 'LOCKED'
                             ? 0.0
-                            : 0.45 + 0.25 * math.sin(ring * math.pi * 2),
+                            : (reduce
+                                  ? 0.35
+                                  : 0.45 + 0.25 * math.sin(ring * math.pi * 2)),
                       ),
                       blurRadius: 26,
                       spreadRadius: 2,

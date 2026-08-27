@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
+import 'package:gamelearn_app/core/network/api_client.dart';
+import 'package:gamelearn_app/core/providers.dart';
 import 'package:gamelearn_app/features/auth/providers/session_controller.dart';
 import 'package:gamelearn_app/features/auth/presentation/login_screen.dart';
 import 'package:gamelearn_app/features/dashboard/presentation/dashboard_screen.dart';
@@ -148,17 +154,35 @@ void main() {
           ),
         ],
       );
-      await tester.pumpWidget(
-        fakeScope(
-          child: MaterialApp.router(routerConfig: router),
-          handler: (request) {
-            if (request.url.path == '/api/v1/auth/login') {
-              return {'body': Fixtures.authSession()};
-            }
-            return {'status': 404, 'body': {}};
+      late ProviderContainer captured;
+      final widget = ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
+          apiClientProvider.overrideWith(
+            (ref) => ApiClient(
+              client: MockClient((request) async {
+                if (request.url.path == '/api/v1/auth/login') {
+                  return http.Response(
+                    jsonEncode(Fixtures.authSession()),
+                    200,
+                    headers: {'content-type': 'application/json'},
+                  );
+                }
+                return http.Response('', 404);
+              }),
+            ),
+          ),
+          audioManagerProvider.overrideWith((ref) => SilentAudioManager()),
+        ],
+        child: Builder(
+          builder: (context) {
+            captured = ProviderScope.containerOf(context);
+            return MaterialApp.router(routerConfig: router);
           },
         ),
       );
+      await tester.pumpWidget(widget);
+      await tester.pump();
 
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Email').first,
@@ -173,13 +197,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 800));
 
       // The backend accepted the credentials and the session controller
-      // reached the authenticated phase (navigation itself is covered by
-      // the router redirect logic).
-      final state = ProviderScope.containerOf(
-        tester.element(find.byType(LoginScreen)),
-      ).read(sessionProvider);
+      // reached the authenticated phase. Login now explicitly navigates to
+      // home, so LoginScreen may be unmounted.
+      final state = captured.read(sessionProvider);
       expect(state.phase, SessionPhase.authenticated);
       expect(state.user!.displayName, 'Nova Player');
+      // And router should have navigated to HOME
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/home');
+      expect(find.text('HOME'), findsOneWidget);
     });
   });
 

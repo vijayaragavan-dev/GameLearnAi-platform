@@ -142,8 +142,27 @@ class _BadgeCellState extends State<_BadgeCell>
   void initState() {
     super.initState();
     _glow = AnimationController(vsync: this, duration: AppMotion.feature);
-    if (widget.achievement.isUnlocked) _glow.repeat(reverse: true);
-    _glow.forward();
+    // Repeat only when not reducing motion and unlocked.
+    final reduce = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
+    if (widget.achievement.isUnlocked && !reduce) _glow.repeat(reverse: true);
+    if (!reduce) _glow.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_glow.isAnimating) _glow.stop();
+    } else {
+      if (widget.achievement.isUnlocked && !_glow.isAnimating) {
+        _glow.repeat(reverse: true);
+      }
+    }
   }
 
   @override
@@ -155,97 +174,103 @@ class _BadgeCellState extends State<_BadgeCell>
   @override
   Widget build(BuildContext context) {
     final a = widget.achievement;
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _glow,
-        builder: (context, child) {
-          final t = Curves.easeInOut.transform(_glow.value);
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: a.isUnlocked
-                  ? LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.xp.withValues(alpha: 0.10 + 0.08 * t),
-                        AppColors.surfaceElevated,
-                      ],
-                    )
-                  : null,
-              color: a.isUnlocked
-                  ? null
-                  : AppColors.surface.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return Semantics(
+      button: true,
+      label:
+          '${a.name}, ${a.isUnlocked ? 'unlocked' : 'locked, ${a.xpReward} XP reward'}',
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _glow,
+          builder: (context, child) {
+            final t = reduce ? 0.5 : Curves.easeInOut.transform(_glow.value);
+            return Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: a.isUnlocked
+                    ? LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.xp.withValues(alpha: 0.10 + 0.08 * t),
+                          AppColors.surfaceElevated,
+                        ],
+                      )
+                    : null,
                 color: a.isUnlocked
-                    ? AppColors.xp.withValues(alpha: 0.4 + 0.2 * t)
-                    : AppColors.border,
+                    ? null
+                    : AppColors.surface.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: a.isUnlocked
+                      ? AppColors.xp.withValues(alpha: 0.4 + 0.2 * t)
+                      : AppColors.border,
+                ),
+                boxShadow: a.isUnlocked
+                    ? [
+                        BoxShadow(
+                          color: AppColors.xp.withValues(alpha: 0.12 + 0.1 * t),
+                          blurRadius: 20,
+                        ),
+                      ]
+                    : null,
               ),
-              boxShadow: a.isUnlocked
-                  ? [
-                      BoxShadow(
-                        color: AppColors.xp.withValues(alpha: 0.12 + 0.1 * t),
-                        blurRadius: 20,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AchievementIcon(
-                  iconKey: a.iconKey,
-                  unlocked: a.isUnlocked,
-                  size: 62,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  a.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: AppTypography.displayFamily,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: a.isUnlocked
-                        ? AppColors.textPrimary
-                        : AppColors.textTertiary,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AchievementIcon(
+                    iconKey: a.iconKey,
+                    unlocked: a.isUnlocked,
+                    size: 62,
                   ),
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      a.isUnlocked
-                          ? Icons.check_circle_outline_rounded
-                          : Icons.lock_outline_rounded,
-                      size: 11,
+                  const SizedBox(height: 10),
+                  Text(
+                    a.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: AppTypography.displayFamily,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
                       color: a.isUnlocked
-                          ? AppColors.success
+                          ? AppColors.textPrimary
                           : AppColors.textTertiary,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      a.isUnlocked
-                          ? Formatters.shortDate(a.unlockedAt)
-                          : '+${a.xpReward} XP',
-                      style: TextStyle(
-                        fontSize: 10.5,
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        a.isUnlocked
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.lock_outline_rounded,
+                        size: 11,
                         color: a.isUnlocked
-                            ? AppColors.textSecondary
+                            ? AppColors.success
                             : AppColors.textTertiary,
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+                      const SizedBox(width: 4),
+                      Text(
+                        a.isUnlocked
+                            ? Formatters.shortDate(a.unlockedAt)
+                            : '+${a.xpReward} XP',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: a.isUnlocked
+                              ? AppColors.textSecondary
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

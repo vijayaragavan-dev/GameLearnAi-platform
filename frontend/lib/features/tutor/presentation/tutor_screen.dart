@@ -165,140 +165,150 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _scroll,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  itemCount:
+                      _messages.length +
+                      (_sending ? 1 : 0) +
+                      (_messages.length <= 1 && !_sending ? 1 : 0),
+                  itemBuilder: (context, i) {
+                    if (_messages.length <= 1 &&
+                        !_sending &&
+                        i == _messages.length) {
+                      // Nova companion starter prompts (real sends, AI-001).
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final s in const [
+                              'Explain this topic in simple words',
+                              'Give me a hint, no spoilers',
+                              'Show me a quick example',
+                            ])
+                              _SuggestionChip(
+                                label: s,
+                                onTap: () {
+                                  _input.text = s;
+                                  _send();
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    }
+                    if (i == _messages.length) {
+                      return const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: EdgeInsets.all(14),
+                          child: TypingIndicator(),
+                        ),
+                      );
+                    }
+                    final m = _messages[i];
+                    return _MessageTile(bubble: m);
+                  },
                 ),
-                itemCount:
-                    _messages.length +
-                    (_sending ? 1 : 0) +
-                    (_messages.length <= 1 && !_sending ? 1 : 0),
-                itemBuilder: (context, i) {
-                  if (_messages.length <= 1 &&
-                      !_sending &&
-                      i == _messages.length) {
-                    // Nova companion starter prompts (real sends, AI-001).
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final s in const [
-                            'Explain this topic in simple words',
-                            'Give me a hint, no spoilers',
-                            'Show me a quick example',
-                          ])
-                            _SuggestionChip(
-                              label: s,
-                              onTap: () {
-                                _input.text = s;
-                                _send();
-                              },
-                            ),
-                        ],
-                      ),
-                    );
-                  }
-                  if (i == _messages.length) {
-                    return const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: EdgeInsets.all(14),
-                        child: TypingIndicator(),
-                      ),
-                    );
-                  }
-                  final m = _messages[i];
-                  return _MessageTile(bubble: m);
-                },
               ),
-            ),
-            if (_error != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+              if (_error != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 15,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 15,
-                      color: AppColors.error,
-                    ),
-                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        _error!,
+                      child: TextField(
+                        controller: _input,
+                        focusNode: _focus,
+                        maxLines: 4,
+                        minLines: 1,
+                        maxLength: _maxQuestionChars,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _send(),
+                        enabled: !_sending,
                         style: const TextStyle(
-                          fontSize: 12.5,
-                          color: AppColors.error,
+                          fontFamily: AppTypography.bodyFamily,
+                          fontSize: 14.5,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      focusNode: _focus,
-                      maxLines: 4,
-                      minLines: 1,
-                      maxLength: _maxQuestionChars,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      enabled: !_sending,
-                      style: const TextStyle(
-                        fontFamily: AppTypography.bodyFamily,
-                        fontSize: 14.5,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Ask Nova about your topic...',
-                        counterText: '',
-                        filled: true,
-                        fillColor: AppColors.surfaceElevated,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 13,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
-                          borderSide: const BorderSide(
-                            color: AppColors.secondary,
-                            width: 1.4,
+                        decoration: InputDecoration(
+                          hintText: 'Ask Nova about your topic...',
+                          counterText: '',
+                          filled: true,
+                          fillColor: AppColors.surfaceElevated,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 13,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: const BorderSide(
+                              color: AppColors.secondary,
+                              width: 1.4,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  _SendButton(onTap: _send, busy: _sending),
-                ],
+                    const SizedBox(width: 10),
+                    _SendButton(onTap: _send, busy: _sending),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -439,6 +449,17 @@ class _TypingIndicatorState extends State<TypingIndicator>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_c.isAnimating) _c.stop();
+    } else {
+      if (!_c.isAnimating) _c.repeat();
+    }
+  }
+
+  @override
   void dispose() {
     _c.dispose();
     super.dispose();
@@ -446,6 +467,24 @@ class _TypingIndicatorState extends State<TypingIndicator>
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < 3; i++)
+            Container(
+              width: 7,
+              height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.secondary,
+              ),
+            ),
+        ],
+      );
+    }
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) {
