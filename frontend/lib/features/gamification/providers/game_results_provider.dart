@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../data/gamification_repository.dart';
 import '../models/game_result_models.dart';
@@ -42,5 +43,5 @@ class GameResultsState {
 
 final gameResultsProvider =
     StateNotifierProvider<GameResultsNotifier, GameResultsState>((ref) {
-  return GameResultsNotifier(ref.watch(gamificationRepositoryProvider));
+  return GameResultsNotifier(ref.watch(gamificationRepoProvider));
 });

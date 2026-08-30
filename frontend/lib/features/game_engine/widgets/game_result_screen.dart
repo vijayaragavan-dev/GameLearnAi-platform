@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math' show Random;
 
 import 'package:flutter/material.dart';
@@ -18,7 +17,6 @@ import '../../../shared/widgets/celebrations.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/xp_bar.dart';
-import '../../gamification/data/gamification_repository.dart';
 import '../../gamification/models/game_result_models.dart';
 import '../models/game_models.dart';
 
@@ -87,7 +85,6 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen> with Ticker
   }
 
   String _deterministicClientRequestId(String gameType, int score, int durationSeconds, int bestCombo) {
-    final prefix = '$gameType-${score}-${durationSeconds}-${bestCombo}';
     final bytes = List<int>.generate(16, (_) => _rng.nextInt(256));
     // UUID v4 layout: set version (6) and variant (8)
     bytes[6] = (bytes[6] & 0x0f) | 0x40;

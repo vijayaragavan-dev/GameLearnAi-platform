@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/providers.dart';
+import '../../../features/dashboard/providers/dashboard_provider.dart';
 import '../data/gamification_repository.dart';
 import '../models/game_result_models.dart';
 import '../providers/game_results_provider.dart';
