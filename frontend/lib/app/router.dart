@@ -31,6 +31,21 @@ import '../features/progress/presentation/topic_performance_screen.dart';
 import '../features/shell/shell_screen.dart';
 import '../features/subjects/presentation/subjects_screen.dart';
 import '../features/tutor/presentation/tutor_screen.dart';
+import '../features/games/hub/presentation/game_hub_screen.dart';
+import '../features/games/quiz_battle/presentation/quiz_battle_screen.dart';
+import '../features/games/memory_match/presentation/memory_match_screen.dart';
+import '../features/games/drag_drop/presentation/drag_drop_screen.dart';
+import '../features/games/speed_run/presentation/speed_run_screen.dart';
+import '../features/games/debug_arena/presentation/debug_arena_screen.dart';
+import '../features/games/unlock_code/presentation/unlock_code_screen.dart';
+import '../features/games/concept_builder/presentation/concept_builder_screen.dart';
+import '../features/games/sequence_master/presentation/sequence_master_screen.dart';
+import '../features/games/target_challenge/presentation/target_challenge_screen.dart';
+import '../features/games/mystery_case/presentation/mystery_case_screen.dart';
+import '../features/games/boss_battle/presentation/boss_battle_screen.dart';
+import '../features/games/puzzle_arena/presentation/puzzle_arena_screen.dart';
+import '../features/games/connectivity_lab/presentation/connectivity_lab_screen.dart';
+import '../features/games/snake_and_ladder/presentation/snake_and_ladder_screen.dart';
 
 /// Route builder helpers keep navigation strings in one place.
 abstract final class Routes {
@@ -58,6 +73,21 @@ abstract final class Routes {
       '/assessment/$subjectId/result';
   static String badge(String code) => '/achievements/$code';
   static String topicPerformance(String topicId) => '/performance/$topicId';
+  static String gameHub(String topicId) => '/games/$topicId';
+  static String quizBattle(String topicId) => '/games/$topicId/quiz-battle';
+  static String memoryMatch(String topicId) => '/games/$topicId/memory';
+  static String dragDrop(String topicId) => '/games/$topicId/drag-drop';
+  static String speedRun(String topicId) => '/games/$topicId/speed-run';
+  static String debugArena(String topicId) => '/games/$topicId/debug-arena';
+  static String unlockCode(String topicId) => '/games/$topicId/unlock-code';
+  static String conceptBuilder(String topicId) => '/games/$topicId/concept-builder';
+  static String sequenceMaster(String topicId) => '/games/$topicId/sequence-master';
+  static String targetChallenge(String topicId) => '/games/$topicId/target-challenge';
+  static String mysteryCase(String topicId) => '/games/$topicId/mystery-case';
+  static String bossBattle(String topicId) => '/games/$topicId/boss-battle';
+  static String puzzleArena(String topicId) => '/games/$topicId/puzzle-arena';
+  static String connectivityLab(String topicId) => '/games/$topicId/connectivity-lab';
+  static String snakeAndLadder(String topicId) => '/games/$topicId/snake-and-ladder';
 
   static bool _isPublic(String location) =>
       location == splash || location == onboarding;
@@ -290,6 +320,173 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.settings,
         pageBuilder: (_, s) => _page(child: const SettingsScreen(), state: s),
+      ),
+
+      // ---- Game Arena -------------------------------------------------------
+      GoRoute(
+        path: '/games/:topicId',
+        pageBuilder: (_, s) => _page(
+          child: GameHubScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/quiz-battle',
+        pageBuilder: (_, s) => _page(
+          child: QuizBattleScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/memory',
+        pageBuilder: (_, s) => _page(
+          child: MemoryMatchScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/drag-drop',
+        pageBuilder: (_, s) => _page(
+          child: DragDropScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/speed-run',
+        pageBuilder: (_, s) => _page(
+          child: SpeedRunScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/debug-arena',
+        pageBuilder: (_, s) => _page(
+          child: DebugArenaScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/unlock-code',
+        pageBuilder: (_, s) => _page(
+          child: UnlockCodeScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/concept-builder',
+        pageBuilder: (_, s) => _page(
+          child: ConceptBuilderScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/sequence-master',
+        pageBuilder: (_, s) => _page(
+          child: SequenceMasterScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/target-challenge',
+        pageBuilder: (_, s) => _page(
+          child: TargetChallengeScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/mystery-case',
+        pageBuilder: (_, s) => _page(
+          child: MysteryCaseScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/boss-battle',
+        pageBuilder: (_, s) => _page(
+          child: BossBattleScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/puzzle-arena',
+        pageBuilder: (_, s) => _page(
+          child: PuzzleArenaScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/connectivity-lab',
+        pageBuilder: (_, s) => _page(
+          child: ConnectivityLabScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: '/games/:topicId/snake-and-ladder',
+        pageBuilder: (_, s) => _page(
+          child: SnakeAndLadderScreen(
+            topicId: s.pathParameters['topicId']!,
+            topicName: s.extra is String ? s.extra as String : null,
+          ),
+          state: s,
+          begin: const Offset(1, 0),
+        ),
       ),
     ],
   );

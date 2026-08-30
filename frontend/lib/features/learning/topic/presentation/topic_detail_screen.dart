@@ -151,6 +151,36 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                         context.push(Routes.quiz(topic.id));
                       },
                     ),
+                    const SizedBox(height: 12),
+                    // Game Arena entry - new gamified hub
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.18), AppColors.surfaceElevated]),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
+                            context.push(Routes.gameHub(topic.id), extra: topic.name);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(colors: [AppColors.primaryDeep, AppColors.primary])), child: const Icon(Icons.sports_esports_rounded, color: Colors.white, size: 22)),
+                                const SizedBox(width: 12),
+                                const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('GAME ARENA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.4)), SizedBox(height: 2), Text('Quiz Battle • Memory • Drag & Drop • Speed Run', style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary))])),
+                                const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 110),
                   ],
                 ),
