@@ -9,6 +9,7 @@ import '../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../core/gamification_delta.dart';
 import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
+import '../../gamification/providers/game_results_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
@@ -80,7 +81,6 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen> with Ticker
     );
     try {
       await ref.read(gameResultsProvider.notifier).submit(submission);
-      ref.invalidate(dashboardProvider);
     } catch (_) {
       // Network blip: dashboard refetches on next read; never block the player.
     }

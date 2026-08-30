@@ -222,7 +222,8 @@ class NetworkGraph {
     visited.add(from);
     while (queue.isNotEmpty) {
       final cur = queue.removeAt(0);
-      for (final nb in adj[cur] ?? {}) {
+      final Set<String> neighbors = adj[cur] ?? <String> {};
+      for (final nb in neighbors) {
         if (nb == to) return true;
         if (!visited.contains(nb)) {
           visited.add(nb);

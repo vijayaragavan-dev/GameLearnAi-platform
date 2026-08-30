@@ -33,7 +33,8 @@ class GameResultSubmitter {
       bestCombo: bestCombo,
     );
     try {
-      return await _ref.read(gameResultsProvider.notifier).submit(req);
+      final GameResultsNotifier notifier = _ref.read(gameResultsProvider.notifier);
+      return await notifier.submit(req);
     } catch (_) {
       return null;
     }

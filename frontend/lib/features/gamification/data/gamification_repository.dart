@@ -1,6 +1,6 @@
 import '../../../../core/models/gamification_models.dart';
 import '../../../../core/network/api_client.dart';
-import 'game_result_models.dart';
+import '../models/game_result_models.dart';
 
 /// GAM-001..003 (read-only), USER-001, PROG-001/002, PROG-101/102
 /// Persistent Gamification + Player Progression (frontend-only, token-sourced)
@@ -68,3 +68,4 @@ class GamificationRepository {
         await _client.getJson('/api/v1/me/game-results/$gameType');
     return GameResultProgress.fromJson(json);
   }
+}

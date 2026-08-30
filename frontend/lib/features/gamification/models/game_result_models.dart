@@ -40,6 +40,8 @@ class GameResultSubmissionResponse {
     required this.leveledUp,
     required this.levelsGained,
     required this.playedAt,
+    this.nextLevelThresholdXp,
+    this.xpToNextLevel,
   });
 
   final String requestId;
@@ -51,8 +53,8 @@ class GameResultSubmissionResponse {
   final bool leveledUp;
   final int levelsGained;
   final DateTime playedAt;
-  final int? nextLevelThresholdXp = null;
-  final int? xpToNextLevel = null;
+  final int? nextLevelThresholdXp;
+  final int? xpToNextLevel;
 
   factory GameResultSubmissionResponse.fromJson(Map<String, dynamic> json) =>
       GameResultSubmissionResponse(
