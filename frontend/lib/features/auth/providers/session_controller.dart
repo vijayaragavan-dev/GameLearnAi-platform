@@ -116,13 +116,18 @@ class SessionController extends Notifier<SessionState> {
       _celebrateEnter();
       return true;
     } on ApiException catch (e) {
+      final error = e is UnauthorizedException &&
+              previousPhase != SessionPhase.authenticated
+          ? const UserFacingError('', 'Wrong username or password.',
+              retryable: true)
+          : describeError(e);
       if (previousPhase == SessionPhase.authenticated) {
-        state = state.copyWith(busy: false, error: describeError(e));
+        state = state.copyWith(busy: false, error: error);
       } else {
         state = state.copyWith(
           phase: SessionPhase.unauthenticated,
           busy: false,
-          error: describeError(e),
+          error: error,
         );
       }
       return false;
