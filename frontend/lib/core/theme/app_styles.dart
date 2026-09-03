@@ -19,12 +19,15 @@ abstract final class AppLayout {
   static const double railWidth = 80;
   static const double railExtendedWidth = 256;
 
-  static const EdgeInsets pagePaddingCompact =
-      EdgeInsets.symmetric(horizontal: 20);
-  static const EdgeInsets pagePaddingMedium =
-      EdgeInsets.symmetric(horizontal: 24);
-  static const EdgeInsets pagePaddingExpanded =
-      EdgeInsets.symmetric(horizontal: 32);
+  static const EdgeInsets pagePaddingCompact = EdgeInsets.symmetric(
+    horizontal: 20,
+  );
+  static const EdgeInsets pagePaddingMedium = EdgeInsets.symmetric(
+    horizontal: 24,
+  );
+  static const EdgeInsets pagePaddingExpanded = EdgeInsets.symmetric(
+    horizontal: 32,
+  );
 }
 
 abstract final class AppRadius {
@@ -59,6 +62,38 @@ abstract final class AppShadows {
 
   static List<BoxShadow> drop() => const [
     BoxShadow(color: Color(0x66000000), blurRadius: 16, offset: Offset(0, 8)),
+  ];
+
+  /// Subtle elevated shadow for cards on light surfaces — theme-aware caller picks opacity.
+  static List<BoxShadow> elevated({double alpha = 0.08}) => [
+    BoxShadow(
+      color: const Color(0xFF0F172A).withValues(alpha: alpha),
+      blurRadius: 20,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: const Color(0xFF0F172A).withValues(alpha: alpha * 0.6),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
+    ),
+  ];
+
+  /// Interactive hover shadow — restrained glow for hover state.
+  static List<BoxShadow> interactive(Color color, {double alpha = 0.18}) => [
+    BoxShadow(
+      color: color.withValues(alpha: alpha),
+      blurRadius: 22,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  /// Focus ring — use via border, not shadow on most widgets; this is for elevated focus.
+  static List<BoxShadow> focus(Color color) => [
+    BoxShadow(
+      color: color.withValues(alpha: 0.35),
+      blurRadius: 0,
+      spreadRadius: 3,
+    ),
   ];
 }
 
@@ -101,4 +136,51 @@ abstract final class AppGradients {
     ],
     stops: const [0.0, 0.55, 1.0],
   );
+
+  // ---- Premium surfaces: subtle game-oriented accent washes (restrained) ----
+
+  static const LinearGradient success = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF065F46), AppColors.success],
+  );
+
+  static const LinearGradient info = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.infoDeep, AppColors.info],
+  );
+
+  static LinearGradient cardHighlight(Color base) => LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [base.withValues(alpha: 0.14), base.withValues(alpha: 0.02)],
+  );
+
+  static LinearGradient rewardHighlight = const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF92400E), AppColors.xp],
+  );
+
+  /// Subtle sheen for elevated cards — dark: white α0.06 → transparent; light: primary α0.03 → transparent.
+  static LinearGradient sheen(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [Colors.white.withValues(alpha: 0.07), Colors.transparent]
+          : [AppColors.primary.withValues(alpha: 0.04), Colors.transparent],
+    );
+  }
+}
+
+/// Interactive state tokens — single source for hover/pressed/focus/disabled opacity.
+abstract final class AppStates {
+  static const double hoverOpacity = 0.08;
+  static const double pressedScale = 0.97;
+  static const double selectedGlowAlpha = 0.18;
+  static const double disabledOpacity = 0.48;
+  static const double focusBorderWidth = 2;
 }

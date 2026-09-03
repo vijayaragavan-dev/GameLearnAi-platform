@@ -1,0 +1,362 @@
+import 'package:flutter/material.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_styles.dart';
+
+/// Premium reusable surfaces — single language for all future game screens.
+///
+/// All surfaces are theme-aware (dark/light), use [AppColors]/[AppLightColors]
+/// tokens, respect [AppRadius.lg] geometry, and provide restrained depth
+/// (no excessive glow). Prefer these over per-screen Decoration copies.
+
+/// Glass-like translucent panel — the only glass primitive. Use max once per screen.
+class GlassPanel extends StatelessWidget {
+  const GlassPanel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.radius = AppRadius.xl,
+    this.tint,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.white.withValues(alpha: 0.03),
+                ]
+              : [
+                  (tint ?? AppColors.primary).withValues(alpha: 0.05),
+                  Colors.white.withValues(alpha: 0.6),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.14)
+              : AppLightColors.border,
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : AppShadows.elevated(alpha: 0.06),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Elevated game panel — premium card with subtle highlight sheen and restrained glow.
+/// Use for game HUD containers, reward headers, highlighted sections.
+class ElevatedGamePanel extends StatelessWidget {
+  const ElevatedGamePanel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.glowColor,
+    this.highlight = true,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color? glowColor;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: glowColor != null
+            ? [
+                BoxShadow(
+                  color: glowColor!.withValues(alpha: isDark ? 0.22 : 0.12),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : (isDark ? AppShadows.drop() : AppShadows.elevated(alpha: 0.07)),
+      ),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          gradient: highlight ? AppGradients.sheen(context) : null,
+          color: highlight ? null : scheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color:
+                glowColor?.withValues(alpha: 0.35) ??
+                (isDark ? AppColors.border : AppLightColors.border),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Reward surface — warm gold wash for XP/reward cards. Data-driven value is outside.
+class RewardSurface extends StatelessWidget {
+  const RewardSurface({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.intensity = 0.08,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double intensity;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.xp.withValues(alpha: intensity),
+            isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: AppColors.xp.withValues(alpha: isDark ? 0.35 : 0.22),
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: AppColors.xp.withValues(alpha: 0.12),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Achievement surface — locked vs unlocked. Pass [unlocked] from real Achievement.unlockedAt != null.
+class AchievementSurface extends StatelessWidget {
+  const AchievementSurface({
+    super.key,
+    required this.child,
+    required this.unlocked,
+    this.padding = const EdgeInsets.all(14),
+  });
+
+  final Widget child;
+  final bool unlocked;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (!unlocked) {
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.lockedSurface
+              : AppLightColors.lockedSurface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: isDark ? AppColors.border : AppLightColors.border,
+          ),
+        ),
+        child: child,
+      );
+    }
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        boxShadow: AppShadows.glow(
+          AppColors.primary,
+          alpha: isDark ? 0.22 : 0.10,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Statistic surface — quiet, consistent for StatCard and KPI tiles.
+/// Uses tint only for the top accent border.
+class StatisticSurface extends StatelessWidget {
+  const StatisticSurface({
+    super.key,
+    required this.child,
+    this.tint,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final Widget child;
+  final Color? tint;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: (tint ?? (isDark ? AppColors.border : AppLightColors.border))
+              .withValues(alpha: tint != null ? 0.35 : 1),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Highlighted surface — featured/selected game card backing.
+/// Controlled glow — one per section max.
+class HighlightedSurface extends StatelessWidget {
+  const HighlightedSurface({
+    super.key,
+    required this.child,
+    this.color = AppColors.primary,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final Widget child;
+  final Color color;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: AppShadows.glow(color, alpha: isDark ? 0.22 : 0.10),
+      ),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: isDark ? 0.14 : 0.07),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: color.withValues(alpha: 0.45)),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Interactive surface — provides hover/pressed/focus feedback without duplicating logic.
+/// Wraps any child; handles hover on desktop/web via MouseRegion and pressed via GestureDetector.
+class InteractiveSurface extends StatefulWidget {
+  const InteractiveSurface({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(16),
+    this.borderColor,
+    this.enableHoverGlow = true,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+  final Color? borderColor;
+  final bool enableHoverGlow;
+
+  @override
+  State<InteractiveSurface> createState() => _InteractiveSurfaceState();
+}
+
+class _InteractiveSurfaceState extends State<InteractiveSurface> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    final hoverBorder =
+        widget.borderColor ??
+        (isDark ? AppColors.borderStrong : AppLightColors.borderStrong);
+    final idleBorder =
+        widget.borderColor ??
+        (isDark ? AppColors.border : AppLightColors.border);
+    return MouseRegion(
+      onEnter: widget.onTap == null
+          ? null
+          : (_) => setState(() => _hovered = true),
+      onExit: widget.onTap == null
+          ? null
+          : (_) => setState(() => _hovered = false),
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onTapDown: widget.onTap == null
+            ? null
+            : (_) => setState(() => _pressed = true),
+        onTapUp: widget.onTap == null
+            ? null
+            : (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? AppStates.pressedScale : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: widget.padding,
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: _hovered ? hoverBorder : idleBorder),
+              boxShadow: _hovered && widget.enableHoverGlow
+                  ? AppShadows.interactive(AppColors.primary, alpha: 0.14)
+                  : (isDark ? AppShadows.drop() : null),
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}

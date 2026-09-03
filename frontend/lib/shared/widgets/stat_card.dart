@@ -20,43 +20,52 @@ class StatCard extends StatelessWidget {
   final String? sub;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      border: Border.all(color: tint.withValues(alpha: 0.35)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9.5,
-            letterSpacing: 1.8,
-            fontWeight: FontWeight.w800,
-            color: tint,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: AppTypography.displayFamily,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (sub != null)
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: tint.withValues(alpha: 0.35)),
+        boxShadow: isDark ? null : AppShadows.elevated(alpha: 0.05),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            sub!,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
+            label,
+            style: TextStyle(
+              fontSize: 9.5,
+              letterSpacing: 1.8,
+              fontWeight: FontWeight.w800,
+              color: tint,
             ),
           ),
-      ],
-    ),
-  );
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: AppTypography.displayFamily,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: isDark
+                  ? AppColors.textPrimary
+                  : AppLightColors.textPrimary,
+            ),
+          ),
+          if (sub != null)
+            Text(
+              sub!,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
