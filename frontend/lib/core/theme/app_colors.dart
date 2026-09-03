@@ -43,10 +43,21 @@ abstract final class AppColors {
   static const Color locked = Color(0xFF475569);
   static const Color lockedSurface = Color(0xFF1E293B);
 
+  // Information (dark) — complements cyan secondary for neutral info states.
+  static const Color info = Color(0xFF38BDF8); // sky-400
+  static const Color infoDeep = Color(0xFF075985);
+
+  // Interaction & overlay (dark).
+  static const Color focusRing = Color(
+    0xFFA78BFA,
+  ); // primaryBright alias for focus
+  static const Color overlay = Color(0xB310172A); // 70% surface for modals
+
   // Text (dark).
   static const Color textPrimary = Color(0xFFF1F5F9);
   static const Color textSecondary = Color(0xFF94A3B8);
   static const Color textTertiary = Color(0xFF64748B);
+  static const Color textDisabled = Color(0xFF475569);
   static const Color textOnColor = Color(0xFF0B1020);
 
   // Lines & overlays (dark).
@@ -66,9 +77,18 @@ abstract final class AppLightColors {
   static const Color locked = Color(0xFF94A3B8);
   static const Color lockedSurface = Color(0xFFE2E8F0);
 
+  static const Color info = Color(
+    0xFF0EA5E9,
+  ); // sky-500 for light — higher contrast on white
+  static const Color infoDeep = Color(0xFF0369A1);
+
+  static const Color focusRing = Color(0xFF8B5CF6);
+  static const Color overlay = Color(0x3310172A);
+
   static const Color textPrimary = Color(0xFF0F172A); // slate-900
   static const Color textSecondary = Color(0xFF334155); // slate-700
   static const Color textTertiary = Color(0xFF64748B); // slate-500
+  static const Color textDisabled = Color(0xFF94A3B8);
   static const Color textOnColor = Color(0xFFFFFFFF);
 
   static const Color border = Color(0xFFE2E8F0); // slate-200
@@ -80,4 +100,13 @@ abstract final class AppLightColors {
 /// scattering ternary everywhere. Accents (primary etc.) are identical.
 extension AppColorContext on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
+
+  Color get surfaceColor => isDark ? AppColors.surface : AppLightColors.surface;
+  Color get surfaceElevatedColor =>
+      isDark ? AppColors.surfaceElevated : AppLightColors.surfaceElevated;
+  Color get borderColor => isDark ? AppColors.border : AppLightColors.border;
+  Color get textPrimaryColor =>
+      isDark ? AppColors.textPrimary : AppLightColors.textPrimary;
+  Color get textSecondaryColor =>
+      isDark ? AppColors.textSecondary : AppLightColors.textSecondary;
 }

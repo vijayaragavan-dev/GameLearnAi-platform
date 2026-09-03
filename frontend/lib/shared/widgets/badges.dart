@@ -103,59 +103,111 @@ class StreakChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = days > 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: active ? null : null,
-          color: active
-              ? AppColors.streak.withValues(alpha: 0.16)
-              : AppColors.surfaceHigh,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
+      child: Semantics(
+        button: onTap != null,
+        label: 'Streak $days ${days == 1 ? 'day' : 'days'}',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
             color: active
-                ? AppColors.streak.withValues(alpha: 0.55)
-                : AppColors.border,
+                ? AppColors.streak.withValues(alpha: 0.16)
+                : (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: active
+                  ? AppColors.streak.withValues(alpha: 0.55)
+                  : (isDark ? AppColors.border : AppLightColors.border),
+            ),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: AppColors.streak.withValues(alpha: 0.28),
+                      blurRadius: 14,
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: AppColors.streak.withValues(alpha: 0.3),
-                    blurRadius: 14,
-                  ),
-                ]
-              : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                active
+                    ? Icons.local_fire_department
+                    : Icons.local_fire_department_outlined,
+                size: 15,
+                color: active ? AppColors.streak : AppColors.textTertiary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$days',
+                style: TextStyle(
+                  fontFamily: AppTypography.displayFamily,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: active ? AppColors.streak : AppColors.textTertiary,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                days == 1 ? 'DAY' : 'DAYS',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                  color: active ? AppColors.streak : AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Gold XP pill — always data-driven. Pass real XP value; never fabricate.
+class XPBadge extends StatelessWidget {
+  const XPBadge({super.key, required this.xp, this.compact = false});
+
+  final int xp;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      label: '$xp XP',
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 8 : 10,
+          vertical: compact ? 4 : 5,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.xp.withValues(alpha: isDark ? 0.14 : 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: AppColors.xp.withValues(alpha: 0.45)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              active
-                  ? Icons.local_fire_department
-                  : Icons.local_fire_department_outlined,
-              size: 15,
-              color: active ? AppColors.streak : AppColors.textTertiary,
+              Icons.star_rounded,
+              size: compact ? 13 : 14,
+              color: AppColors.xp,
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 4),
             Text(
-              '$days',
+              compact ? '$xp' : '+$xp XP',
               style: TextStyle(
                 fontFamily: AppTypography.displayFamily,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: active ? AppColors.streak : AppColors.textTertiary,
-              ),
-            ),
-            const SizedBox(width: 3),
-            Text(
-              days == 1 ? 'DAY' : 'DAYS',
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-                color: active ? AppColors.streak : AppColors.textTertiary,
+                fontSize: compact ? 11 : 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+                color: isDark ? AppColors.xp : const Color(0xFF92400E),
               ),
             ),
           ],
@@ -163,4 +215,174 @@ class StreakChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Category chip for game/world grouping — consistent height 36, pill, selectable.
+class CategoryChip extends StatelessWidget {
+  const CategoryChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10)
+                : (isDark ? AppColors.surface : AppLightColors.surface),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.5)
+                  : (isDark ? AppColors.border : AppLightColors.border),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 14,
+                  color: selected ? AppColors.primary : AppColors.textTertiary,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: selected
+                      ? AppColors.primary
+                      : (isDark
+                            ? AppColors.textSecondary
+                            : AppLightColors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Generic status pill — locked / available / completed / featured.
+enum StatusKind { locked, available, completed, featured, inProgress }
+
+class StatusPill extends StatelessWidget {
+  const StatusPill({super.key, required this.kind, this.label});
+
+  final StatusKind kind;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, icon, text) = switch (kind) {
+      StatusKind.locked => (
+        AppColors.locked,
+        Icons.lock_rounded,
+        label ?? 'LOCKED',
+      ),
+      StatusKind.available => (
+        AppColors.success,
+        Icons.play_circle_rounded,
+        label ?? 'AVAILABLE',
+      ),
+      StatusKind.completed => (
+        AppColors.success,
+        Icons.check_circle_rounded,
+        label ?? 'COMPLETED',
+      ),
+      StatusKind.featured => (
+        AppColors.primary,
+        Icons.star_rounded,
+        label ?? 'FEATURED',
+      ),
+      StatusKind.inProgress => (
+        AppColors.warning,
+        Icons.timelapse_rounded,
+        label ?? 'IN PROGRESS',
+      ),
+    };
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: kind == StatusKind.locked
+            ? (isDark ? AppColors.lockedSurface : AppLightColors.lockedSurface)
+            : color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(
+          color: color.withValues(
+            alpha: kind == StatusKind.locked ? 0.35 : 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Locked indicator — icon + label, for path nodes / game cards.
+class LockedIndicator extends StatelessWidget {
+  const LockedIndicator({super.key, this.label = 'LOCKED', this.size = 13});
+
+  final String label;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.lock_rounded, size: size, color: AppColors.locked),
+      const SizedBox(width: 4),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1,
+          color: AppColors.locked,
+        ),
+      ),
+    ],
+  );
 }
