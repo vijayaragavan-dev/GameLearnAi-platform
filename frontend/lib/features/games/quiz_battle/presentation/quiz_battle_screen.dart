@@ -30,10 +30,12 @@ import '../../../game_engine/widgets/game_result_screen.dart';
 /// fast-answer bonus, progress, replay, sound, animations, personal best via
 /// local storage comparison (backend XP via real submission).
 class QuizBattleScreen extends ConsumerStatefulWidget {
-  const QuizBattleScreen({super.key, required this.topicId, this.topicName});
+  const QuizBattleScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
 
   final String topicId;
   final String? topicName;
+  final String? subjectId;
+  final String? subjectName;
 
   @override
   ConsumerState<QuizBattleScreen> createState() => _QuizBattleScreenState();
@@ -199,7 +201,7 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
       if (!mounted) return;
       final elapsed = _gameStart == null ? 0 : DateTime.now().difference(_gameStart!).inSeconds;
       final gameResult = GameResult(
-        config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? _quiz!.title, difficulty: _difficulty, type: GameType.quizBattle, timeLimitSeconds: DifficultyUtils.timeLimitFor(_difficulty, GameType.quizBattle)),
+        config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? _quiz!.title, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.quizBattle, timeLimitSeconds: DifficultyUtils.timeLimitFor(_difficulty, GameType.quizBattle)),
         score: localScore,
         accuracy: accuracy,
         correctCount: result.correctCount,
@@ -214,7 +216,7 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
         builder: (_) => GameResultScreen(
           result: gameResult,
           gamificationDelta: delta,
-          onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => QuizBattleScreen(topicId: widget.topicId, topicName: widget.topicName))),
+          onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => QuizBattleScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
         ),
       ));
     } on ApiException catch (e) {
@@ -228,7 +230,9 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
 
   @override
   void dispose() {
-    _questionTimer.dispose();
+    try {
+      _questionTimer.dispose();
+    } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }
@@ -262,7 +266,7 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
         final progress = quiz.questions.length == 0 ? 0.0 : (_index + (selected != null ? 1 : 0)) / quiz.questions.length;
 
         return GameScaffold(
-          config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? quiz.title, difficulty: _difficulty, type: GameType.quizBattle),
+          config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? quiz.title, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.quizBattle),
           score: _score,
           progress: progress.clamp(0, 1),
           progressLabel: 'QUESTION ${_index + 1} / ${quiz.questions.length}',

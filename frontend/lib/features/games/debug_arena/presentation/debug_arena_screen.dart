@@ -21,10 +21,11 @@ import '../models/debug_challenge.dart';
 /// Debug Arena: debugging simulation — identify / diagnose / fix bugs without executing code.
 /// No audio in this phase; uses haptics only.
 class DebugArenaScreen extends ConsumerStatefulWidget {
-  const DebugArenaScreen({super.key, required this.topicId, this.topicName, this.subjectId});
+  const DebugArenaScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<DebugArenaScreen> createState() => _DebugArenaScreenState();
 }
@@ -106,7 +107,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
     // XP preview local only for this phase — no backend persistence (documented)
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.debugArena, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.debugArena, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: correctCount,
@@ -162,7 +163,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }

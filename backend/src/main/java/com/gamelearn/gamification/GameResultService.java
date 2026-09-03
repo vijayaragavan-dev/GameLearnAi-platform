@@ -14,18 +14,30 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+
 import com.gamelearn.dto.GameResultProgressResponse;
 import com.gamelearn.dto.GameResultSubmissionRequest;
 import com.gamelearn.dto.GameResultSubmissionResponse;
+import com.gamelearn.entity.Achievement;
 import com.gamelearn.entity.GameResult;
 import com.gamelearn.entity.LearnerProfile;
+import com.gamelearn.entity.Streak;
 import com.gamelearn.entity.User;
+import com.gamelearn.entity.UserAchievement;
 import com.gamelearn.entity.enums.Difficulty;
+import com.gamelearn.entity.enums.MasteryLevel;
 import com.gamelearn.entity.enums.XpEventType;
 import com.gamelearn.exception.ApiException;
 import com.gamelearn.exception.ErrorCode;
+import com.gamelearn.repository.AchievementRepository;
 import com.gamelearn.repository.GameResultRepository;
 import com.gamelearn.repository.LearnerProfileRepository;
+import com.gamelearn.repository.QuizAttemptRepository;
+import com.gamelearn.repository.StreakRepository;
+import com.gamelearn.repository.TopicMasteryRepository;
+import com.gamelearn.repository.UserAchievementRepository;
 import com.gamelearn.repository.XpTransactionRepository;
 
 /**
@@ -59,18 +71,38 @@ public class GameResultService {
     /** Combo bonus: +1 XP per 1 combo above 1, capped at 5. */
     static final int COMBO_BONUS_CAP = 5;
 
+    private static final String V1_TIMEZONE = "UTC";
+
     private final GameResultRepository gameResultRepository;
     private final XpTransactionRepository xpTransactionRepository;
     private final LearnerProfileRepository learnerProfileRepository;
+    private final GameResultRateLimiter gameResultRateLimiter;
+    private final StreakRepository streakRepository;
+    private final AchievementRepository achievementRepository;
+    private final UserAchievementRepository userAchievementRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final TopicMasteryRepository topicMasteryRepository;
 
     private Clock clock = Clock.systemUTC();
 
     public GameResultService(GameResultRepository gameResultRepository,
                              XpTransactionRepository xpTransactionRepository,
-                             LearnerProfileRepository learnerProfileRepository) {
+                             LearnerProfileRepository learnerProfileRepository,
+                             GameResultRateLimiter gameResultRateLimiter,
+                             StreakRepository streakRepository,
+                             AchievementRepository achievementRepository,
+                             UserAchievementRepository userAchievementRepository,
+                             QuizAttemptRepository quizAttemptRepository,
+                             TopicMasteryRepository topicMasteryRepository) {
         this.gameResultRepository = gameResultRepository;
         this.xpTransactionRepository = xpTransactionRepository;
         this.learnerProfileRepository = learnerProfileRepository;
+        this.gameResultRateLimiter = gameResultRateLimiter;
+        this.streakRepository = streakRepository;
+        this.achievementRepository = achievementRepository;
+        this.userAchievementRepository = userAchievementRepository;
+        this.quizAttemptRepository = quizAttemptRepository;
+        this.topicMasteryRepository = topicMasteryRepository;
     }
 
     void setClock(Clock clock) {
@@ -94,6 +126,14 @@ public class GameResultService {
                 gameResultRepository.findByUserIdAndClientRequestId(learner.getId(), request.clientRequestId());
         if (existing.isPresent()) {
             return buildResponseFromExisting(learner, existing.get());
+        }
+
+        // Rate limit for NEW submissions only — replays above are quota-free (Gate 2).
+        if (!gameResultRateLimiter.tryAcquire(learner.getId())) {
+            log.info("GAME_RATE_LIMITED user={} gameType={}", learner.getId(), request.gameType());
+            throw new ApiException(ErrorCode.GAME_RATE_LIMITED.getHttpStatus(),
+                    ErrorCode.GAME_RATE_LIMITED.name(),
+                    "Game submission limit reached. Try again later.");
         }
 
         Instant now = Instant.now(clock);
@@ -129,6 +169,11 @@ public class GameResultService {
     }
 
     private void validate(GameResultSubmissionRequest r) {
+        if (!GameType.isValid(r.gameType())) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED.getHttpStatus(),
+                    ErrorCode.VALIDATION_FAILED.name(), "Request validation failed",
+                    java.util.Map.of("gameType", "must be one of " + String.join(", ", GameType.allIds())));
+        }
         if (r.score() < 0 || r.score() > 1_000_000) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED.getHttpStatus(),
                     ErrorCode.VALIDATION_FAILED.name(), "Score is out of range",
@@ -180,7 +225,11 @@ public class GameResultService {
     }
 
     // ------------------------------------------------------------------
-    // PROG-101 XP/level: single deterministic path, identical to quiz pipeline.
+    // PROG-101 XP/level + streak + achievement (Gate 7 Option A).
+    // Reuses existing streak/achievement semantics: game result is a meaningful
+    // learning activity that advances streak and participates in achievement evaluation.
+    // Transactional and idempotent: replay returns early before this method, so no duplicate side effects.
+    // Order mirrors GamificationService O-2 (achievement) / O-3 (streak) with lock ordering preserved.
     // ------------------------------------------------------------------
 
     private Progression awardXpAndAdvance(User learner, String gameType, int deltaXp, Instant now) {
@@ -188,9 +237,7 @@ public class GameResultService {
         if (xp <= 0) {
             return captureProgression(learner);
         }
-        // Write ledger row with referenceType='GAME_RESULT' and the game type as
-        // the description. Idempotency is enforced at the GameResult UNIQUE
-        // constraint; here we just record the credit leg of the same event.
+        // O-1: game XP ledger
         com.gamelearn.entity.XpTransaction row = new com.gamelearn.entity.XpTransaction();
         row.setUser(learner);
         row.setEventType(XpEventType.GAME_COMPLETED);
@@ -200,14 +247,31 @@ public class GameResultService {
         row.setDescription("Game completion: " + gameType);
         xpTransactionRepository.save(row);
 
+        // Streak projection under lock BEFORE achievements so STREAK_DAYS observes this pass's day.
+        LocalDate today = LocalDate.now(clock.withZone(ZoneOffset.UTC));
+        Streak streak = streakRepository.findWithLock(learner.getId()).orElse(null);
+        StreakEngine.Decision decision = streak == null
+                ? StreakEngine.decide(null, today, 0, 0)
+                : StreakEngine.decide(streak.getLastLearningDate(), today,
+                        streak.getCurrentStreakDays(), streak.getLongestStreakDays());
+
+        // O-2: achievements + reward XP (using existing catalog and snapshot)
+        int rewardXp = evaluateAchievementsForGame(learner, decision.newCurrent());
+        Integer milestoneXp = decision.milestoneXp();
+
+        // O-3: apply projected streak state + milestone bonus
+        applyStreak(streak, learner, decision, today);
+
+        // O-4: accumulate total_xp once and recalculate level exactly once (game XP + achievement + milestone)
         LearnerProfile profile = learnerProfileRepository.findWithLock(learner.getId())
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.INTERNAL_ERROR.getHttpStatus(),
                         ErrorCode.INTERNAL_ERROR.name(),
                         "Learner profile missing"));
         Progression before = captureProgression(learner);
+        long delta = (long) xp + rewardXp + (milestoneXp == null ? 0 : milestoneXp);
         long newTotal = Math.min((long) Integer.MAX_VALUE,
-                Math.max(0L, (long) profile.getTotalXp() + (long) xp));
+                Math.max(0L, (long) profile.getTotalXp() + delta));
         profile.setTotalXp((int) newTotal);
         int recomputed = LevelEngine.levelFor(newTotal);
         profile.setCurrentLevel(Math.max(profile.getCurrentLevel(), recomputed));
@@ -215,7 +279,94 @@ public class GameResultService {
         if (recomputed > before.currentLevel()) {
             log.info("GAM_LEVEL_UP from={} to={}", before.currentLevel(), recomputed);
         }
+        log.debug("GAM_XP_AWARDED_GAME delta={} total={} gameXp={} rewardXp={} milestoneXp={}", delta, newTotal, xp, rewardXp, milestoneXp);
         return before;
+    }
+
+    private int evaluateAchievementsForGame(User learner, int projectedStreakDays) {
+        List<Achievement> catalog = achievementRepository.findByActiveTrueOrderByRuleTypeAscCodeAsc();
+        if (catalog.isEmpty()) {
+            return 0;
+        }
+        long attemptCount = quizAttemptRepository.countByUserId(learner.getId());
+        // Game perfect not defined for raw score 0..1M; treat as not perfect to preserve PERFECT_SCORE semantics
+        boolean perfect = false;
+        long masteredCount = topicMasteryRepository.countByUserIdAndMasteryLevel(learner.getId(), MasteryLevel.MASTERED);
+        var snapshot = new AchievementRules.Snapshot(attemptCount, perfect, masteredCount, projectedStreakDays);
+
+        int rewardXp = 0;
+        List<String> unlockedCodes = new ArrayList<>();
+        for (Achievement achievement : catalog) {
+            if (userAchievementRepository.existsByUserIdAndAchievementId(learner.getId(), achievement.getId())) {
+                continue;
+            }
+            var threshold = AchievementRules.parseThreshold(achievement.getRuleConfigJson());
+            if (threshold.isEmpty()) {
+                log.warn("GAM_ACH_CONFIG_INVALID code={}", achievement.getCode());
+                continue;
+            }
+            if (!AchievementRules.satisfied(achievement.getRuleType(), threshold.getAsInt(), snapshot)) {
+                continue;
+            }
+            try {
+                UserAchievement unlock = new UserAchievement();
+                unlock.setUser(learner);
+                unlock.setAchievement(achievement);
+                unlock.setUnlockedAt(Instant.now(clock));
+                userAchievementRepository.save(unlock);
+            } catch (DataIntegrityViolationException raced) {
+                continue;
+            }
+            int reward = XpCalculator.capped(achievement.getXpReward());
+            com.gamelearn.entity.XpTransaction rewardRow = new com.gamelearn.entity.XpTransaction();
+            rewardRow.setUser(learner);
+            rewardRow.setEventType(XpEventType.ACHIEVEMENT_UNLOCKED);
+            rewardRow.setAmount(reward);
+            rewardRow.setReferenceType("ACHIEVEMENT");
+            rewardRow.setReferenceId(achievement.getId());
+            String desc = "Achievement unlocked: " + achievement.getCode();
+            rewardRow.setDescription(desc.length() > 255 ? desc.substring(0, 255) : desc);
+            xpTransactionRepository.save(rewardRow);
+            rewardXp += reward;
+            unlockedCodes.add(achievement.getCode());
+        }
+        if (!unlockedCodes.isEmpty()) {
+            log.info("GAM_ACHIEVEMENT_UNLOCKED codes={}", unlockedCodes);
+        }
+        return rewardXp;
+    }
+
+    private void applyStreak(Streak existing, User learner, StreakEngine.Decision decision, LocalDate today) {
+        if (decision.sameDayNoOp()) {
+            return;
+        }
+        Streak streak = existing != null ? existing : new Streak();
+        streak.setUser(learner);
+        streak.setCurrentStreakDays(decision.newCurrent());
+        streak.setLongestStreakDays(decision.newLongest());
+        streak.setLastLearningDate(today);
+        if (streak.getTimezone() == null || streak.getTimezone().isBlank()) {
+            streak.setTimezone(V1_TIMEZONE);
+        }
+        try {
+            streakRepository.saveAndFlush(streak);
+        } catch (DataIntegrityViolationException raced) {
+            // Concurrent first-ever streak insert loser: another thread inserted the same user_id row.
+            // Treat as same-day no-op; do not award milestone twice.
+            log.info("GAM_STREAK_RACE duplicate for user={}", learner.getId());
+            return;
+        }
+        log.info("GAM_STREAK_UPDATED current={} longest={}", decision.newCurrent(), decision.newLongest());
+        if (decision.milestoneXp() != null) {
+            com.gamelearn.entity.XpTransaction bonus = new com.gamelearn.entity.XpTransaction();
+            bonus.setUser(learner);
+            bonus.setEventType(XpEventType.STREAK_BONUS);
+            bonus.setAmount(XpCalculator.capped(decision.milestoneXp()));
+            bonus.setReferenceType("STREAK_MILESTONE");
+            bonus.setReferenceId(null);
+            bonus.setDescription("Streak milestone: " + decision.newCurrent() + " days");
+            xpTransactionRepository.save(bonus);
+        }
     }
 
     private Progression captureProgression(User learner) {
@@ -315,7 +466,7 @@ public class GameResultService {
         Integer best = gameResultRepository.maxScoreByUserIdAndGameType(userId, gameType);
         Integer combo = gameResultRepository.maxComboByUserIdAndGameType(userId, gameType);
         Integer xp = gameResultRepository.sumXpAwardedByUserIdAndGameType(userId, gameType);
-        Instant last = gameResultRepository.findLastPlayedAt(userId).orElse(null);
+        Instant last = gameResultRepository.findLastPlayedAtByUserIdAndGameType(userId, gameType).orElse(null);
         return new GameResultProgressResponse(
                 gameType, played, completed,
                 best == null ? 0 : best,

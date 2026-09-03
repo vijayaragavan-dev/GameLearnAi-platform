@@ -23,9 +23,11 @@ import '../../../game_engine/widgets/game_result_screen.dart';
 
 /// Drag & Drop Challenge: draggable items → target zones.
 class DragDropScreen extends ConsumerStatefulWidget {
-  const DragDropScreen({super.key, required this.topicId, this.topicName});
+  const DragDropScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
+  final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<DragDropScreen> createState() => _DragDropScreenState();
 }
@@ -141,7 +143,7 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
     final accuracy = _items.isEmpty ? 0.0 : _correctCount / _items.length * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.dragDrop, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.dragDrop, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _correctCount,
@@ -152,14 +154,14 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
       completedAt: DateTime.now(),
     );
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => DragDropScreen(topicId: widget.topicId, topicName: widget.topicName))))));
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => DragDropScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))))));
   }
 
   String _fmt(int s) => '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     super.dispose();
   }
 
@@ -174,7 +176,7 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
     final progress = _items.isEmpty ? 0.0 : _placements.values.where((v) => v != null).length / _items.length;
     final isWide = MediaQuery.sizeOf(context).width > 700;
     return GameScaffold(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.dragDrop),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.dragDrop),
       score: _score,
       progress: progress,
       progressLabel: 'PLACED ${_placements.values.where((v) => v != null).length} / ${_items.length}  •  CORRECT $_correctCount',

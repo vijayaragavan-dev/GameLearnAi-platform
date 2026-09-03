@@ -20,10 +20,11 @@ import '../data/snake_and_ladder_data.dart';
 import '../models/snake_and_ladder.dart';
 
 class SnakeAndLadderScreen extends ConsumerStatefulWidget {
-  const SnakeAndLadderScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.diceProvider});
+  const SnakeAndLadderScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName, this.diceProvider});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   final DiceRollProvider? diceProvider;
   @override
   ConsumerState<SnakeAndLadderScreen> createState() => _SnakeAndLadderScreenState();
@@ -235,7 +236,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
     final acc = attempted == 0 ? 0.0 : _correct / attempted * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: acc, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.snakeAndLadder, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.snakeAndLadder, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: acc,
       correctCount: _correct,
@@ -263,7 +264,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }

@@ -22,9 +22,11 @@ import '../../../game_engine/widgets/game_result_screen.dart';
 
 /// Speed Run: rapid-fire quiz with tight global countdown, streak & speed bonuses.
 class SpeedRunScreen extends ConsumerStatefulWidget {
-  const SpeedRunScreen({super.key, required this.topicId, this.topicName});
+  const SpeedRunScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
+  final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<SpeedRunScreen> createState() => _SpeedRunScreenState();
 }
@@ -139,7 +141,7 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
       if (!mounted) return;
       final elapsed = _timeLimit - _timer.remaining;
       final gameResult = GameResult(
-        config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? _quiz!.title, difficulty: _difficulty, type: GameType.speedRun, timeLimitSeconds: _timeLimit),
+        config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? _quiz!.title, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.speedRun, timeLimitSeconds: _timeLimit),
         score: trueScore,
         accuracy: accuracy,
         correctCount: result.correctCount,
@@ -149,7 +151,7 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
         xpEarned: delta.xpGained > 0 ? delta.xpGained : xpPreview,
         completedAt: DateTime.now(),
       );
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: gameResult, gamificationDelta: delta, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SpeedRunScreen(topicId: widget.topicId, topicName: widget.topicName))))));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: gameResult, gamificationDelta: delta, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SpeedRunScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))))));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
@@ -162,7 +164,7 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
 
   @override
   void dispose() {
-    if (_quiz != null) _timer.dispose();
+    if (_quiz != null) try { _timer.dispose(); } catch (_) {}
     _flashTimer?.cancel();
     super.dispose();
   }
@@ -188,7 +190,7 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
         final progress = quiz.questions.length == 0 ? 0.0 : (_index + (selected != null ? 1 : 0)) / quiz.questions.length;
         final urgent = _timer.remaining <= 10;
         return GameScaffold(
-          config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? quiz.title, difficulty: _difficulty, type: GameType.speedRun),
+          config: GameConfig(topicId: widget.topicId, topicName: widget.topicName ?? quiz.title, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.speedRun),
           score: _score,
           progress: progress,
           progressLabel: 'RUSH ${_index + 1} / ${quiz.questions.length}',

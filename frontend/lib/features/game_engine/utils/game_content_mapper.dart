@@ -17,6 +17,13 @@ abstract final class GameContentMapper {
       final pairs = _fromLesson(lesson, maxPairs);
       if (pairs.length >= 2) return pairs;
     }
+    // P1-3: Prefer topic description (authoritative) over quiz fallback.
+    // Quiz fallback previously fabricated definition from options[0], which is not
+    // guaranteed to be the correct answer. Topic path is authoritative and deterministic.
+    if (topic != null) {
+      final topicPairs = _fromTopic(topic, maxPairs);
+      if (topicPairs.length >= 2) return topicPairs;
+    }
     if (quiz != null && quiz.questions.isNotEmpty) {
       return _fromQuiz(quiz, maxPairs);
     }
@@ -61,9 +68,14 @@ abstract final class GameContentMapper {
     for (var i = 0; i < quiz.questions.length && result.length < max; i++) {
       final q = quiz.questions[i];
       final term = q.questionText.length > 60 ? '${q.questionText.substring(0, 57)}...' : q.questionText;
-      // Definition = first option as proxy (since correct answer not known pre-submission).
-      // For educational value we use question + difficulty as context.
-      final def = q.options.isNotEmpty ? q.options.first : 'Concept ${i + 1}';
+      // P1-3 FIX: Do NOT use options[0] as definition. Options order is not authoritative
+      // and correctAnswer is intentionally not exposed in QUIZ-001 (only after submission).
+      // Using options.first would fabricate educational meaning and could be wrong if
+      // options are shuffled or correct answer is not first (seed currently has correct first
+      // by coincidence, but contract does not guarantee it). Use a deterministic, non-fabricated
+      // placeholder derived from questionText/difficulty. Topic fallback is preferred over this
+      // quiz fallback; this path is now last resort and must remain trustworthy.
+      final def = 'Review focus • ${q.difficulty}';
       final definition = def.length > 70 ? '${def.substring(0, 67)}...' : def;
       result.add((term: term, definition: definition));
     }

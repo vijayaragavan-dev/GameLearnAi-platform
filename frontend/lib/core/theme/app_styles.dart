@@ -13,6 +13,20 @@ abstract final class AppSpacing {
   static const EdgeInsets screenH = EdgeInsets.symmetric(horizontal: 20);
 }
 
+abstract final class AppLayout {
+  static const double maxContentWidth = 1120;
+  static const double wideContentWidth = 1200;
+  static const double railWidth = 80;
+  static const double railExtendedWidth = 256;
+
+  static const EdgeInsets pagePaddingCompact =
+      EdgeInsets.symmetric(horizontal: 20);
+  static const EdgeInsets pagePaddingMedium =
+      EdgeInsets.symmetric(horizontal: 24);
+  static const EdgeInsets pagePaddingExpanded =
+      EdgeInsets.symmetric(horizontal: 32);
+}
+
 abstract final class AppRadius {
   static const double sm = 10;
   static const double md = 14;

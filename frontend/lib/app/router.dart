@@ -73,21 +73,43 @@ abstract final class Routes {
       '/assessment/$subjectId/result';
   static String badge(String code) => '/achievements/$code';
   static String topicPerformance(String topicId) => '/performance/$topicId';
-  static String gameHub(String topicId) => '/games/$topicId';
-  static String quizBattle(String topicId) => '/games/$topicId/quiz-battle';
-  static String memoryMatch(String topicId) => '/games/$topicId/memory';
-  static String dragDrop(String topicId) => '/games/$topicId/drag-drop';
-  static String speedRun(String topicId) => '/games/$topicId/speed-run';
-  static String debugArena(String topicId) => '/games/$topicId/debug-arena';
-  static String unlockCode(String topicId) => '/games/$topicId/unlock-code';
-  static String conceptBuilder(String topicId) => '/games/$topicId/concept-builder';
-  static String sequenceMaster(String topicId) => '/games/$topicId/sequence-master';
-  static String targetChallenge(String topicId) => '/games/$topicId/target-challenge';
-  static String mysteryCase(String topicId) => '/games/$topicId/mystery-case';
-  static String bossBattle(String topicId) => '/games/$topicId/boss-battle';
-  static String puzzleArena(String topicId) => '/games/$topicId/puzzle-arena';
-  static String connectivityLab(String topicId) => '/games/$topicId/connectivity-lab';
-  static String snakeAndLadder(String topicId) => '/games/$topicId/snake-and-ladder';
+  static String _withSubjectQuery(String base, String? subjectId, String? subjectName) {
+    final q = <String>[];
+    if (subjectId != null && subjectId.isNotEmpty) q.add('subjectId=${Uri.encodeComponent(subjectId)}');
+    if (subjectName != null && subjectName.isNotEmpty) q.add('subjectName=${Uri.encodeComponent(subjectName)}');
+    return q.isEmpty ? base : '$base?${q.join('&')}';
+  }
+
+  static String gameHub(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId', subjectId, subjectName);
+  static String quizBattle(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/quiz-battle', subjectId, subjectName);
+  static String memoryMatch(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/memory', subjectId, subjectName);
+  static String dragDrop(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/drag-drop', subjectId, subjectName);
+  static String speedRun(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/speed-run', subjectId, subjectName);
+  static String debugArena(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/debug-arena', subjectId, subjectName);
+  static String unlockCode(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/unlock-code', subjectId, subjectName);
+  static String conceptBuilder(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/concept-builder', subjectId, subjectName);
+  static String sequenceMaster(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/sequence-master', subjectId, subjectName);
+  static String targetChallenge(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/target-challenge', subjectId, subjectName);
+  static String mysteryCase(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/mystery-case', subjectId, subjectName);
+  static String bossBattle(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/boss-battle', subjectId, subjectName);
+  static String puzzleArena(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/puzzle-arena', subjectId, subjectName);
+  static String connectivityLab(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/connectivity-lab', subjectId, subjectName);
+  static String snakeAndLadder(String topicId, {String? subjectId, String? subjectName}) =>
+      _withSubjectQuery('/games/$topicId/snake-and-ladder', subjectId, subjectName);
 
   static bool _isPublic(String location) =>
       location == splash || location == onboarding;
@@ -329,6 +351,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: GameHubScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(0, 0.06),
@@ -340,6 +364,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: QuizBattleScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -351,6 +377,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: MemoryMatchScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -362,6 +390,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: DragDropScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -373,6 +403,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: SpeedRunScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -384,6 +416,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: DebugArenaScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -395,6 +429,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: UnlockCodeScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -406,6 +442,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: ConceptBuilderScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -417,6 +455,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: SequenceMasterScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -428,6 +468,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: TargetChallengeScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -439,6 +481,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: MysteryCaseScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -450,6 +494,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: BossBattleScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -461,6 +507,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: PuzzleArenaScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -472,6 +520,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: ConnectivityLabScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),
@@ -483,6 +533,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           child: SnakeAndLadderScreen(
             topicId: s.pathParameters['topicId']!,
             topicName: s.extra is String ? s.extra as String : null,
+            subjectId: s.uri.queryParameters['subjectId'],
+            subjectName: s.uri.queryParameters['subjectName'],
           ),
           state: s,
           begin: const Offset(1, 0),

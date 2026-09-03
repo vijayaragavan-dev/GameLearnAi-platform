@@ -9,14 +9,18 @@ import '../../../core/models/content_models.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/achievement_icon.dart' show SubjectGlyph;
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../../shared/widgets/responsive_layout.dart';
 import 'subject_grouping.dart';
 
-/// SUBJ-001 world selection. Each subject is a "world" with its own tint.
+/// SUBJ-001 world selection — premium catalog.
+/// Responsive: 1 col mobile, 2 tablet, 3 desktop, constrained 1120.
+/// Theme-aware via Theme brightness. No fake subjects.
 class SubjectsScreen extends ConsumerStatefulWidget {
   const SubjectsScreen({super.key});
 
@@ -63,11 +67,12 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('CHOOSE YOUR WORLD')),
       body: RefreshIndicator(
         color: AppColors.primaryBright,
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
         onRefresh: () async => _reload(),
         child: FutureBuilder<List<Subject>>(
           future: _future,
@@ -75,7 +80,7 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
             if (snap.connectionState != ConnectionState.done && !snap.hasData) {
               return ListView(
                 physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(AppGutters.pagePadding(context)),
                 children: const [SkeletonList(itemCount: 4, itemHeight: 108)],
               );
             }
@@ -104,46 +109,47 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
               subjects,
               _selectedCategory,
             );
-            return ListView.builder(
+            // Premium catalog: header + chips + adaptive grid
+            return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
-              itemCount: filtered.length + 2,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.fromLTRB(
+                AppGutters.pagePadding(context),
+                8,
+                AppGutters.pagePadding(context),
+                110,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
-                        NovaCompanion(size: 38, mood: NovaMood.encouraging),
-                        SizedBox(width: 12),
+                        const NovaCompanion(size: 38, mood: NovaMood.encouraging),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Pick a world, Player. Your path adapts to you.',
                             style: TextStyle(
                               fontSize: 13.5,
                               height: 1.4,
-                              color: AppColors.textSecondary,
+                              color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  );
-                }
-                if (index == 1) {
-                  return Padding(
+                  ),
+                  Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _CategoryChips(
                       chips: chips,
                       selected: _selectedCategory,
                       onSelected: _selectCategory,
                     ),
-                  );
-                }
-                if (filtered.isEmpty) {
-                  // Only render once when filtered empty.
-                  if (index == 2) {
-                    return EmptyState(
+                  ),
+                  if (filtered.isEmpty)
+                    EmptyState(
                       icon: Icons.filter_list_off_rounded,
                       title: 'No worlds in this category',
                       message:
@@ -154,20 +160,57 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                         ),
                         child: const Text('SHOW ALL'),
                       ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }
-                final subject = filtered[index - 2];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: PressableWorldCard(
-                    subject: subject,
-                    onTap: () => _enter(subject),
-                    onScan: () => _scan(subject),
-                  ),
-                );
-              },
+                    )
+                  else
+                    AdaptiveGrid(
+                      compact: 1,
+                      medium: 2,
+                      expanded: 2,
+                      wide: 3,
+                      spacing: 14,
+                      runSpacing: 14,
+                      children: filtered.map((subject) {
+                        return PressableWorldCard(
+                          subject: subject,
+                          onTap: () => _enter(subject),
+                          onScan: () => _scan(subject),
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 8),
+                  // Programming hint when no separate language subjects exist
+                  if (subjects.any((s) => s.name.toLowerCase().contains('programming')) &&
+                      !subjects.any((s) => ['c', 'java', 'python', 'c++'].contains(s.name.toLowerCase())))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                            color: isDark ? AppColors.border : AppLightColors.border,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.code_rounded, size: 14, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Programming covers C · C++ · Java · Python · JavaScript — one world, many languages.',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             );
           },
         ),
@@ -206,6 +249,8 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceElevated = Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
     return Semantics(
       button: true,
       label: '${widget.subject.name} world, tap to enter, scan available',
@@ -230,7 +275,7 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                   end: Alignment.bottomRight,
                   colors: [
                     _tint.withValues(alpha: _down ? 0.2 : 0.13),
-                    AppColors.surfaceElevated,
+                    surfaceElevated,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -239,7 +284,7 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _tint.withValues(alpha: _down ? 0.35 : 0.15),
+                    color: _tint.withValues(alpha: _down ? 0.35 : (isDark ? 0.15 : 0.08)),
                     blurRadius: _down ? 26 : 14,
                     offset: const Offset(0, 6),
                   ),
@@ -257,10 +302,11 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                           widget.subject.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: AppTypography.displayFamily,
                             fontSize: 17.5,
                             fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -270,10 +316,10 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                               : 'Enter the ${widget.subject.name} world',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             height: 1.35,
-                            color: AppColors.textSecondary,
+                            color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
                           ),
                         ),
                       ],
@@ -348,6 +394,7 @@ class _CategoryChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -375,18 +422,18 @@ class _CategoryChips extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1,
                     color: isSelected
-                        ? AppColors.textOnColor
-                        : AppColors.textSecondary,
+                        ? (isDark ? AppColors.textOnColor : Colors.white)
+                        : (isDark ? AppColors.textSecondary : AppLightColors.textSecondary),
                   ),
                 ),
                 selected: isSelected,
                 onSelected: (_) => onSelected(label),
                 selectedColor: AppColors.primary,
-                backgroundColor: AppColors.surface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 side: BorderSide(
                   color: isSelected
                       ? AppColors.primaryBright
-                      : AppColors.border,
+                      : (isDark ? AppColors.border : AppLightColors.border),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.pill),

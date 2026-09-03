@@ -28,21 +28,39 @@ public class QuizService {
     private final QuizRepository quizRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final TopicService topicService;
+    private final SubjectService subjectService;
     private final ObjectMapper objectMapper;
 
     public QuizService(QuizRepository quizRepository,
                        QuizQuestionRepository quizQuestionRepository,
                        TopicService topicService,
+                       SubjectService subjectService,
                        ObjectMapper objectMapper) {
         this.quizRepository = quizRepository;
         this.quizQuestionRepository = quizQuestionRepository;
         this.topicService = topicService;
+        this.subjectService = subjectService;
         this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
     public QuizResponse getQuizForTopic(UUID topicId) {
+        return getQuizForTopic(topicId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public QuizResponse getQuizForTopic(UUID topicId, UUID subjectId) {
         var topic = topicService.requireActiveTopic(topicId);
+        if (subjectId != null) {
+            var subject = subjectService.requireActiveSubject(subjectId);
+            if (!topic.getSubject().getId().equals(subject.getId())) {
+                throw new ApiException(
+                        ErrorCode.VALIDATION_FAILED.getHttpStatus(),
+                        ErrorCode.VALIDATION_FAILED.name(),
+                        "Request validation failed",
+                        java.util.Map.of("subjectId", "does not match topic's subject"));
+            }
+        }
         Quiz quiz = quizRepository.findFirstByTopicIdAndActiveTrueOrderByCreatedAtAscIdAsc(topic.getId())
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.RESOURCE_NOT_FOUND.getHttpStatus(),

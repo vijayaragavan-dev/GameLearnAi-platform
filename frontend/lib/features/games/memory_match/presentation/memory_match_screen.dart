@@ -35,9 +35,11 @@ class MemoryCard {
 
 /// Memory Match: flip to find term-definition pairs.
 class MemoryMatchScreen extends ConsumerStatefulWidget {
-  const MemoryMatchScreen({super.key, required this.topicId, this.topicName});
+  const MemoryMatchScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
+  final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<MemoryMatchScreen> createState() => _MemoryMatchScreenState();
 }
@@ -183,7 +185,7 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
     final accuracy = totalPairs == 0 ? 0.0 : _matchedPairs / totalPairs * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.memoryMatch, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.memoryMatch, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _matchedPairs,
@@ -194,14 +196,14 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
       completedAt: DateTime.now(),
     );
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => MemoryMatchScreen(topicId: widget.topicId, topicName: widget.topicName))))));
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => MemoryMatchScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))))));
   }
 
   String _fmt(int s) => '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     super.dispose();
   }
 
@@ -215,7 +217,7 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
     }
     final progress = _cards.isEmpty ? 0.0 : _matchedPairs / (_cards.length / 2);
     return GameScaffold(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.memoryMatch),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.memoryMatch),
       score: _score,
       progress: progress,
       progressLabel: 'MATCHED $_matchedPairs / ${_cards.length ~/ 2}  •  MOVES $_moves',

@@ -18,73 +18,99 @@ abstract final class AppTypography {
     BuildContext context, {
     double size = 34,
     int weight = 700,
-  }) => TextStyle(
-    fontFamily: displayFamily,
-    fontVariations: _wght(weight),
-    fontSize: size,
-    height: 1.12,
-    letterSpacing: -0.5,
-    color: AppColors.textPrimary,
-  );
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: displayFamily,
+      fontVariations: _wght(weight),
+      fontSize: size,
+      height: 1.12,
+      letterSpacing: -0.5,
+      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+    );
+  }
 
-  static TextStyle h1(BuildContext context) => TextStyle(
-    fontFamily: displayFamily,
-    fontVariations: _wght(700),
-    fontSize: 26,
-    letterSpacing: -0.3,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle h1(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: displayFamily,
+      fontVariations: _wght(700),
+      fontSize: 26,
+      letterSpacing: -0.3,
+      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+    );
+  }
 
-  static TextStyle h2(BuildContext context) => TextStyle(
-    fontFamily: displayFamily,
-    fontVariations: _wght(700),
-    fontSize: 20,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle h2(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: displayFamily,
+      fontVariations: _wght(700),
+      fontSize: 20,
+      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+    );
+  }
 
-  static TextStyle h3(BuildContext context) => TextStyle(
-    fontFamily: displayFamily,
-    fontVariations: _wght(700),
-    fontSize: 17,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle h3(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: displayFamily,
+      fontVariations: _wght(700),
+      fontSize: 17,
+      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+    );
+  }
 
-  static TextStyle body(BuildContext context) => const TextStyle(
-    fontFamily: bodyFamily,
-    fontSize: 15,
-    height: 1.45,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle body(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: bodyFamily,
+      fontSize: 15,
+      height: 1.45,
+      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+    );
+  }
 
-  static TextStyle bodySecondary(BuildContext context) => const TextStyle(
-    fontFamily: bodyFamily,
-    fontSize: 14,
-    height: 1.45,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle bodySecondary(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: bodyFamily,
+      fontSize: 14,
+      height: 1.45,
+      color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+    );
+  }
 
-  static TextStyle caption(BuildContext context) => const TextStyle(
-    fontFamily: bodyFamily,
-    fontSize: 12.5,
-    height: 1.35,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.2,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle caption(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: bodyFamily,
+      fontSize: 12.5,
+      height: 1.35,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+      color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+    );
+  }
 
-  static TextStyle label(BuildContext context) => const TextStyle(
-    fontFamily: bodyFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.8,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle label(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: bodyFamily,
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.8,
+      color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+    );
+  }
 
-  static TextStyle monoNumber(BuildContext context, {double size = 16}) =>
-      TextStyle(
-        fontFamily: displayFamily,
-        fontVariations: _wght(700),
-        fontSize: size,
-        color: AppColors.textPrimary,
-      );
+  static TextStyle monoNumber(BuildContext context, {double size = 16}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TextStyle(
+      fontFamily: displayFamily,
+      fontVariations: _wght(700),
+      fontSize: size,
+      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+    );
+  }
 }

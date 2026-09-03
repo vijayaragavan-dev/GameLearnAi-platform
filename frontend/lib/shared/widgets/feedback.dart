@@ -53,13 +53,17 @@ class _SkeletonBlockState extends State<SkeletonBlock>
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh;
+    final highlight =
+        isDark ? AppColors.borderStrong : AppLightColors.borderStrong;
     if (reduce) {
       return Container(
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(widget.radius),
-          color: AppColors.surfaceHigh.withValues(alpha: 0.55),
+          color: base.withValues(alpha: 0.55),
         ),
       );
     }
@@ -76,9 +80,9 @@ class _SkeletonBlockState extends State<SkeletonBlock>
               begin: Alignment(-1 + 2 * t, 0),
               end: Alignment(0 + 2 * t, 0),
               colors: [
-                AppColors.surfaceHigh.withValues(alpha: 0.55),
-                AppColors.borderStrong.withValues(alpha: 0.75),
-                AppColors.surfaceHigh.withValues(alpha: 0.55),
+                base.withValues(alpha: 0.55),
+                highlight.withValues(alpha: 0.75),
+                base.withValues(alpha: 0.55),
               ],
             ),
           ),
@@ -95,40 +99,47 @@ class SkeletonCard extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const SkeletonBlock(width: 44, height: 44, radius: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonBlock(
-                    width: MediaQuery.sizeOf(context).width * 0.4,
-                    height: 14,
-                  ),
-                  const SizedBox(height: 8),
-                  const SkeletonBlock(width: 90, height: 10),
-                ],
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppLightColors.border,
         ),
-        const SizedBox(height: 14),
-        const SkeletonBlock(height: 34),
-      ],
-    ),
-  );
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const SkeletonBlock(width: 44, height: 44, radius: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBlock(
+                      width: MediaQuery.sizeOf(context).width * 0.4,
+                      height: 14,
+                    ),
+                    const SizedBox(height: 8),
+                    const SkeletonBlock(width: 90, height: 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const SkeletonBlock(height: 34),
+        ],
+      ),
+    );
+  }
+
 }
 
 class SkeletonList extends StatelessWidget {
@@ -224,6 +235,7 @@ class SkeletonAchievementGrid extends StatelessWidget {
 }
 
 /// Full-screen centered error state with Nova and optional retry.
+/// Constrained on wide screens to avoid stretched centered text.
 class ErrorState extends StatelessWidget {
   const ErrorState({
     super.key,
@@ -238,33 +250,36 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const NovaErrorOrb(),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: AppTypography.h2(context),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: AppTypography.bodySecondary(context),
-            textAlign: TextAlign.center,
-          ),
-          if (onRetry != null) ...[
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('TRY AGAIN'),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const NovaErrorOrb(),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: AppTypography.h2(context),
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: AppTypography.bodySecondary(context),
+              textAlign: TextAlign.center,
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('TRY AGAIN'),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     ),
   );
@@ -293,7 +308,7 @@ class NovaErrorOrb extends StatelessWidget {
   );
 }
 
-/// Empty state with icon + message.
+/// Empty state with icon + message. Constrained on wide screens.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -310,33 +325,36 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary.withValues(alpha: 0.1),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.35),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.1),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                ),
               ),
+              child: Icon(icon, color: AppColors.primaryBright, size: 28),
             ),
-            child: Icon(icon, color: AppColors.primaryBright, size: 28),
-          ),
-          const SizedBox(height: 18),
-          Text(title, style: AppTypography.h2(context)),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: AppTypography.bodySecondary(context),
-            textAlign: TextAlign.center,
-          ),
-          if (action != null) ...[const SizedBox(height: 20), action!],
-        ],
+            const SizedBox(height: 18),
+            Text(title, style: AppTypography.h2(context), textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: AppTypography.bodySecondary(context),
+              textAlign: TextAlign.center,
+            ),
+            if (action != null) ...[const SizedBox(height: 20), action!],
+          ],
+        ),
       ),
     ),
   );
@@ -378,13 +396,13 @@ class OfflineBanner extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: onRetry,
-                child: const Text(
+                child: Text(
                   'RETRY',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -403,18 +421,26 @@ class EmptyMiniCard extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Text(
-      text,
-      textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 12.5, color: AppColors.textTertiary),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppLightColors.border,
+        ),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12.5,
+          color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+        ),
+      ),
+    );
+  }
 }

@@ -19,10 +19,11 @@ import '../data/concept_challenges.dart';
 import '../models/concept_challenge.dart';
 
 class ConceptBuilderScreen extends ConsumerStatefulWidget {
-  const ConceptBuilderScreen({super.key, required this.topicId, this.topicName, this.subjectId});
+  const ConceptBuilderScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<ConceptBuilderScreen> createState() => _ConceptBuilderScreenState();
 }
@@ -142,7 +143,7 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
     final accuracy = total == 0 ? 0.0 : _correctCount / total * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.conceptBuilder, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.conceptBuilder, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _correctCount,
@@ -167,7 +168,7 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }

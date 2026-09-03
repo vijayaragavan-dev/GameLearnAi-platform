@@ -19,10 +19,11 @@ import '../data/connectivity_missions.dart';
 import '../models/connectivity_lab.dart';
 
 class ConnectivityLabScreen extends ConsumerStatefulWidget {
-  const ConnectivityLabScreen({super.key, required this.topicId, this.topicName, this.subjectId});
+  const ConnectivityLabScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<ConnectivityLabScreen> createState() => _ConnectivityLabScreenState();
 }
@@ -275,7 +276,7 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
     final accuracy = total == 0 ? 0.0 : _correctCount / total * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.connectivityLab, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.connectivityLab, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _correctCount,
@@ -303,7 +304,7 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }

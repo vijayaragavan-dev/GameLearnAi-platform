@@ -49,7 +49,13 @@ public class GameResultController {
 
     @Operation(summary = "Submit a completed game result",
             description = "Award XP and persist per-game progress for the authenticated "
-                    + "learner. Idempotent on the caller UUID; replay never re-grants XP.")
+                    + "learner. Idempotent on the caller UUID; replay never re-grants XP."
+                    + " New submissions are rate-limited per user (default 30/hour);"
+                    + " replays are quota-free.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Game result persisted and XP awarded (or idempotent replay)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Game submission rate limit exceeded")
+    })
     @PostMapping
     public GameResultSubmissionResponse submit(
             @AuthenticationPrincipal AuthenticatedUser principal,

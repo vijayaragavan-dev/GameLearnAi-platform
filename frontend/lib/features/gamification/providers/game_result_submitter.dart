@@ -18,6 +18,7 @@ class GameResultSubmitter {
 
   Future<GameResultSubmissionResponse?> submit({
     required String gameType,
+    required String difficulty,
     required bool completed,
     required int score,
     required int durationSeconds,
@@ -26,13 +27,16 @@ class GameResultSubmitter {
     final req = GameResultSubmission(
       clientRequestId: _newUuid(),
       gameType: gameType,
+      difficulty: difficulty,
       completed: completed,
       score: score,
       durationSeconds: durationSeconds,
       bestCombo: bestCombo,
     );
     try {
-      final GameResultsNotifier notifier = _ref.read(gameResultsProvider.notifier);
+      final GameResultsNotifier notifier = _ref.read(
+        gameResultsProvider.notifier,
+      );
       return await notifier.submit(req);
     } catch (_) {
       return null;
@@ -52,5 +56,6 @@ class GameResultSubmitter {
   }
 }
 
-final gameResultSubmitterProvider =
-    Provider<GameResultSubmitter>((ref) => GameResultSubmitter(ref));
+final gameResultSubmitterProvider = Provider<GameResultSubmitter>(
+  (ref) => GameResultSubmitter(ref),
+);

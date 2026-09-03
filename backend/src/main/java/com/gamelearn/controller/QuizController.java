@@ -44,10 +44,13 @@ public class QuizController {
 
     @Operation(summary = "Get the active quiz of a topic",
             description = "Returns the quiz with its ordered questions. Correct answers "
-                    + "and explanations are never included in this response.")
+                    + "and explanations are never included in this response. Optional subjectId "
+                    + "validates topic-subject consistency when provided.")
     @GetMapping("/{topicId}")
-    public QuizResponse getQuiz(@PathVariable UUID topicId) {
-        return quizService.getQuizForTopic(topicId);
+    public QuizResponse getQuiz(
+            @PathVariable UUID topicId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID subjectId) {
+        return quizService.getQuizForTopic(topicId, subjectId);
     }
 
     @Operation(summary = "Submit answers and receive the evaluated result",

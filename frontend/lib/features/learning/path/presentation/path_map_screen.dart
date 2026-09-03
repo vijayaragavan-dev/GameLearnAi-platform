@@ -8,6 +8,7 @@ import '../../../../app/router.dart';
 import '../../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
 import '../../../../core/models/content_models.dart';
 import '../../../../core/providers.dart';
+import '../../../../core/theme/app_breakpoints.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
@@ -15,10 +16,12 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/nova_companion.dart';
+import '../../../../shared/widgets/responsive_layout.dart';
 import '../providers/path_provider.dart';
 
-/// The adventure map: a curved serpentine trail of mission nodes.
-/// Node status ALWAYS comes from the backend (PATH-001/002).
+/// Premium syllabus: Subject → Learning Path → Topic List
+/// Flat PathNode list is truthful (no fake modules). Visual grouping via
+/// progress header + current indicator + status list, ready for future modules.
 class PathMapScreen extends ConsumerStatefulWidget {
   const PathMapScreen({
     super.key,
@@ -63,9 +66,11 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(pathProvider(widget.subjectId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Stack(
         children: [
+          // Starfield only prominent on dark; subtle on light
           const _Starfield(),
           SafeArea(
             child: Column(
@@ -77,7 +82,7 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
                       ? context.pop()
                       : context.go(Routes.home),
                 ),
-                Expanded(child: _buildBody(state)),
+                Expanded(child: _buildBody(state, isDark)),
               ],
             ),
           ),
@@ -86,7 +91,7 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
     );
   }
 
-  Widget _buildBody(PathState state) {
+  Widget _buildBody(PathState state, bool isDark) {
     if (state.showLoading) {
       return const Center(child: SkeletonPath());
     }
@@ -104,14 +109,357 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
     if (path == null) {
       return _GeneratePrompt(state: state, subjectId: widget.subjectId);
     }
+    // UI-5 safety: ensure rendered path matches requested subject.
+    if (path.subjectId != widget.subjectId) {
+      return ErrorState(
+        title: 'Path mismatch',
+        message:
+            'This path belongs to a different world. Please return and open the correct path.',
+        onRetry: () => ref.read(pathProvider(widget.subjectId).notifier).load(),
+      );
+    }
+    if (path.nodes.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.map_outlined,
+                size: 48,
+                color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your learning path is not available yet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Generate your personalized path or check back after your scan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return RefreshIndicator(
       color: AppColors.primaryBright,
-      backgroundColor: AppColors.surfaceElevated,
+      backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
       onRefresh: () => ref.read(pathProvider(widget.subjectId).notifier).load(),
-      child: AdventureTrail(
-        path: path,
-        aiMetadata: state.aiMetadata,
-        onNodeTap: _openTopic,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isTablet = constraints.maxWidth >= AppBreakpoints.medium;
+          if (isTablet) {
+            // Tablet/desktop: header + trail in constrained center, higher density
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              child: ResponsiveCenter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SyllabusHeader(path: path, subjectName: widget.subjectName, onTopicTap: _openTopic),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: _calcTrailHeight(path.nodes.length),
+                      child: AdventureTrail(
+                        path: path,
+                        aiMetadata: state.aiMetadata,
+                        onNodeTap: _openTopic,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _TopicList(path: path, onTap: _openTopic),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            );
+          }
+          return Column(
+            children: [
+              _SyllabusHeader(path: path, subjectName: widget.subjectName, onTopicTap: _openTopic),
+              Expanded(
+                child: AdventureTrail(
+                  path: path,
+                  aiMetadata: state.aiMetadata,
+                  onNodeTap: _openTopic,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  double _calcTrailHeight(int count) => 160 * count + 80;
+}
+
+// ---------------------------------------------------------------------------
+// Syllabus header: subject identity + progress + current/next topic + actions
+class _SyllabusHeader extends StatelessWidget {
+  const _SyllabusHeader({required this.path, required this.subjectName, required this.onTopicTap});
+  final LearningPath path;
+  final String subjectName;
+  final void Function(PathNode) onTopicTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final total = path.nodes.length;
+    final completed = path.nodes.where((n) => n.status == 'COMPLETED').length;
+    final inProgress = path.nodes.where((n) => n.status == 'IN_PROGRESS').length;
+    final available = path.nodes.where((n) => n.status == 'AVAILABLE').length;
+    final next = path.nodes.where((n) => n.status == 'AVAILABLE' || n.status == 'IN_PROGRESS').isNotEmpty
+        ? path.nodes.firstWhere((n) => n.status == 'AVAILABLE' || n.status == 'IN_PROGRESS')
+        : null;
+    final current = path.nodes.where((n) => n.status == 'IN_PROGRESS').isNotEmpty
+        ? path.nodes.firstWhere((n) => n.status == 'IN_PROGRESS')
+        : next;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+        boxShadow: isDark ? AppShadows.drop() : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  path.status.toUpperCase(),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary, letterSpacing: 1),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  subjectName.isEmpty ? path.subjectId : subjectName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                ),
+              ),
+              if (path.generatedBy.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Semantics(
+                  label: 'Generated by ${path.generatedBy}',
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+                    ),
+                    child: Text(
+                      path.generatedBy,
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            path.title.isEmpty ? 'Learning Path' : path.title,
+            style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+          ),
+          if (path.description.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              path.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary),
+            ),
+          ],
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: total == 0 ? 0 : completed / total,
+              minHeight: 6,
+              backgroundColor: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$completed of $total topics completed${inProgress > 0 ? ' · $inProgress in progress' : ''}${available > 0 ? ' · $available available' : ''}',
+            style: TextStyle(fontSize: 11, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+          ),
+          if (current != null) ...[
+            const SizedBox(height: 12),
+            Semantics(
+              label: current.status == 'IN_PROGRESS'
+                  ? 'Continue learning ${current.topicName}'
+                  : 'Start next topic ${current.topicName}',
+              child: Row(
+                children: [
+                  Icon(Icons.play_arrow_rounded, size: 14, color: AppColors.primaryBright),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      current.status == 'IN_PROGRESS' ? 'Continue: ${current.topicName}' : 'Next: ${current.topicName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Semantics(
+              button: true,
+              label: current.status == 'IN_PROGRESS' ? 'Continue learning' : 'Start next topic',
+              child: SizedBox(
+                width: double.infinity,
+                child: PrimaryGameButton(
+                  label: current.status == 'IN_PROGRESS' ? 'Continue learning' : 'Start next topic',
+                  icon: Icons.play_arrow_rounded,
+                  onTap: () => onTopicTap(current),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// Linear topic list below trail for quick scannability (truthful, no fake)
+class _TopicList extends StatelessWidget {
+  const _TopicList({required this.path, required this.onTap});
+  final LearningPath path;
+  final void Function(PathNode) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            'TOPICS',
+            style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < path.nodes.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _TopicRow(index: i, node: path.nodes[i], onTap: () => onTap(path.nodes[i])),
+          ),
+      ],
+    );
+  }
+}
+
+class _TopicRow extends StatelessWidget {
+  const _TopicRow({required this.index, required this.node, required this.onTap});
+  final int index;
+  final PathNode node;
+  final VoidCallback onTap;
+
+  Color get _tint => switch (node.status) {
+        'COMPLETED' => AppColors.success,
+        'IN_PROGRESS' => AppColors.warning,
+        'AVAILABLE' => AppColors.primary,
+        _ => AppColors.locked,
+      };
+
+  IconData get _icon => switch (node.status) {
+        'COMPLETED' => Icons.check_rounded,
+        'IN_PROGRESS' => Icons.play_arrow_rounded,
+        'AVAILABLE' => Icons.bolt_rounded,
+        _ => Icons.lock_rounded,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLocked = node.status == 'LOCKED';
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: isLocked ? (isDark ? AppColors.border : AppLightColors.border) : _tint.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isLocked ? (isDark ? AppColors.lockedSurface : AppLightColors.lockedSurface) : _tint.withValues(alpha: 0.14),
+                border: Border.all(color: _tint.withValues(alpha: 0.5)),
+              ),
+              child: Icon(_icon, size: 16, color: isLocked ? AppColors.textTertiary : _tint),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${index + 1}. ${node.topicName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: isLocked ? (isDark ? AppColors.textTertiary : AppLightColors.textTertiary) : (isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    node.status == 'LOCKED'
+                        ? 'Requires ${node.requiredMastery.toStringAsFixed(0)}% mastery'
+                        : node.status,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: isLocked ? AppColors.textTertiary : _tint,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, size: 16, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+          ],
+        ),
       ),
     );
   }
@@ -159,9 +507,10 @@ class _StarfieldState extends State<_Starfield>
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (reduce) {
-      return const CustomPaint(
-        painter: _StarfieldPainter(t: 0),
+      return CustomPaint(
+        painter: _StarfieldPainter(t: 0, isDark: isDark),
         size: Size.infinite,
       );
     }
@@ -169,7 +518,7 @@ class _StarfieldState extends State<_Starfield>
       child: AnimatedBuilder(
         animation: _c,
         builder: (context, _) => CustomPaint(
-          painter: _StarfieldPainter(t: _c.value),
+          painter: _StarfieldPainter(t: _c.value, isDark: isDark),
           size: Size.infinite,
         ),
       ),
@@ -178,13 +527,13 @@ class _StarfieldState extends State<_Starfield>
 }
 
 class _StarfieldPainter extends CustomPainter {
-  const _StarfieldPainter({required this.t});
+  const _StarfieldPainter({required this.t, required this.isDark});
 
   final double t;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Deterministic pseudo-random star layout (no flicker between frames).
     const starCount = 70;
     final paint = Paint()..color = Colors.white;
     for (var i = 0; i < starCount; i++) {
@@ -194,13 +543,14 @@ class _StarfieldPainter extends CustomPainter {
       final drift = (t * size.height * 0.15 + seed * 2.0) % size.height;
       final y = (baseY + drift) % size.height;
       final phase = (math.sin((t + seed % 1) * math.pi * 2) + 1) / 2;
-      paint.color = Colors.white.withValues(alpha: 0.08 + 0.22 * phase);
+      final alpha = isDark ? (0.08 + 0.22 * phase) : (0.03 + 0.08 * phase);
+      paint.color = (isDark ? Colors.white : AppColors.primary).withValues(alpha: alpha);
       canvas.drawCircle(Offset(x, y), 1.1, paint);
     }
   }
 
   @override
-  bool shouldRepaint(_StarfieldPainter oldDelegate) => oldDelegate.t != t;
+  bool shouldRepaint(_StarfieldPainter oldDelegate) => oldDelegate.t != t || oldDelegate.isDark != isDark;
 }
 
 // ---------------------------------------------------------------------------
@@ -217,40 +567,44 @@ class _PathHeader extends StatelessWidget {
   final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 8, 20, 6),
-    child: Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
-        Expanded(
-          child: Text(
-            subjectName.toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: AppTypography.displayFamily,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 20, 6),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onBack,
+            icon: Icon(Icons.arrow_back_rounded, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+          ),
+          Expanded(
+            child: Text(
+              subjectName.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppTypography.displayFamily,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+              ),
             ),
           ),
-        ),
-        IconButton(
-          tooltip: 'Knowledge scan',
-          onPressed: () => context.push(Routes.assessmentIntro(subjectId)),
-          icon: const Icon(Icons.radar_rounded, size: 20),
-        ),
-        IconButton(
-          tooltip: 'Ask Nova',
-          onPressed: () => context.push(Routes.tutor),
-          icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-        ),
-      ],
-    ),
-  );
+          IconButton(
+            tooltip: 'Knowledge scan',
+            onPressed: () => context.push(Routes.assessmentIntro(subjectId)),
+            icon: Icon(Icons.radar_rounded, size: 20, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+          ),
+          IconButton(
+            tooltip: 'Ask Nova',
+            onPressed: () => context.push(Routes.tutor),
+            icon: Icon(Icons.auto_awesome_rounded, size: 20, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -302,6 +656,7 @@ class AdventureTrail extends StatelessWidget {
                       nodes.length,
                       (i) => _centerFor(i, width),
                     ),
+                    isDark: Theme.of(context).brightness == Brightness.dark,
                   ),
                 ),
                 for (var i = 0; i < nodes.length; i++)
@@ -348,9 +703,10 @@ class AdventureTrail extends StatelessWidget {
 }
 
 class _TrailPainter extends CustomPainter {
-  const _TrailPainter({required this.centers});
+  const _TrailPainter({required this.centers, required this.isDark});
 
   final List<Offset> centers;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -359,34 +715,34 @@ class _TrailPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [AppColors.primaryDeep, AppColors.primary, AppColors.secondary],
+        colors: isDark
+            ? [AppColors.primaryDeep, AppColors.primary, AppColors.secondary]
+            : [AppColors.primary.withValues(alpha: 0.9), AppColors.primary, AppColors.secondary.withValues(alpha: 0.8)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final glowPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
-      ..color = AppColors.primary.withValues(alpha: 0.12)
+      ..color = AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.06)
       ..strokeCap = StrokeCap.round;
 
     final path = Path()..moveTo(centers.first.dx, centers.first.dy);
     for (var i = 1; i < centers.length; i++) {
       final a = centers[i - 1];
       final b = centers[i];
-      // S-curve between consecutive nodes.
       final midY = (a.dy + b.dy) / 2;
       path.cubicTo(a.dx, midY, b.dx, midY, b.dx, b.dy);
     }
     canvas.drawPath(path, glowPaint);
     canvas.drawPath(path, trailPaint);
 
-    // Directional chevrons along the path.
     final chevron = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.4
-      ..color = Colors.white.withValues(alpha: 0.35);
+      ..color = (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.35);
     for (var i = 1; i < centers.length; i++) {
       final a = centers[i - 1];
       final b = centers[i];
@@ -407,7 +763,7 @@ class _TrailPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_TrailPainter oldDelegate) =>
-      oldDelegate.centers.length != centers.length;
+      oldDelegate.centers.length != centers.length || oldDelegate.isDark != isDark;
 }
 
 // ---------------------------------------------------------------------------
@@ -440,10 +796,6 @@ class _LearningNodeState extends State<LearningNode>
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     );
-    // Do NOT query MediaQuery here — context is not attached to an
-    // InheritedWidget tree yet (would throw
-    // dependOnInheritedWidgetOfExactType<MediaQuery> before initState
-    // completed). Pulse gating is handled in didChangeDependencies.
   }
 
   @override
@@ -481,18 +833,18 @@ class _LearningNodeState extends State<LearningNode>
   }
 
   Color get tint => switch (widget.node.status) {
-    'COMPLETED' => AppColors.success,
-    'IN_PROGRESS' => AppColors.warning,
-    'AVAILABLE' => AppColors.primaryBright,
-    _ => AppColors.locked,
-  };
+        'COMPLETED' => AppColors.success,
+        'IN_PROGRESS' => AppColors.warning,
+        'AVAILABLE' => AppColors.primaryBright,
+        _ => AppColors.locked,
+      };
 
   IconData get icon => switch (widget.node.status) {
-    'COMPLETED' => Icons.check_rounded,
-    'IN_PROGRESS' => Icons.play_arrow_rounded,
-    'AVAILABLE' => Icons.bolt_rounded,
-    _ => Icons.lock_rounded,
-  };
+        'COMPLETED' => Icons.check_rounded,
+        'IN_PROGRESS' => Icons.play_arrow_rounded,
+        'AVAILABLE' => Icons.bolt_rounded,
+        _ => Icons.lock_rounded,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -573,11 +925,11 @@ class _LearningNodeState extends State<LearningNode>
   }
 
   static String _stateLabel(String status) => switch (status) {
-    'COMPLETED' => 'completed',
-    'IN_PROGRESS' => 'in progress',
-    'AVAILABLE' => 'available now',
-    _ => 'locked',
-  };
+        'COMPLETED' => 'completed',
+        'IN_PROGRESS' => 'in progress',
+        'AVAILABLE' => 'available now',
+        _ => 'locked',
+      };
 }
 
 class _RingPainter extends CustomPainter {
@@ -613,6 +965,7 @@ class _NodeCaption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final label = EnumPresentationExt.nodeStatus(node.status);
     final isCurrent = node.status == 'AVAILABLE';
     return Column(
@@ -620,8 +973,6 @@ class _NodeCaption extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (isCurrent)
-          // Locator for the signature map: answers "where am I?" at a
-          // glance. Purely presentational - status itself is backend-owned.
           Container(
             margin: const EdgeInsets.only(bottom: 4),
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -653,7 +1004,7 @@ class _NodeCaption extends StatelessWidget {
             height: 1.25,
             color: node.status == 'LOCKED'
                 ? AppColors.textTertiary
-                : AppColors.textPrimary,
+                : (isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
           ),
         ),
         const SizedBox(height: 2),
@@ -677,9 +1028,9 @@ class _NodeCaption extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10.5,
-                  color: AppColors.textSecondary,
+                  color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
                 ),
               ),
             ),
@@ -700,6 +1051,7 @@ class _GeneratePrompt extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final goalController = TextEditingController();
     return Center(
       child: SingleChildScrollView(
@@ -712,23 +1064,24 @@ class _GeneratePrompt extends ConsumerWidget {
               mood: state.generating ? NovaMood.thinking : NovaMood.encouraging,
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Forge your path',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: AppTypography.displayFamily,
                 fontSize: 23,
                 fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'The AI Game Master will chart a mission sequence tuned to your mastery profile.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
-                color: AppColors.textSecondary,
+                color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
               ),
             ),
             const SizedBox(height: 22),
@@ -791,25 +1144,26 @@ class _GeneratingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          NovaCompanion(size: 96, mood: NovaMood.thinking),
-          SizedBox(height: 24),
+          const NovaCompanion(size: 96, mood: NovaMood.thinking),
+          const SizedBox(height: 24),
           Text(
             'NOVA IS CHARTING YOUR PATH...',
             style: TextStyle(
               letterSpacing: 2.5,
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: AppColors.secondary,
+              color: isDark ? AppColors.secondary : AppColors.secondaryDeep,
             ),
           ),
-          SizedBox(height: 18),
-          SizedBox(width: 120, child: LinearProgressIndicator(minHeight: 3)),
-          SizedBox(height: 40),
-          SkeletonPath(),
+          const SizedBox(height: 18),
+          const SizedBox(width: 120, child: LinearProgressIndicator(minHeight: 3)),
+          const SizedBox(height: 40),
+          const SkeletonPath(),
         ],
       ),
     );
@@ -818,9 +1172,9 @@ class _GeneratingPanel extends StatelessWidget {
 
 abstract final class EnumPresentationExt {
   static String nodeStatus(String status) => switch (status) {
-    'COMPLETED' => 'Completed',
-    'IN_PROGRESS' => 'In progress',
-    'AVAILABLE' => 'Available',
-    _ => 'Locked',
-  };
+        'COMPLETED' => 'Completed',
+        'IN_PROGRESS' => 'In progress',
+        'AVAILABLE' => 'Available',
+        _ => 'Locked',
+      };
 }

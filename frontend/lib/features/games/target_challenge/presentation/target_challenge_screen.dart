@@ -19,10 +19,11 @@ import '../data/target_challenges.dart';
 import '../models/target_challenge.dart';
 
 class TargetChallengeScreen extends ConsumerStatefulWidget {
-  const TargetChallengeScreen({super.key, required this.topicId, this.topicName, this.subjectId});
+  const TargetChallengeScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<TargetChallengeScreen> createState() => _TargetChallengeScreenState();
 }
@@ -236,7 +237,7 @@ class _TargetChallengeScreenState extends ConsumerState<TargetChallengeScreen> {
     final accuracy = total == 0 ? 0.0 : _correctCount / total * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.targetChallenge, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.targetChallenge, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _correctCount,
@@ -284,7 +285,7 @@ class _TargetChallengeScreenState extends ConsumerState<TargetChallengeScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }

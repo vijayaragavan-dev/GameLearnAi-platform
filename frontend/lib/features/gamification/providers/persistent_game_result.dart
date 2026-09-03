@@ -32,6 +32,7 @@ class PersistentGameResult {
     required BuildContext context,
     required Widget resultScreen,
     required String gameType,
+    required String difficulty,
     required bool completed,
     required int score,
     required int durationSeconds,
@@ -39,25 +40,29 @@ class PersistentGameResult {
   }) async {
     // Show the local result screen first (zero blocking).
     if (!context.mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => resultScreen),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => resultScreen));
 
     // Fire the persistent submission in the background. Failures are
     // intentionally non-fatal: the local result remains the source of
     // truth for this run, and the dashboard provider refetches on its
     // own whenever the player returns home.
-    unawaited(_submitInBackground(
-      gameType: gameType,
-      completed: completed,
-      score: score,
-      durationSeconds: durationSeconds,
-      bestCombo: bestCombo,
-    ));
+    unawaited(
+      _submitInBackground(
+        gameType: gameType,
+        difficulty: difficulty,
+        completed: completed,
+        score: score,
+        durationSeconds: durationSeconds,
+        bestCombo: bestCombo,
+      ),
+    );
   }
 
   Future<void> _submitInBackground({
     required String gameType,
+    required String difficulty,
     required bool completed,
     required int score,
     required int durationSeconds,
@@ -66,14 +71,16 @@ class PersistentGameResult {
     final req = GameResultSubmission(
       clientRequestId: _newUuid(),
       gameType: gameType,
+      difficulty: difficulty,
       completed: completed,
       score: score,
       durationSeconds: durationSeconds,
       bestCombo: bestCombo,
     );
     try {
-      final response =
-          await _ref.read(gameResultsProvider.notifier).submit(req);
+      final response = await _ref
+          .read(gameResultsProvider.notifier)
+          .submit(req);
       // Refresh dashboard + hub providers so the player sees the new XP /
       // level on return-home.
       _ref.invalidate(dashboardProvider);
@@ -101,5 +108,6 @@ class PersistentGameResult {
   }
 }
 
-final persistentGameResultProvider =
-    Provider<PersistentGameResult>((ref) => PersistentGameResult(ref));
+final persistentGameResultProvider = Provider<PersistentGameResult>(
+  (ref) => PersistentGameResult(ref),
+);

@@ -7,6 +7,7 @@ import '../../../core/audio/audio_manager.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/theme_controller.dart';
 import '../../auth/providers/session_controller.dart';
 import '../../../shared/widgets/game_card.dart';
 
@@ -23,11 +24,102 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final audio = ref.watch(audioManagerProvider);
+    final themeMode = ref.watch(themeControllerProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('SETTINGS')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
+          SectionCard(
+            title: 'APPEARANCE',
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isDark
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Theme',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTypography.bodyFamily,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          themeMode == ThemeMode.system
+                              ? 'System'
+                              : themeMode == ThemeMode.light
+                                  ? 'Light'
+                                  : 'Dark',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? AppColors.textSecondary
+                                : AppLightColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SegmentedButton<ThemeMode>(
+                      segments: const [
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.system,
+                          label: Text('System'),
+                          icon: Icon(Icons.brightness_auto_rounded, size: 16),
+                        ),
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.light,
+                          label: Text('Light'),
+                          icon: Icon(Icons.light_mode_rounded, size: 16),
+                        ),
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.dark,
+                          label: Text('Dark'),
+                          icon: Icon(Icons.dark_mode_rounded, size: 16),
+                        ),
+                      ],
+                      selected: {themeMode},
+                      onSelectionChanged: (Set<ThemeMode> s) {
+                        ref
+                            .read(themeControllerProvider.notifier)
+                            .set(s.first);
+                      },
+                      style: ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'System follows your device setting. Light is a true light theme — not inverted dark.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textTertiary
+                            : AppLightColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
           SectionCard(
             title: 'AUDIO',
             children: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/app_typography.dart';
 import '../models/game_models.dart';
 import 'game_hud.dart';
 import '../engine/game_combo.dart';
@@ -40,13 +41,63 @@ class GameScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasSubject = config.subjectId != null && config.subjectId!.isNotEmpty;
+    final subjectLabel = hasSubject ? (config.subjectName?.isNotEmpty == true ? config.subjectName! : 'World') : 'GAME ZONE';
+    final topicLabel = config.topicName ?? (config.topicId.length > 8 ? config.topicId.substring(0, 8) : config.topicId);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           SafeArea(
             child: Column(
               children: [
+                // Subject-aware context banner — UI-6
+                Semantics(
+                  label: hasSubject
+                      ? 'Subject $subjectLabel, topic $topicLabel, game ${config.type.displayName}'
+                      : 'General game ${config.type.displayName}, topic $topicLabel',
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: hasSubject ? AppColors.primary.withValues(alpha: 0.12) : AppColors.textTertiary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: hasSubject ? AppColors.primary.withValues(alpha: 0.22) : AppColors.textTertiary.withValues(alpha: 0.2)),
+                          ),
+                          child: Text(
+                            hasSubject ? subjectLabel.toUpperCase() : 'GENERAL',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 1, color: hasSubject ? AppColors.primary : AppColors.textTertiary),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(hasSubject ? Icons.topic_rounded : Icons.sports_esports_rounded, size: 12, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            hasSubject ? '$topicLabel • ${config.type.displayName}' : '${config.type.displayName} • $topicLabel',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(config.difficulty.displayName.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
+                      ],
+                    ),
+                  ),
+                ),
                 GameHud(
                   score: score,
                   progress: progress,

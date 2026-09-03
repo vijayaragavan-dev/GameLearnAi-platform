@@ -40,11 +40,10 @@ public interface GameResultRepository extends JpaRepository<GameResult, UUID> {
     @Query("SELECT MAX(g.bestCombo) FROM GameResult g WHERE g.user.id = :userId AND g.gameType = :gameType")
     Integer maxComboByUserIdAndGameType(@Param("userId") UUID userId, @Param("gameType") String gameType);
 
-    @Query("SELECT g.playedAt FROM GameResult g WHERE g.user.id = :userId ORDER BY g.playedAt DESC")
-    List<Instant> findAllPlayedAtDesc(@Param("userId") UUID userId);
+    @Query("SELECT MAX(g.playedAt) FROM GameResult g WHERE g.user.id = :userId")
+    Optional<Instant> findLastPlayedAt(@Param("userId") UUID userId);
 
-    default Optional<Instant> findLastPlayedAt(UUID userId) {
-        List<Instant> all = findAllPlayedAtDesc(userId);
-        return all.isEmpty() ? Optional.empty() : Optional.of(all.get(0));
-    }
+    @Query("SELECT MAX(g.playedAt) FROM GameResult g WHERE g.user.id = :userId AND g.gameType = :gameType")
+    Optional<Instant> findLastPlayedAtByUserIdAndGameType(@Param("userId") UUID userId,
+                                                           @Param("gameType") String gameType);
 }

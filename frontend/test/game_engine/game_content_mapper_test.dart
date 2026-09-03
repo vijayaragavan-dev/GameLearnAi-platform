@@ -20,11 +20,56 @@ void main() {
       expect(pairs.first.definition, isNotEmpty);
     });
 
-    test('memoryPairs fallback to quiz when lesson empty', () {
+    test('memoryPairs fallback to quiz when lesson empty and topic null', () {
+      final emptyLesson = Lesson(id: lesson.id, topicId: lesson.topicId, title: lesson.title, content: '', summary: '', difficulty: 'EASY', sourceType: 'CURATED');
+      final pairs = GameContentMapper.memoryPairs(lesson: emptyLesson, quiz: quiz, topic: null, maxPairs: 2);
+      expect(pairs.length, 2);
+      expect(pairs[0].term, contains('What is a variable'));
+    });
+
+    test('memoryPairs prefers topic over quiz when lesson empty and topic rich', () {
       final emptyLesson = Lesson(id: lesson.id, topicId: lesson.topicId, title: lesson.title, content: '', summary: '', difficulty: 'EASY', sourceType: 'CURATED');
       final pairs = GameContentMapper.memoryPairs(lesson: emptyLesson, quiz: quiz, topic: topic, maxPairs: 2);
       expect(pairs.length, 2);
-      expect(pairs[0].term, contains('What is a variable'));
+      // With P1-3 fix, topic (authoritative) is preferred over quiz fallback, so term comes from topic description, not quiz
+      expect(pairs[0].term, contains('Variables'));
+    });
+
+    test('P1-3: memoryPairs does NOT derive definition from options[0]', () {
+      final emptyLesson = Lesson(id: lesson.id, topicId: lesson.topicId, title: lesson.title, content: '', summary: '', difficulty: 'EASY', sourceType: 'CURATED');
+      // Use a topic with minimal description so fallback to quiz is forced (less than 2 sentences)
+      final minimalTopic = Topic(id: topic.id, subjectId: topic.subjectId, subjectName: topic.subjectName, name: topic.name, description: 'Short', difficulty: topic.difficulty, displayOrder: topic.displayOrder);
+      final quizWithOptions = Quiz(id: quiz.id, topicId: minimalTopic.id, title: quiz.title, description: quiz.description, difficulty: quiz.difficulty, timeLimitSeconds: quiz.timeLimitSeconds, questionCount: quiz.questionCount, questions: [
+        const QuizQuestion(id: 'q1', questionText: 'What is a variable?', options: ['Storage for data', 'A function', 'A loop'], difficulty: 'EASY'),
+      ]);
+      final pairs = GameContentMapper.memoryPairs(lesson: emptyLesson, quiz: quizWithOptions, topic: minimalTopic, maxPairs: 1);
+      expect(pairs.length, 1);
+      // Definition must NOT be the first option (previous buggy behavior)
+      expect(pairs.first.definition, isNot('Storage for data'));
+      expect(pairs.first.definition, isNot(contains('Storage for data')));
+      // Should be deterministic non-fabricated placeholder
+      expect(pairs.first.definition, contains('Review focus'));
+    });
+
+    test('P1-3: reordered options preserve same correct behavior (definition not tied to order)', () {
+      final emptyLesson = Lesson(id: lesson.id, topicId: lesson.topicId, title: lesson.title, content: '', summary: '', difficulty: 'EASY', sourceType: 'CURATED');
+      final minimalTopic = Topic(id: topic.id, subjectId: topic.subjectId, subjectName: topic.subjectName, name: topic.name, description: 'Short', difficulty: topic.difficulty, displayOrder: topic.displayOrder);
+      final quizA = Quiz(id: quiz.id, topicId: minimalTopic.id, title: quiz.title, description: quiz.description, difficulty: quiz.difficulty, timeLimitSeconds: quiz.timeLimitSeconds, questionCount: 1, questions: [
+        const QuizQuestion(id: 'q1', questionText: 'What is a variable?', options: ['Storage for data', 'A function', 'A loop'], difficulty: 'EASY'),
+      ]);
+      final quizB = Quiz(id: quiz.id, topicId: minimalTopic.id, title: quiz.title, description: quiz.description, difficulty: quiz.difficulty, timeLimitSeconds: quiz.timeLimitSeconds, questionCount: 1, questions: [
+        const QuizQuestion(id: 'q1', questionText: 'What is a variable?', options: ['A loop', 'Storage for data', 'A function'], difficulty: 'EASY'),
+      ]);
+      final pairsA = GameContentMapper.memoryPairs(lesson: emptyLesson, quiz: quizA, topic: minimalTopic, maxPairs: 1);
+      final pairsB = GameContentMapper.memoryPairs(lesson: emptyLesson, quiz: quizB, topic: minimalTopic, maxPairs: 1);
+      expect(pairsA.first.definition, equals(pairsB.first.definition));
+      expect(pairsA.first.term, equals(pairsB.first.term));
+    });
+
+    test('P1-3: lesson content remains authoritative when available', () {
+      final pairs = GameContentMapper.memoryPairs(lesson: lesson, quiz: quiz, topic: topic, maxPairs: 2);
+      // When lesson is present, pairs derive from lesson sentences, not quiz options
+      expect(pairs.first.term, isNot(contains('What is a variable')));
     });
 
     test('memoryPairs fallback to topic when no lesson/quiz', () {

@@ -23,7 +23,8 @@ public enum ErrorCode {
     INTERNAL_ERROR(500),
     AI_SERVICE_UNAVAILABLE(503),
     AI_GENERATION_FAILED(503),
-    AI_RATE_LIMITED(429);
+    AI_RATE_LIMITED(429),
+    GAME_RATE_LIMITED(429);
 
     private final int httpStatus;
 

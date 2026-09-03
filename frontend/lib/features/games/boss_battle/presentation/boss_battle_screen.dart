@@ -19,10 +19,11 @@ import '../data/boss_battles.dart';
 import '../models/boss_battle.dart';
 
 class BossBattleScreen extends ConsumerStatefulWidget {
-  const BossBattleScreen({super.key, required this.topicId, this.topicName, this.subjectId});
+  const BossBattleScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<BossBattleScreen> createState() => _BossBattleScreenState();
 }
@@ -300,7 +301,7 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
     final accuracy = total == 0 ? 0.0 : _defeatedCount / total * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.bossBattle, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.bossBattle, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _defeatedCount,
@@ -329,7 +330,7 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     _shakeController.dispose();
     super.dispose();

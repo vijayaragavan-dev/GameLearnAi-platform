@@ -19,10 +19,11 @@ import '../data/puzzle_puzzles.dart';
 import '../models/puzzle_arena.dart';
 
 class PuzzleArenaScreen extends ConsumerStatefulWidget {
-  const PuzzleArenaScreen({super.key, required this.topicId, this.topicName, this.subjectId});
+  const PuzzleArenaScreen({super.key, required this.topicId, this.topicName, this.subjectId, this.subjectName});
   final String topicId;
   final String? topicName;
   final String? subjectId;
+  final String? subjectName;
   @override
   ConsumerState<PuzzleArenaScreen> createState() => _PuzzleArenaScreenState();
 }
@@ -213,7 +214,7 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
     final accuracy = total == 0 ? 0.0 : _correctCount / total * 100;
     final xpPreview = GameScoring.totalXpPreview(accuracy: accuracy, difficulty: _difficulty, comboMax: _combo.max);
     final result = GameResult(
-      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, difficulty: _difficulty, type: GameType.puzzleArena, timeLimitSeconds: _timeLimit),
+      config: GameConfig(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName, difficulty: _difficulty, type: GameType.puzzleArena, timeLimitSeconds: _timeLimit),
       score: _score,
       accuracy: accuracy,
       correctCount: _correctCount,
@@ -316,7 +317,7 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    try { _timer.dispose(); } catch (_) {}
     _feedbackTimer?.cancel();
     super.dispose();
   }

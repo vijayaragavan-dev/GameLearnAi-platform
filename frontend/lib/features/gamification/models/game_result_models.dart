@@ -6,6 +6,7 @@ class GameResultSubmission {
   const GameResultSubmission({
     required this.clientRequestId,
     required this.gameType,
+    required this.difficulty,
     required this.completed,
     required this.score,
     required this.durationSeconds,
@@ -14,19 +15,23 @@ class GameResultSubmission {
 
   final String clientRequestId;
   final String gameType;
+
+  /// Backend Difficulty enum value: EASY, MEDIUM, HARD — sourced from GameConfig.difficulty.apiValue.
+  final String difficulty;
   final bool completed;
   final int score;
   final int durationSeconds;
   final int bestCombo;
 
   Map<String, dynamic> toJson() => {
-        'clientRequestId': clientRequestId,
-        'gameType': gameType,
-        'completed': completed,
-        'score': score,
-        'durationSeconds': durationSeconds,
-        'bestCombo': bestCombo,
-      };
+    'clientRequestId': clientRequestId,
+    'gameType': gameType,
+    'difficulty': difficulty,
+    'completed': completed,
+    'score': score,
+    'durationSeconds': durationSeconds,
+    'bestCombo': bestCombo,
+  };
 }
 
 class GameResultSubmissionResponse {
@@ -66,7 +71,8 @@ class GameResultSubmissionResponse {
         currentTotalXp: (json['currentTotalXp'] as num?)?.toInt() ?? 0,
         leveledUp: json['leveledUp'] as bool? ?? false,
         levelsGained: (json['levelsGained'] as num?)?.toInt() ?? 0,
-        playedAt: DateTime.tryParse(json['playedAt'] as String? ?? '')?.toUtc() ??
+        playedAt:
+            DateTime.tryParse(json['playedAt'] as String? ?? '')?.toUtc() ??
             DateTime.now().toUtc(),
         nextLevelThresholdXp: (json['nextLevelThresholdXp'] as num?)?.toInt(),
         xpToNextLevel: (json['xpToNextLevel'] as num?)?.toInt(),
@@ -100,7 +106,8 @@ class GameResultProgress {
         bestScore: (json['bestScore'] as num?)?.toInt() ?? 0,
         bestCombo: (json['bestCombo'] as num?)?.toInt() ?? 0,
         totalXpEarned: (json['totalXpEarned'] as num?)?.toInt() ?? 0,
-        lastPlayedAt: DateTime.tryParse(json['lastPlayedAt'] as String? ?? '')
-            ?.toUtc(),
+        lastPlayedAt: DateTime.tryParse(
+          json['lastPlayedAt'] as String? ?? '',
+        )?.toUtc(),
       );
 }

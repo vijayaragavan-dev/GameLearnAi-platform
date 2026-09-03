@@ -7,6 +7,7 @@ import '../../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
 import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/assessment_models.dart';
 import '../../../../core/providers.dart';
+import '../../../../core/theme/app_breakpoints.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -16,6 +17,7 @@ import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/game_card.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/recommendation_card.dart' show SectionHeader;
+import '../../../../shared/widgets/responsive_layout.dart';
 import '../providers/assessment_provider.dart';
 
 /// ASMT-003 result reveal. Assessment never awards XP - the celebration is
@@ -41,6 +43,7 @@ class _AssessmentResultScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(assessmentProvider(widget.subjectId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Text('SCAN RESULTS'),
@@ -69,129 +72,269 @@ class _AssessmentResultScreenState
 
           return Stack(
             children: [
-              ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                children: [
-                  const SizedBox(height: 8),
-                  Center(
-                    child: NovaCompanion(
-                      size: 76,
-                      mood: outcome.assessed
-                          ? NovaMood.celebrating
-                          : NovaMood.encouraging,
+              ResponsiveCenter(
+                child: ListView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppGutters.pagePadding(context),
+                    vertical: 8,
+                  ).copyWith(bottom: 32),
+                  children: [
+                    const SizedBox(height: 8),
+                    Center(
+                      child: NovaCompanion(
+                        size: 76,
+                        mood: outcome.assessed
+                            ? NovaMood.celebrating
+                            : NovaMood.encouraging,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    outcome.assessed ? 'Baseline established' : 'No scan yet',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: AppTypography.displayFamily,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(height: 16),
+                    Text(
+                      outcome.assessed ? 'Baseline established' : 'No scan yet',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: AppTypography.displayFamily,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppLightColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  if (submission != null) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        AnimatedDefaultTextStyle(
-                          duration: AppMotion.normal,
-                          style: const TextStyle(
-                            fontFamily: AppTypography.displayFamily,
-                            fontSize: 44,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.secondary,
+                    if (submission != null) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          AnimatedDefaultTextStyle(
+                            duration: AppMotion.normal,
+                            style: const TextStyle(
+                              fontFamily: AppTypography.displayFamily,
+                              fontSize: 44,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.secondary,
+                            ),
+                            child: Text(submission.score.toStringAsFixed(0)),
                           ),
-                          child: Text(submission.score.toStringAsFixed(0)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '% accuracy',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppLightColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      outcome.assessed
+                          ? 'The Game Master has calibrated your missions for this world.'
+                          : 'Take the scan to unlock calibration.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppLightColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Subject context pill — truthful, uses actual subjectId.
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          '% accuracy',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.border
+                                : AppLightColors.border,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    outcome.assessed
-                        ? 'The Game Master has calibrated your missions.'
-                        : 'Take the scan to unlock calibration.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-
-                  // WHAT HAPPENED / TOPIC BREAKDOWN
-                  if (outcome.topics.isNotEmpty) ...[
-                    const SectionHeader(title: 'Topic baselines'),
-                    for (final t in outcome.topics)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: GameCard(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 13,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      t.topicName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      '${_levelLabel(t.masteryLevel)} · ${t.currentDifficulty}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.public_rounded,
+                              size: 12,
+                              color: isDark
+                                  ? AppColors.textTertiary
+                                  : AppLightColors.textTertiary,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'World • ${widget.subjectId.substring(0, 8)}…',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
                                 ),
                               ),
-                              _ScoreRing(score: t.masteryScore),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                  ],
-
-                  if (outcome.topics.isEmpty) ...[
-                    const EmptyMiniCard(
-                      text: 'Baselines appear here after your first scan.',
                     ),
+                    if (outcome.assessed) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Your personalized path is ready. View where you are and continue the next topic.',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.4,
+                                  color: isDark
+                                      ? AppColors.textSecondary
+                                      : AppLightColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 26),
+
+                    // WHAT HAPPENED / TOPIC BREAKDOWN
+                    if (outcome.topics.isNotEmpty) ...[
+                      const SectionHeader(title: 'Topic baselines'),
+                      for (final t in outcome.topics)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: GameCard(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 13,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        t.topicName.isEmpty
+                                            ? 'Topic ${t.topicId.substring(0, 8)}'
+                                            : t.topicName,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: isDark
+                                              ? AppColors.textPrimary
+                                              : AppLightColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${_levelLabel(t.masteryLevel)} · ${t.currentDifficulty}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? AppColors.textSecondary
+                                              : AppLightColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _ScoreRing(score: t.masteryScore),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+
+                    if (outcome.topics.isEmpty) ...[
+                      const EmptyMiniCard(
+                        text: 'Baselines appear here after your first scan.',
+                      ),
+                    ],
+                    const SizedBox(height: 22),
+                    Semantics(
+                      button: true,
+                      label:
+                          'View my personalized learning path for this world',
+                      child: PrimaryGameButton(
+                        label: 'View my path',
+                        icon: Icons.map_rounded,
+                        onTap: () {
+                          ref
+                              .read(audioManagerProvider)
+                              .play(Sfx.missionComplete);
+                          // PRIMARY FIX UI-5: navigate to subject-specific personalized path
+                          context.go(Routes.path(widget.subjectId));
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Semantics(
+                      button: true,
+                      label: 'Return to home dashboard',
+                      child: SecondaryGameButton(
+                        label: 'Back to home',
+                        icon: Icons.home_rounded,
+                        onTap: () => context.go(Routes.home),
+                      ),
+                    ),
+                    if (!outcome.assessed) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Your learning path is not available yet. Complete the scan to generate it.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.textTertiary
+                              : AppLightColors.textTertiary,
+                        ),
+                      ),
+                    ],
                   ],
-                  const SizedBox(height: 22),
-                  PrimaryGameButton(
-                    label: 'View my path',
-                    icon: Icons.map_rounded,
-                    onTap: () async {
-                      ref.read(audioManagerProvider).play(Sfx.missionComplete);
-                      context.go(Routes.home);
-                    },
-                  ),
-                ],
+                ),
               ),
               if (outcome.assessed)
-                const Positioned.fill(child: ConfettiEffect(particleCount: 50)),
+                const Positioned.fill(
+                  child: IgnorePointer(child: ConfettiEffect(particleCount: 50)),
+                ),
             ],
           );
         },

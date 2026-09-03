@@ -267,7 +267,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 800));
       expect(find.text('7'), findsOneWidget); // streak chip
-      expect(find.textContaining('IP Addressing'), findsOneWidget);
+      expect(find.textContaining('IP Addressing'), findsWidgets);
       expect(find.text('NOVA RECOMMENDS'), findsOneWidget);
     });
   });

@@ -152,7 +152,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    // Game Arena entry - new gamified hub
+                    // Game Arena entry - subject-aware hub
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.18), AppColors.surfaceElevated]),
@@ -165,7 +165,10 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                           borderRadius: BorderRadius.circular(16),
                           onTap: () {
                             ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
-                            context.push(Routes.gameHub(topic.id), extra: topic.name);
+                            context.push(
+                              Routes.gameHub(topic.id, subjectId: topic.subjectId, subjectName: topic.subjectName),
+                              extra: topic.name,
+                            );
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(16),

@@ -96,3 +96,7 @@ gamelearn:
       rate-limit:
         max-requests-per-hour: 20   # OT-4 - dedicated tutor bucket
         window-minutes: 60
+  gamification:
+    game-result-rate-limit:
+      max-submissions-per-hour: 30
+      window-minutes: 60
