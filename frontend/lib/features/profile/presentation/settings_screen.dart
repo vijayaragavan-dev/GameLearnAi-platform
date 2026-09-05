@@ -6,6 +6,7 @@ import '../../../app/router.dart';
 import '../../../core/audio/audio_manager.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../auth/providers/session_controller.dart';
@@ -165,25 +166,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SectionCard(
             title: 'ACCOUNT',
             children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.logout_rounded,
-                  size: 21,
-                  color: AppColors.error,
-                ),
-                title: const Text(
-                  'Sign out',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.logout_rounded,
+                    size: 21,
                     color: AppColors.error,
                   ),
+                  title: const Text(
+                    'Sign out',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Ends this session on this device',
+                    style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                  ),
+                  onTap: () => _confirmLogout(context),
                 ),
-                subtitle: const Text(
-                  'Ends this session on this device',
-                  style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
-                ),
-                onTap: () => _confirmLogout(context),
               ),
             ],
           ),
@@ -281,26 +287,31 @@ class SwitchTile extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  Widget build(BuildContext context) => SwitchListTile(
-    secondary: Icon(icon, size: 20, color: AppColors.secondary),
-    title: Text(
-      title,
-      style: const TextStyle(
-        fontSize: 14.5,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppTypography.bodyFamily,
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(AppRadius.lg),
+    clipBehavior: Clip.antiAlias,
+    child: SwitchListTile(
+      secondary: Icon(icon, size: 20, color: AppColors.secondary),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14.5,
+          fontWeight: FontWeight.w600,
+          fontFamily: AppTypography.bodyFamily,
+        ),
       ),
-    ),
-    subtitle: Text(
-      subtitle,
-      style: const TextStyle(
-        fontSize: 12,
-        color: AppColors.textSecondary,
-        fontFamily: AppTypography.bodyFamily,
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.textSecondary,
+          fontFamily: AppTypography.bodyFamily,
+        ),
       ),
+      value: value,
+      activeThumbColor: AppColors.primaryBright,
+      onChanged: onChanged,
     ),
-    value: value,
-    activeThumbColor: AppColors.primaryBright,
-    onChanged: onChanged,
   );
 }

@@ -57,6 +57,9 @@ class AudioManager {
   bool hapticsEnabled = true;
 
   bool _platformBroken = false;
+  bool _disposed = false;
+  int _contextSeq = 0;
+  bool _stoppingMusic = false;
 
   final Map<String, AudioPlayer> _musicPlayers = {};
   AudioPlayer? _sfxPlayer;
@@ -87,7 +90,7 @@ class AudioManager {
   Sfx? _lastSfx;
 
   Future<void> play(Sfx sfx) async {
-    if (!sfxEnabled || _platformBroken) return;
+    if (!sfxEnabled || _platformBroken || _disposed) return;
     final now = DateTime.now();
     if (_lastSfx == sfx &&
         now.difference(_lastPlay) < const Duration(milliseconds: 60)) {
@@ -96,56 +99,198 @@ class AudioManager {
     _lastPlay = now;
     _lastSfx = sfx;
     try {
+      if (_disposed) return;
       _sfxPlayer ??= AudioPlayer();
-      await _sfxPlayer!.setVolume(0.9); // system volume governs the rest
+      // Each operation is individually guarded; a closed stream must not
+      // crash or spam logs. _isStreamClosed errors degrade silently.
+      try {
+        await _sfxPlayer!.setVolume(0.9);
+      } catch (e) {
+        if (_isBenignAudioError(e)) {
+          _silentDegrade();
+          return;
+        }
+        _degrade(e);
+        return;
+      }
+      if (_disposed || _platformBroken) return;
       await _sfxPlayer!.play(AssetSource('audio/${sfx.asset}'));
     } catch (e) {
-      _degrade(e);
+      if (_isBenignAudioError(e)) {
+        _silentDegrade();
+      } else {
+        _degrade(e);
+      }
     }
   }
 
   // ---- Music --------------------------------------------------------------
 
   Future<void> playContext(MusicContext context) async {
-    if (!musicEnabled || _platformBroken) return;
+    if (!musicEnabled || _platformBroken || _disposed) return;
     if (_currentContext == context) return;
+    final int seq = ++_contextSeq;
+    // Stop previous music first; if a newer request arrives while stopping,
+    // abort this attempt so the latest context wins.
     try {
       await stopMusic();
-      final player = AudioPlayer()..setReleaseMode(ReleaseMode.loop);
+    } catch (_) {
+      // stopMusic already guards; ignore here.
+    }
+    if (_disposed || _platformBroken || seq != _contextSeq) return;
+
+    AudioPlayer? player;
+    try {
+      if (_disposed || seq != _contextSeq) return;
+      player = AudioPlayer();
+      try {
+        await player.setReleaseMode(ReleaseMode.loop);
+      } catch (e) {
+        if (_isBenignAudioError(e)) {
+          _silentDegrade();
+          await _safeDisposePlayer(player);
+          return;
+        }
+        _degrade(e);
+        await _safeDisposePlayer(player);
+        return;
+      }
+      if (_disposed || seq != _contextSeq) {
+        await _safeDisposePlayer(player);
+        return;
+      }
+      // Register early so stopMusic can dispose it if a concurrent
+      // playContext/stop/dispose arrives.
       _musicPlayers[context.asset] = player;
-      await player.setVolume(0.16); // subtle, study-friendly
+      try {
+        await player.setVolume(0.16);
+      } catch (e) {
+        if (_isBenignAudioError(e)) {
+          _silentDegrade();
+          // Keep player registered but silent; do not throw.
+        } else {
+          _degrade(e);
+          return;
+        }
+      }
+      if (_disposed || seq != _contextSeq) {
+        // Stale request: clean up this player.
+        _musicPlayers.remove(context.asset);
+        await _safeDisposePlayer(player);
+        return;
+      }
       await player.play(AssetSource('audio/${context.asset}'));
+      if (_disposed || seq != _contextSeq) {
+        _musicPlayers.remove(context.asset);
+        await _safeDisposePlayer(player);
+        return;
+      }
       _currentContext = context;
     } catch (e) {
-      _degrade(e);
+      // Ensure partially-created player does not leak.
+      if (player != null) {
+        _musicPlayers.remove(context.asset);
+        await _safeDisposePlayer(player);
+      }
+      if (_isBenignAudioError(e)) {
+        _silentDegrade();
+      } else {
+        _degrade(e);
+      }
     }
   }
 
   Future<void> stopMusic() async {
+    if (_stoppingMusic) return;
+    _stoppingMusic = true;
+    // Increment seq to invalidate any in-flight playContext that has not
+    // yet finished preparation; caller playContext already captures seq.
+    // Do not increment here for explicit stopMusic from UI — but guard
+    // against race where stopMusic is called concurrently with playContext.
     try {
-      for (final p in _musicPlayers.values) {
-        await p.stop();
-        await p.dispose();
+      // Copy and clear atomically to avoid concurrent modification
+      // if stopMusic is called re-entrantly from playContext.
+      final players = Map<String, AudioPlayer>.from(_musicPlayers);
+      _musicPlayers.clear();
+      _currentContext = null;
+      for (final p in players.values) {
+        try {
+          await p.stop();
+        } catch (e) {
+          if (!_isBenignAudioError(e)) {
+            debugPrint('AudioManager.stopMusic stop degraded: $e');
+          }
+        }
+        await _safeDisposePlayer(p);
       }
     } catch (e) {
-      debugPrint('AudioManager.stopMusic degraded: $e');
+      if (!_isBenignAudioError(e)) {
+        debugPrint('AudioManager.stopMusic degraded: $e');
+      }
+    } finally {
+      _stoppingMusic = false;
     }
-    _musicPlayers.clear();
-    _currentContext = null;
+  }
+
+  bool _isBenignAudioError(Object e) {
+    final s = e.toString();
+    // audioplayers throws "Stream closed before it got prepared",
+    // "Player has been disposed", StateError/Bad state etc. when
+    // dispose races with prepare. These are expected on web/hot-reload
+    // and should degrade silently rather than spamming logs.
+    // MissingPluginException is benign in tests / unsupported platforms.
+    return s.contains('Stream closed') ||
+        s.contains('Stream has already been listened') ||
+        s.contains('Bad state') ||
+        s.contains('has been closed') ||
+        s.contains('disposed') ||
+        s.contains('MissingPluginException') ||
+        s.contains('No implementation found') ||
+        s.contains('PlatformException') && s.contains('closed');
+  }
+
+  void _silentDegrade() {
+    _platformBroken = true;
+    // Graceful silent fallback — no noisy debugPrint for benign
+    // browser/platform races (autoplay blocked, stream closed on
+    // dispose, etc.). App remains fully functional.
   }
 
   void _degrade(Object e) {
+    if (_isBenignAudioError(e)) {
+      _silentDegrade();
+      return;
+    }
     // One hard failure (missing asset/plugin) disables audio for the session
     // instead of spamming errors. App remains fully functional.
     _platformBroken = true;
     debugPrint('AudioManager degraded to silent mode: $e');
   }
 
+  Future<void> _safeDisposePlayer(AudioPlayer p) async {
+    try {
+      await p.dispose();
+    } catch (e) {
+      if (!_isBenignAudioError(e)) {
+        debugPrint('AudioManager dispose degraded: $e');
+      }
+    }
+  }
+
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    // Invalidate any pending playContext.
+    _contextSeq++;
     await stopMusic();
     try {
-      await _sfxPlayer?.dispose();
-    } catch (_) {}
+      await _sfxPlayer?.stop();
+    } catch (e) {
+      if (!_isBenignAudioError(e)) debugPrint('AudioManager sfx stop: $e');
+    }
+    if (_sfxPlayer != null) {
+      await _safeDisposePlayer(_sfxPlayer!);
+    }
     _sfxPlayer = null;
   }
 }
