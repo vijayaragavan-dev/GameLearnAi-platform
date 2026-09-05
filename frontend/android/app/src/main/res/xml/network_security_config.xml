@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext is allowed ONLY for the localhost loopback (web + dev tools) and
+  the Android emulator host alias (10.0.2.2). The RFC1918 entry below is for
+  physical-device LAN validation builds only (laptop backend over Wi-Fi).
+  Production builds MUST be served over HTTPS and this LAN entry is inert in
+  production because the production API_BASE_URL uses https:// and the
+  base-config still denies cleartext for any host not on the dev allowlist.
+-->
 <network-security-config>
     <!-- Development: allow cleartext only for localhost and Android emulator host -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- Physical-device LAN validation endpoint (RFC1918, dev only) -->
+        <domain includeSubdomains="true">10.163.124.39</domain>
     </domain-config>
     <!-- Production: deny cleartext by default (HTTPS required) -->
     <base-config cleartextTrafficPermitted="false">

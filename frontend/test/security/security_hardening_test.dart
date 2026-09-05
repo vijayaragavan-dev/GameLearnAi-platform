@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gamelearn_app/core/config/app_config.dart';
 import 'package:gamelearn_app/core/models/auth_models.dart';
@@ -95,5 +97,58 @@ void main() {
       // and never logs token
       expect('gl_access_token', isNotEmpty);
     });
+  });
+
+  group('Security — Android network security config', () {
+    // Regression for the Android cleartext allowlist. Physical-device LAN
+    // validation must remain possible, but production cleartext must stay
+    // denied and no global usesCleartextTraffic flag may be introduced.
+    test(
+      'network_security_config.xml permits cleartext for dev/LAN only',
+      () {
+        final file = File(
+          'android/app/src/main/res/xml/network_security_config.xml',
+        );
+        expect(file.existsSync(), isTrue,
+            reason: 'network_security_config.xml must exist');
+        final xml = file.readAsStringSync();
+
+        // No global cleartext flag may be introduced.
+        expect(xml.contains('usesCleartextTraffic="true"'), isFalse,
+            reason:
+                'Application must not globally enable cleartext; rely on the per-host allowlist only.');
+
+        // Required dev hosts must remain in the allowlist.
+        expect(xml.contains('>10.0.2.2<'), isTrue,
+            reason: 'Android emulator host alias must be allowed');
+        expect(xml.contains('>localhost<'), isTrue,
+            reason: 'localhost must be allowed for dev tools');
+        expect(xml.contains('>127.0.0.1<'), isTrue,
+            reason: 'loopback must be allowed for dev tools');
+
+        // Base config must still deny cleartext by default (production HTTPS).
+        expect(xml.contains('cleartextTrafficPermitted="false"'), isTrue,
+            reason: 'Default base-config must deny cleartext for HTTPS-first production');
+
+        // Only the documented dev/RFC1918 hosts may be cleartext-permitted.
+        // Any other literal IPv4 in the allowlist is a regression.
+        final domainPattern = RegExp(r'<domain[^>]*>([^<]+)</domain>');
+        final allowedHosts = domainPattern
+            .allMatches(xml)
+            .map((m) => m.group(1)!.trim())
+            .toList();
+        const permitted = {
+          '10.0.2.2',
+          'localhost',
+          '127.0.0.1',
+          '10.163.124.39',
+        };
+        for (final host in allowedHosts) {
+          expect(permitted.contains(host), isTrue,
+              reason:
+                  'Unexpected host "$host" added to cleartext allowlist; only the documented dev/LAN hosts are permitted.');
+        }
+      },
+    );
   });
 }
