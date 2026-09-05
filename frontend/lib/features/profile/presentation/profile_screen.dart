@@ -8,15 +8,19 @@ import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../../shared/widgets/xp_bar.dart' show XPBar;
 
-/// USER-001 player profile. Only backend-provided fields are displayed.
+/// USER-001 player profile with premium progression clarity — only backend-provided fields.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -47,6 +51,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Text('PLAYER PROFILE'),
@@ -58,162 +63,193 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: AppColors.primaryBright,
-        backgroundColor: AppColors.surfaceElevated,
-        onRefresh: () async => _reload(),
-        child: FutureBuilder<(LearnerProfile, GamificationSummary)>(
-          future: _future,
-          builder: (context, snap) {
-            if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-              return ListView(
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
-                children: const [SkeletonList(itemCount: 3, itemHeight: 120)],
-              );
-            }
-            if (snap.hasError) {
-              final err = describeError(snap.error!);
-              return ErrorState(
-                title: err.title,
-                message: err.message,
-                onRetry: _reload,
-              );
-            }
-            final (profile, summary) = snap.data!;
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
-              children: [
-                const SizedBox(height: 6),
-                Column(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: AtmosphericBackground(
+              primaryGlow: AppColors.primary,
+              secondaryGlow: AppColors.secondary,
+              intensity: isDark ? 0.52 : 0.0,
+              showStarField: true,
+            ),
+          ),
+          if (isDark) ...[
+            Positioned(top: -30, right: -20, child: GlowOrb(color: AppColors.primary, size: 220, opacity: 0.08)),
+            Positioned(bottom: 120, left: -30, child: GlowOrb(color: AppColors.secondary, size: 180, opacity: 0.05)),
+          ],
+          RefreshIndicator(
+            color: AppColors.primaryBright,
+            backgroundColor: AppColors.surfaceElevated,
+            onRefresh: () async => _reload(),
+            child: FutureBuilder<(LearnerProfile, GamificationSummary)>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done && !snap.hasData) {
+                  return ListView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    children: const [SkeletonList(itemCount: 3, itemHeight: 120)],
+                  );
+                }
+                if (snap.hasError) {
+                  final err = describeError(snap.error!);
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [ErrorState(title: err.title, message: err.message, onRetry: _reload)],
+                  );
+                }
+                final (profile, summary) = snap.data!;
+                final atMax = summary.atMaxLevel;
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
                   children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        Container(
-                          width: 92,
-                          height: 92,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF5B21B6), AppColors.primary],
-                            ),
-                            border: Border.all(
-                              color: AppColors.primaryBright,
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.4),
-                                blurRadius: 26,
+                    ResponsiveCenter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 6),
+                          // Identity hero — premium circular badge + Nova
+                          Column(
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  Container(
+                                    width: 92,
+                                    height: 92,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(colors: [Color(0xFF5B21B6), AppColors.primary]),
+                                      border: Border.all(color: AppColors.primaryBright, width: 2),
+                                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.34), blurRadius: 22)],
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        profile.displayName.isEmpty ? '?' : profile.displayName[0].toUpperCase(),
+                                        style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                  const NovaCompanion(size: 30, mood: NovaMood.idle),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Text(profile.displayName, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 21, fontWeight: FontWeight.w700)),
+                              Text(profile.email, style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999), border: Border.all(color: AppColors.primary.withValues(alpha: 0.22))),
+                                child: Text('LEVEL ${profile.currentLevel} • ${Formatters.count(profile.totalXp)} XP', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
                               ),
                             ],
                           ),
-                          child: Center(
-                            child: Text(
-                              profile.displayName.isEmpty
-                                  ? '?'
-                                  : profile.displayName[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontFamily: AppTypography.displayFamily,
-                                fontSize: 36,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
+                          const SizedBox(height: 18),
+                          // Level / XP — consistent language XP / LEVEL everywhere
+                          GameChallengeSurface(
+                            accent: AppColors.primary,
+                            title: 'PROGRESSION',
+                            icon: Icons.trending_up_rounded,
+                            subtitle: atMax ? 'MAX LEVEL' : 'LEVEL ${profile.currentLevel} → ${profile.currentLevel + 1}',
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    LevelBadge(level: profile.currentLevel, size: 58),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: XPBar(
+                                        currentLevel: profile.currentLevel,
+                                        totalXp: profile.totalXp,
+                                        xpToNextLevel: summary.xpToNextLevel,
+                                        showLabels: true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (!atMax && summary.xpToNextLevel != null) ...[
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text('${summary.xpToNextLevel} XP TO NEXT LEVEL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
+                                  ),
+                                ],
+                                if (atMax) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(color: AppColors.xp.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: AppColors.xp.withValues(alpha: 0.24))),
+                                    child: Row(children: [const Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.xp), const SizedBox(width: 6), const Expanded(child: Text('MAX LEVEL REACHED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.xp)))]),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                        ),
-                        const NovaCompanion(size: 30, mood: NovaMood.idle),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      profile.displayName,
-                      style: const TextStyle(
-                        fontFamily: AppTypography.displayFamily,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      profile.email,
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: LevelBadge(level: profile.currentLevel, size: 58),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 3,
-                      child: XPBar(
-                        currentLevel: profile.currentLevel,
-                        totalXp: profile.totalXp,
-                        xpToNextLevel: summary.xpToNextLevel,
-                        showLabels: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatCard(
-                        label: 'TOTAL XP',
-                        value: Formatters.count(profile.totalXp),
-                        tint: AppColors.xp,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => context.go(Routes.streak),
-                        child: StatCard(
-                          label: 'STREAK',
-                          value: '${summary.currentStreakDays}',
-                          sub: 'days',
-                          tint: AppColors.streak,
-                        ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: StatCard(label: 'TOTAL XP', value: Formatters.count(profile.totalXp), tint: AppColors.xp),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => context.go(Routes.streak),
+                                  child: StatCard(label: 'STREAK', value: '${summary.currentStreakDays}', sub: 'days', tint: AppColors.streak),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => context.go(Routes.achievements),
+                                  child: StatCard(label: 'BADGES', value: '${summary.unlockedAchievements}', tint: AppColors.secondary),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: StatCard(label: 'MASTERY', value: Formatters.percent(profile.overallMastery), tint: AppColors.success),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Longest streak + clear next action when real data minimal
+                          if (summary.longestStreakDays > summary.currentStreakDays)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+                              child: Row(children: [Icon(Icons.local_fire_department_rounded, size: 14, color: AppColors.streak), const SizedBox(width: 6), Text('LONGEST STREAK ${summary.longestStreakDays} DAYS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))]),
+                            ),
+                          if (summary.currentStreakDays == 0 && summary.unlockedAchievements == 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(children: [Icon(Icons.rocket_launch_rounded, size: 16, color: AppColors.primary), const SizedBox(width: 8), const Text("WHAT'S NEXT?", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textTertiary))]),
+                                    const SizedBox(height: 8),
+                                    Text('Complete your first game to earn XP and unlock your first badge. Your streak starts with a single day of learning.', style: TextStyle(fontSize: 12.5, height: 1.4, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => context.go(Routes.achievements),
-                        child: StatCard(
-                          label: 'BADGES',
-                          value: '${summary.unlockedAchievements}',
-                          tint: AppColors.secondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatCard(
-                        label: 'MASTERY',
-                        value: Formatters.percent(profile.overallMastery),
-                        tint: AppColors.success,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -13,7 +13,9 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/achievement_icon.dart';
+import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/responsive_layout.dart';
 
 /// GAM-002 trophy room: unlocked badges glow, locked stay dark.
 class AchievementsScreen extends ConsumerStatefulWidget {
@@ -39,9 +41,14 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('TROPHY ROOM')),
-      body: FutureBuilder<List<Achievement>>(
+      body: Stack(
+        children: [
+          Positioned.fill(child: AtmosphericBackground(primaryGlow: AppColors.xp, secondaryGlow: AppColors.primary, intensity: isDark ? 0.42 : 0.0, showStarField: true)),
+          if (isDark) Positioned(top: -20, right: -10, child: GlowOrb(color: AppColors.xp, size: 200, opacity: 0.07)),
+          FutureBuilder<List<Achievement>>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done && !snap.hasData) {
@@ -119,6 +126,8 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
             ],
           );
         },
+      ),
+        ],
       ),
     );
   }
