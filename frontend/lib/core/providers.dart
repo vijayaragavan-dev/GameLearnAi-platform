@@ -75,7 +75,7 @@ final audioManagerProvider = Provider<AudioManager>(
 final hapticsProvider = Provider<Haptics>((ref) => Haptics());
 
 final appConfigInfoProvider = Provider<AppConfigInfo>(
-  (ref) => const AppConfigInfo(
+  (ref) => AppConfigInfo(
     baseUrl: AppConfig.apiBaseUrl,
     env: AppConfig.envName,
   ),
