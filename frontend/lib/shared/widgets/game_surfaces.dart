@@ -483,3 +483,131 @@ class GameIdentitySurface extends StatelessWidget {
     );
   }
 }
+
+/// Premium challenge surface — the focal point for every game's challenge area.
+/// Provides accent-aware depth, subtle gradient, and clear hierarchy.
+class GameChallengeSurface extends StatelessWidget {
+  const GameChallengeSurface({
+    super.key,
+    required this.child,
+    required this.accent,
+    this.title,
+    this.icon,
+    this.subtitle,
+    this.padding = const EdgeInsets.all(14),
+  });
+
+  final Widget child;
+  final Color accent;
+  final String? title;
+  final IconData? icon;
+  final String? subtitle;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(color: accent.withValues(alpha: isDark ? 0.14 : 0.07), blurRadius: 20, offset: const Offset(0, 8)),
+          if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6)),
+        ],
+      ),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [accent.withValues(alpha: 0.10), AppColors.surfaceElevated, AppColors.surfaceElevated.withValues(alpha: 0.98)]
+                : [accent.withValues(alpha: 0.06), AppLightColors.surface],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: accent.withValues(alpha: isDark ? 0.28 : 0.18), width: 1.2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null) ...[
+              Row(
+                children: [
+                  if (icon != null) ...[
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.78)])),
+                      child: Icon(icon, size: 16, color: Colors.white),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(title!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: accent)),
+                  ),
+                  if (subtitle != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh, borderRadius: BorderRadius.circular(999), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+                      child: Text(subtitle!, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Premium feedback surface for correct/incorrect states.
+/// Success: subtle success glow + check; Error: red glow + shake support externally.
+class GameFeedbackSurface extends StatelessWidget {
+  const GameFeedbackSurface({
+    super.key,
+    required this.child,
+    required this.isCorrect,
+    this.accent,
+  });
+
+  final Widget child;
+  final bool isCorrect;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isCorrect ? AppColors.success : AppColors.error;
+    final useAccent = accent ?? color;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.10 : 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.38 : 0.28), width: 1.2),
+        boxShadow: [
+          BoxShadow(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.14 : 0.06), blurRadius: 14, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.16), border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.45))),
+            child: Icon(isCorrect ? Icons.check_rounded : Icons.close_rounded, size: 16, color: isCorrect ? AppColors.success : AppColors.error),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}

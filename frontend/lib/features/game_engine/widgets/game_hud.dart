@@ -3,9 +3,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/game_visual_identity.dart';
+import '../../../features/game_engine/models/game_models.dart';
 import '../engine/game_combo.dart';
 
-/// Reusable HUD for games: score, timer, progress, combo, difficulty.
+/// Premium HUD for games: score, timer, progress, combo, difficulty.
+/// Accent-aware — tints progress and difficulty pill with game identity.
 class GameHud extends StatelessWidget {
   const GameHud({
     super.key,
@@ -15,35 +18,78 @@ class GameHud extends StatelessWidget {
     required this.timeRemaining,
     required this.combo,
     required this.difficultyLabel,
+    this.accent,
+    this.gameIcon,
+    this.gameTitle,
     this.onPause,
     this.onSoundToggle,
     this.soundEnabled = true,
   });
 
   final int score;
-  final double progress; // 0..1
+  final double progress;
   final String progressLabel;
-  final String timeRemaining; // formatted mm:ss
+  final String timeRemaining;
   final GameCombo combo;
   final String difficultyLabel;
+  final Color? accent;
+  final IconData? gameIcon;
+  final String? gameTitle;
   final VoidCallback? onPause;
   final VoidCallback? onSoundToggle;
   final bool soundEnabled;
 
+  Color _resolveAccent(BuildContext context) {
+    if (accent != null) return accent!;
+    return AppColors.primary;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final a = _resolveAccent(context);
+    final showIdentity = gameIcon != null && gameTitle != null;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.92),
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [a.withValues(alpha: 0.08), AppColors.surface.withValues(alpha: 0.96)]
+              : [a.withValues(alpha: 0.04), AppColors.surface.withValues(alpha: 0.98)],
+        ),
+        border: Border(
+          bottom: BorderSide(color: a.withValues(alpha: isDark ? 0.22 : 0.14)),
+          top: BorderSide(color: a.withValues(alpha: 0.10), width: 1),
+        ),
+        boxShadow: isDark ? [BoxShadow(color: a.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))] : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              _Pill(label: difficultyLabel, color: AppColors.secondary),
+              if (showIdentity) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: a.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: a.withValues(alpha: 0.32)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(gameIcon, size: 12, color: a),
+                      const SizedBox(width: 4),
+                      Text(gameTitle!.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: a)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              _Pill(label: difficultyLabel, color: a),
               const Spacer(),
               Semantics(
                 label: 'Score $score',
@@ -66,12 +112,14 @@ class GameHud extends StatelessWidget {
               const SizedBox(width: 12),
               Semantics(
                 label: 'Time remaining $timeRemaining',
-                child: Container(
+                child: AnimatedContainer(
+                  duration: AppMotion.fast,
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: _timerColor(timeRemaining).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                     border: Border.all(color: _timerColor(timeRemaining).withValues(alpha: 0.4)),
+                    boxShadow: _timerColor(timeRemaining) == AppColors.error ? [BoxShadow(color: AppColors.error.withValues(alpha: 0.18), blurRadius: 10)] : null,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -121,8 +169,8 @@ class GameHud extends StatelessWidget {
               builder: (context, value, _) => LinearProgressIndicator(
                 value: value.clamp(0, 1),
                 minHeight: 6,
-                backgroundColor: AppColors.surfaceHigh,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                backgroundColor: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(a),
               ),
             ),
           ),
@@ -142,6 +190,7 @@ class GameHud extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: combo.isOnFire ? AppGradients.streakFire : AppGradients.xpGold,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
+                        boxShadow: combo.isOnFire ? [BoxShadow(color: AppColors.streak.withValues(alpha: 0.28), blurRadius: 10)] : null,
                       ),
                       child: Text(combo.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textOnColor)),
                     ),
@@ -155,7 +204,6 @@ class GameHud extends StatelessWidget {
   }
 
   Color _timerColor(String time) {
-    // Parse mm:ss or plain seconds string
     final parts = time.split(':');
     int total = 0;
     if (parts.length == 2) total = (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
