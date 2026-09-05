@@ -46,6 +46,7 @@ import '../features/games/boss_battle/presentation/boss_battle_screen.dart';
 import '../features/games/puzzle_arena/presentation/puzzle_arena_screen.dart';
 import '../features/games/connectivity_lab/presentation/connectivity_lab_screen.dart';
 import '../features/games/snake_and_ladder/presentation/snake_and_ladder_screen.dart';
+import '../features/design_showcase/design_showcase_screen.dart';
 
 /// Route builder helpers keep navigation strings in one place.
 abstract final class Routes {
@@ -62,6 +63,8 @@ abstract final class Routes {
   static const achievements = '/achievements';
   static const streak = '/streak';
   static const settings = '/settings';
+  // DEV ONLY — not in production nav
+  static const designShowcase = '/design-showcase';
 
   static String path(String subjectId) => '/path/$subjectId';
   static String topic(String topicId) => '/topic/$topicId';
@@ -342,6 +345,12 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.settings,
         pageBuilder: (_, s) => _page(child: const SettingsScreen(), state: s),
+      ),
+      // DEV ONLY — design showcase, not in production nav
+      GoRoute(
+        path: Routes.designShowcase,
+        pageBuilder: (_, s) =>
+            _page(child: const DesignShowcaseScreen(), state: s),
       ),
 
       // ---- Game Arena -------------------------------------------------------

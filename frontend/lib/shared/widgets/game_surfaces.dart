@@ -360,3 +360,126 @@ class _InteractiveSurfaceState extends State<InteractiveSurface> {
     );
   }
 }
+
+/// Featured surface — premium highlighted card for hero/spotlight content.
+/// Use for "Current Path Node", "Today's Challenge", "Recommended Game".
+/// One per screen max — use sparingly.
+class FeaturedSurface extends StatelessWidget {
+  const FeaturedSurface({
+    super.key,
+    required this.child,
+    this.accent = AppColors.primary,
+    this.padding = const EdgeInsets.all(20),
+  });
+
+  final Widget child;
+  final Color accent;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: isDark ? 0.28 : 0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
+          ),
+          if (isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.28),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+        ],
+      ),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    accent.withValues(alpha: 0.18),
+                    AppColors.surfaceElevated,
+                    AppColors.surfaceElevated.withValues(alpha: 0.95),
+                  ]
+                : [
+                    accent.withValues(alpha: 0.08),
+                    AppLightColors.surface,
+                  ],
+            stops: isDark ? const [0.0, 0.55, 1.0] : const [0.0, 1.0],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(
+            color: accent.withValues(alpha: isDark ? 0.45 : 0.28),
+            width: 1.5,
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Game identity surface — tints a card with the game's visual accent.
+/// Pass [accent] from [GameVisualIdentity.accent] for the current game.
+class GameIdentitySurface extends StatelessWidget {
+  const GameIdentitySurface({
+    super.key,
+    required this.child,
+    required this.accent,
+    this.padding = const EdgeInsets.all(16),
+    this.showGlow = false,
+    this.radius = AppRadius.lg,
+  });
+
+  final Widget child;
+  final Color accent;
+  final EdgeInsetsGeometry padding;
+  final bool showGlow;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: showGlow && isDark
+            ? [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  spreadRadius: 0,
+                ),
+              ]
+            : null,
+      ),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accent.withValues(alpha: isDark ? 0.12 : 0.05),
+              scheme.surface,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: accent.withValues(alpha: isDark ? 0.30 : 0.18),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
