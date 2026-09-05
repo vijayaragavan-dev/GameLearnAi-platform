@@ -1793,16 +1793,37 @@ class _EmptyPathState extends StatelessWidget {
   }
 }
 
-class _GeneratePrompt extends ConsumerWidget {
+class _GeneratePrompt extends ConsumerStatefulWidget {
   const _GeneratePrompt({required this.state, required this.subjectId, required this.identity});
   final PathState state;
   final String subjectId;
   final SubjectVisualIdentity identity;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GeneratePrompt> createState() => _GeneratePromptState();
+}
+
+class _GeneratePromptState extends ConsumerState<_GeneratePrompt> {
+  late final TextEditingController _goalController;
+
+  @override
+  void initState() {
+    super.initState();
+    _goalController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _goalController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final goalController = TextEditingController();
+    final identity = widget.identity;
+    final state = widget.state;
+    final subjectId = widget.subjectId;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
@@ -1856,7 +1877,7 @@ class _GeneratePrompt extends ConsumerWidget {
                 padding: const EdgeInsets.all(14),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: TextField(
-                  controller: goalController,
+                  controller: _goalController,
                   maxLength: 300,
                   minLines: 1,
                   maxLines: 3,
@@ -1892,7 +1913,7 @@ class _GeneratePrompt extends ConsumerWidget {
                   onTap: () async {
                     FocusScope.of(context).unfocus();
                     ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
-                    final ok = await ref.read(pathProvider(subjectId).notifier).generate(learningGoal: goalController.text.trim());
+                    final ok = await ref.read(pathProvider(subjectId).notifier).generate(learningGoal: _goalController.text.trim());
                     if (ok && context.mounted) {
                       ref.read(audioManagerProvider).play(Sfx.missionComplete);
                       ref.read(hapticsProvider).celebrate();

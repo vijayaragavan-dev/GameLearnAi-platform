@@ -34,10 +34,21 @@ class AssessmentResultScreen extends ConsumerStatefulWidget {
 
 class _AssessmentResultScreenState
     extends ConsumerState<AssessmentResultScreen> {
+  late Future<AssessmentOutcome> _future;
+
   @override
   void initState() {
     super.initState();
     ref.read(audioManagerProvider).playContext(MusicContext.celebration);
+    _future = ref.read(assessmentRepoProvider).result(widget.subjectId);
+  }
+
+  @override
+  void didUpdateWidget(covariant AssessmentResultScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.subjectId != widget.subjectId) {
+      _future = ref.read(assessmentRepoProvider).result(widget.subjectId);
+    }
   }
 
   @override
@@ -50,7 +61,7 @@ class _AssessmentResultScreenState
         automaticallyImplyLeading: false,
       ),
       body: FutureBuilder<AssessmentOutcome>(
-        future: ref.read(assessmentRepoProvider).result(widget.subjectId),
+        future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done && !snap.hasData) {
             return const Center(child: CircularProgressIndicator());

@@ -873,15 +873,28 @@ class _JourneySection extends StatelessWidget {
   }
 }
 
-// 4. SUBJECTS — real catalog, adaptive grid 1→2→3
-class _SubjectsSection extends ConsumerWidget {
+// 4. SUBJECTS — real catalog, adaptive grid 1→2→3 — cached future to avoid duplicate requests
+class _SubjectsSection extends ConsumerStatefulWidget {
   const _SubjectsSection({required this.dashboard});
   final Dashboard dashboard;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SubjectsSection> createState() => _SubjectsSectionState();
+}
+
+class _SubjectsSectionState extends ConsumerState<_SubjectsSection> {
+  late final Future<List<Subject>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ref.read(contentRepoProvider).subjects();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<List<Subject>>(
-      future: ref.read(contentRepoProvider).subjects(),
+      future: _future,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done && !snap.hasData) {
           return const Padding(
@@ -901,7 +914,7 @@ class _SubjectsSection extends ConsumerWidget {
           expanded: 2,
           wide: 3,
           children: subjects.map((s) {
-            final assessed = dashboard.assessment.assessedSubjects.any((a) => a.subjectId == s.id);
+            final assessed = widget.dashboard.assessment.assessedSubjects.any((a) => a.subjectId == s.id);
             final identity = SubjectVisualRegistry.fromIconKey(s.iconKey);
             final accent = identity.accent;
             return GestureDetector(

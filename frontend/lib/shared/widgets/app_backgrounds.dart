@@ -76,15 +76,17 @@ class AtmosphericBackground extends StatelessWidget {
       );
     }
 
-    // Dark: layered atmosphere
-    return CustomPaint(
-      painter: _AtmospherePainter(
-        primaryGlow: primary,
-        secondaryGlow: secondary,
-        showStarField: showStarField,
-        intensity: intensity.clamp(0.0, 1.0),
+    // Dark: layered atmosphere — RepaintBoundary isolates background repaints
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: _AtmospherePainter(
+          primaryGlow: primary,
+          secondaryGlow: secondary,
+          showStarField: showStarField,
+          intensity: intensity.clamp(0.0, 1.0),
+        ),
+        child: const SizedBox.expand(),
       ),
-      child: const SizedBox.expand(),
     );
   }
 }
@@ -224,22 +226,24 @@ class GlowOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              color.withValues(alpha: opacity),
-              color.withValues(alpha: opacity * 0.4),
-              Colors.transparent,
+    return RepaintBoundary(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                color.withValues(alpha: opacity),
+                color.withValues(alpha: opacity * 0.4),
+                Colors.transparent,
             ],
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
       ),
+    ),
     );
   }
 }
