@@ -10,16 +10,24 @@ import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_depth.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/game_visual_identity.dart';
+import '../../../core/theme/subject_visual_identity.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/achievement_icon.dart';
+import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
+import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../../shared/widgets/premium_buttons.dart';
+import '../../../shared/widgets/progression_widgets.dart';
 import '../../../shared/widgets/recommendation_card.dart'
     show DifficultyPill, PriorityPill, RecommendationCard, SectionHeader;
 import '../../../shared/widgets/responsive_layout.dart';
@@ -116,33 +124,61 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2),
         ),
       ),
-      body: RefreshIndicator(
-        color: AppColors.primaryBright,
-        backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
-        onRefresh: _refresh,
-        child: Builder(
-          builder: (context) {
-            if (state.showLoading) return const SkeletonDashboard();
-            final error = state.error;
-            if (error != null && state.data == null) {
-              final err = describeError(error);
-              return ErrorState(
-                title: err.title,
-                message: err.message,
-                onRetry: () => ref.read(dashboardProvider.notifier).load(),
-              );
-            }
-            final dashboard = state.data;
-            if (dashboard != null) {
-              return _DashboardBody(
-                dashboard: dashboard,
-                onContinue: () => _continueAdventure(dashboard),
-                onOpenRecommendation: _openRecommendation,
-              );
-            }
-            return const SkeletonDashboard();
-          },
-        ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: AtmosphericBackground()),
+          // Subtle top glow orb — supports hierarchy, not distraction
+          Positioned(
+            top: -80,
+            right: -60,
+            child: IgnorePointer(
+              child: GlowOrb(
+                color: AppColors.primary,
+                size: 320,
+                opacity: isDark ? 0.10 : 0.04,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 120,
+            left: -40,
+            child: IgnorePointer(
+              child: GlowOrb(
+                color: AppColors.secondary,
+                size: 260,
+                opacity: isDark ? 0.06 : 0.03,
+              ),
+            ),
+          ),
+          RefreshIndicator(
+            color: AppColors.primaryBright,
+            backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
+            onRefresh: _refresh,
+            child: Builder(
+              builder: (context) {
+                if (state.showLoading) return const SkeletonDashboard();
+                final error = state.error;
+                if (error != null && state.data == null) {
+                  final err = describeError(error);
+                  return ErrorState(
+                    title: err.title,
+                    message: err.message,
+                    onRetry: () => ref.read(dashboardProvider.notifier).load(),
+                  );
+                }
+                final dashboard = state.data;
+                if (dashboard != null) {
+                  return _DashboardBody(
+                    dashboard: dashboard,
+                    onContinue: () => _continueAdventure(dashboard),
+                    onOpenRecommendation: _openRecommendation,
+                  );
+                }
+                return const SkeletonDashboard();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -189,27 +225,38 @@ class _DashboardBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = dashboard;
     final isWide = MediaQuery.sizeOf(context).width >= AppBreakpoints.medium;
+    final isExpanded = MediaQuery.sizeOf(context).width >= AppBreakpoints.expanded;
     var i = 0;
     // Use SingleChildScrollView + Column so all dashboard sections are built
     // eagerly for tester finders (ListView lazily builds off-screen slivers).
+    // Wrapped in ResponsiveCenter for desktop max-width + atmospheric depth.
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        AppGutters.pagePadding(context),
-        12,
-        AppGutters.pagePadding(context),
-        110,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-        // 1. HERO — Profile / Level / XP / Streak (premium, theme-aware)
-        _staggered(i++, _HeroCard(dashboard: d)),
-        const SizedBox(height: 22),
-
-        // 2. CONTINUE LEARNING — visually dominant CTA
-        _staggered(i++, _ContinueCard(dashboard: d, onContinue: onContinue)),
-        const SizedBox(height: 18),
+      child: ResponsiveCenter(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 110),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── COMMAND CENTER HEADER — player identity + continue as hero row on expanded
+              if (isExpanded) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 5, child: _staggered(i++, _HeroCard(dashboard: d))),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 4, child: _staggered(i++, _ContinueCard(dashboard: d, onContinue: onContinue))),
+                  ],
+                ),
+                const SizedBox(height: 22),
+              ] else ...[
+                // 1. HERO — Profile / Level / XP / Streak (premium, theme-aware)
+                _staggered(i++, _HeroCard(dashboard: d)),
+                const SizedBox(height: 18),
+                // 2. CONTINUE LEARNING — visually dominant CTA
+                _staggered(i++, _ContinueCard(dashboard: d, onContinue: onContinue)),
+                const SizedBox(height: 18),
+              ],
 
         // 3. JOURNEY / PROGRESS (uses real learningPath nodes)
         _staggered(i++, const SectionHeader(title: 'Your journey')),
@@ -277,7 +324,12 @@ class _DashboardBody extends StatelessWidget {
         _staggered(i++, _GameZoneSection(dashboard: d)),
         const SizedBox(height: 18),
 
-        // 7. ACHIEVEMENTS / STREAK — real data only
+        // 7. NOVA — AI companion entry (truthful, no fake chat)
+        _staggered(i++, const SectionHeader(title: 'Meet Nova')),
+        _staggered(i++, _NovaSection(dashboard: d)),
+        const SizedBox(height: 18),
+
+        // 8. ACHIEVEMENTS / STREAK — real data only
         if (d.achievements.recentUnlocks.isNotEmpty) ...[
           _staggered(i++, const SectionHeader(title: 'Trophy room')),
           _staggered(
@@ -383,7 +435,9 @@ class _DashboardBody extends StatelessWidget {
           _staggered(i++, const SectionHeader(title: 'Recent battles')),
           _staggered(i++, RecentBattles(quizzes: d.recentActivity.quizzes)),
         ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -403,7 +457,7 @@ class _DashboardBody extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 1. HERO — premium, theme-aware, responsive
+// 1. HERO — premium command-center identity, uses V2.0 foundation
 class _HeroCard extends StatelessWidget {
   const _HeroCard({required this.dashboard});
   final Dashboard dashboard;
@@ -413,11 +467,14 @@ class _HeroCard extends StatelessWidget {
     final g = dashboard.gamification;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = dashboard.learner.displayName;
-    return GameCard(
-      padding: const EdgeInsets.all(18),
+    final mastery = (dashboard.learner.overallMastery.clamp(0, 100) / 100).clamp(0.0, 1.0);
+    return FeaturedSurface(
+      accent: AppColors.primary,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top row: avatar + identity + streak
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -426,43 +483,46 @@ class _HeroCard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: AppGradients.brand,
                       border: Border.all(
                         color: isDark ? AppColors.primaryBright : Colors.white,
-                        width: 2,
+                        width: 2.5,
                       ),
                       boxShadow: isDark
-                          ? AppShadows.glow(AppColors.primary, alpha: 0.35)
-                          : null,
+                          ? AppGlows.accent(dark: true)
+                          : AppShadows.depth2(dark: false),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       name.isEmpty ? '?' : name[0].toUpperCase(),
                       style: const TextStyle(
                         fontFamily: AppTypography.displayFamily,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   Positioned(
-                    right: -6,
+                    right: -4,
                     bottom: -4,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: AppGlows.accent(dark: isDark),
                       ),
                       child: Text(
                         '${g.currentLevel}',
                         style: const TextStyle(
+                          fontFamily: AppTypography.bodyFamily,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -472,34 +532,35 @@ class _HeroCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${Formatters.daypartGreeting()}, ${_firstName(name)}',
+                      '${Formatters.daypartGreeting()}, ${_firstName(name)}'.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: AppTypography.displayFamily,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                      style: AppTypography.overline(context).copyWith(
+                        color: AppColors.primaryBright,
+                        letterSpacing: 1.4,
                       ),
                     ),
                     const SizedBox(height: 2),
+                    Text(
+                      _firstName(name),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.hero(context, size: 22),
+                    ),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.bolt_rounded, size: 13, color: AppColors.xp),
+                        const Icon(Icons.bolt_rounded, size: 14, color: AppColors.xp),
                         const SizedBox(width: 4),
                         Text(
                           '${Formatters.count(g.totalXp)} XP',
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.xp,
-                          ),
+                          style: AppTypography.xpLabel(context, size: 12),
                         ),
                         const SizedBox(width: 10),
                         Flexible(
@@ -507,10 +568,7 @@ class _HeroCard extends StatelessWidget {
                             'Level ${g.currentLevel} of ${g.maxLevel}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
-                            ),
+                            style: AppTypography.caption(context),
                           ),
                         ),
                       ],
@@ -518,6 +576,9 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 10),
+              // Mastery orb alongside streak for command-center density
+              MasteryOrb(fraction: mastery, size: 56, animate: false),
               const SizedBox(width: 8),
               StreakChip(
                 days: dashboard.streak.currentStreakDays,
@@ -566,54 +627,55 @@ class _ContinueCard extends StatelessWidget {
     final subject = dashboard.currentSubject;
     final topic = subject?.currentTopic;
     final path = dashboard.learningPath;
-    return GlowCard(
-      glowColor: AppColors.primary,
-      intensity: isDark ? 0.22 : 0.10,
+    final subjectIdentity = subject != null
+        ? SubjectVisualRegistry.fromIconKey(subject.iconKey)
+        : SubjectVisualRegistry.fallback;
+    final accent = _hasSubject ? subjectIdentity.accent : AppColors.primary;
+    return FeaturedSurface(
+      accent: accent,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.10),
+                  color: accent.withValues(alpha: isDark ? 0.18 : 0.10),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: accent.withValues(alpha: 0.35)),
                 ),
-                child: const Text(
+                child: Text(
                   'CURRENT ADVENTURE',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.6,
-                    color: AppColors.primaryBright,
-                  ),
+                  style: AppTypography.overline(context).copyWith(color: accent, letterSpacing: 1.4),
                 ),
               ),
               const Spacer(),
-              Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primaryBright.withValues(alpha: 0.9)),
+              Icon(AppIcons.nova, size: 16, color: accent.withValues(alpha: 0.9)),
             ],
           ),
           const SizedBox(height: 14),
           Text(
             subject?.name ?? 'Choose your first world',
-            style: TextStyle(
-              fontFamily: AppTypography.displayFamily,
-              fontSize: 23,
-              fontWeight: FontWeight.w700,
-              height: 1.15,
-              color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-            ),
+            style: AppTypography.hero(context, size: 22),
           ),
-          const SizedBox(height: 5),
-          Text(
-            topic?.topicName ?? path?.title ?? 'Your personalized path awaits',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13.5,
-              color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
-            ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              if (_hasSubject) ...[
+                SubjectIcon(iconKey: subject!.iconKey, size: 20, withBackground: false),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: Text(
+                  topic?.topicName ?? path?.title ?? 'Your personalized path awaits',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySecondary(context),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           PrimaryGameButton(
@@ -651,61 +713,125 @@ class _JourneySection extends StatelessWidget {
       (n) => n.status == 'AVAILABLE' || n.status == 'IN_PROGRESS',
       orElse: () => path.nodes.first,
     );
-    return GameCard(
+    final progress = total == 0 ? 0.0 : completed / total;
+    final accent = AppColors.primary;
+    return DepthContainer(
+      level: DepthLevel.card,
+      padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  path.title.isEmpty ? 'Learning Path' : path.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-                  ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: accent.withValues(alpha: 0.28)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(AppIcons.path, size: 12, color: accent),
+                    const SizedBox(width: 4),
+                    Text(
+                      'JOURNEY',
+                      style: AppTypography.badgeLabel(context, color: accent),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (isDark ? AppColors.primary : AppColors.primary).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.22)),
-                ),
-                child: Text(
-                  '$completed/$total',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
+              const Spacer(),
+              Text(
+                '$completed/$total',
+                style: AppTypography.badgeLabel(context, color: accent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            path.title.isEmpty ? 'Learning Path' : path.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.h3(context),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              MasteryOrb(fraction: progress, size: 52, animate: false),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(progress * 100).round()}% completed • $completed of $total nodes',
+                      style: AppTypography.caption(context),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: total == 0 ? 0 : completed / total,
-              minHeight: 6,
-              backgroundColor: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              StateChip(state: ProgressionState.completed, compact: true),
+              if (inProgress > 0) StateChip(state: ProgressionState.inProgress, compact: true),
+              if (available > 0) StateChip(state: ProgressionState.available, compact: true),
+              if (completed == 0 && available == 0) StateChip(state: ProgressionState.locked, compact: true),
+            ],
           ),
+          const SizedBox(height: 4),
+          // Mini node trail dots — lightweight, no heavy CustomPaint
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: path.nodes.take(12).map((n) {
+              final c = switch (n.status) {
+                'COMPLETED' => AppColors.success,
+                'IN_PROGRESS' => AppColors.warning,
+                'AVAILABLE' => AppColors.primary,
+                _ => AppColors.locked,
+              };
+              return Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.withValues(alpha: 0.90),
+                  border: Border.all(color: c.withValues(alpha: 0.30)),
+                ),
+              );
+            }).toList(),
+          ),
+          if (path.nodes.length > 12)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('+${path.nodes.length - 12} more', style: AppTypography.caption(context)),
+            ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 6,
             children: [
-              _Pill(label: '$completed completed', color: AppColors.success),
-              if (inProgress > 0) _Pill(label: '$inProgress in progress', color: AppColors.warning),
-              if (available > 0) _Pill(label: '$available available', color: AppColors.primary),
+              Text('$completed completed', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.success)),
+              if (inProgress > 0) Text('$inProgress in progress', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.warning)),
+              if (available > 0) Text('$available available', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.primary)),
             ],
           ),
           const SizedBox(height: 12),
@@ -747,25 +873,6 @@ class _JourneySection extends StatelessWidget {
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.color});
-  final String label;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.28)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
-        ),
-      );
-}
-
 // 4. SUBJECTS — real catalog, adaptive grid 1→2→3
 class _SubjectsSection extends ConsumerWidget {
   const _SubjectsSection({required this.dashboard});
@@ -795,11 +902,20 @@ class _SubjectsSection extends ConsumerWidget {
           wide: 3,
           children: subjects.map((s) {
             final assessed = dashboard.assessment.assessedSubjects.any((a) => a.subjectId == s.id);
-            return GameCard(
-              padding: const EdgeInsets.all(14),
-              child: Row(
+            final identity = SubjectVisualRegistry.fromIconKey(s.iconKey);
+            final accent = identity.accent;
+            return GestureDetector(
+              onTap: () {
+                final name = Uri.encodeComponent(s.name);
+                context.go('/${Routes.path(s.id).substring(1)}?name=$name');
+              },
+              child: GameIdentitySurface(
+                accent: accent,
+                padding: const EdgeInsets.all(14),
+                radius: AppRadius.lg,
+                child: Row(
                 children: [
-                  SubjectGlyph(iconKey: s.iconKey, color: AppColors.primary, size: 32),
+                  SubjectIcon(iconKey: s.iconKey, size: 36),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -846,6 +962,7 @@ class _SubjectsSection extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
               ),
             );
           }).toList(),
@@ -995,62 +1112,50 @@ class _GameZoneSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topicId = _topicIdForGames();
-    final featured = [
-      (GameType.quizBattle, 'Quiz Battle', Icons.bolt_rounded, AppColors.primary),
-      (GameType.memoryMatch, 'Memory', Icons.psychology_rounded, AppColors.secondary),
-      (GameType.puzzleArena, 'Puzzle', Icons.extension_rounded, const Color(0xFF06B6D4)),
-      (GameType.bossBattle, 'Boss', Icons.videogame_asset_rounded, const Color(0xFFEF4444)),
+    // Use real game identities from registry — premium, distinct per game
+    final featuredTypes = [
+      GameType.quizBattle,
+      GameType.memoryMatch,
+      GameType.puzzleArena,
+      GameType.bossBattle,
     ];
-    return GlowCard(
-      glowColor: AppColors.primary,
-      intensity: isDark ? 0.14 : 0.06,
+    return FeaturedSurface(
+      accent: AppColors.primary,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
                   borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.sports_esports_rounded, size: 12, color: AppColors.primary),
-                    SizedBox(width: 6),
-                    Text(
-                      'GAME ZONE',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.4,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    Icon(AppIcons.navGamesActive, size: 13, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Text('GAME ZONE', style: AppTypography.badgeLabel(context, color: AppColors.primary)),
                   ],
                 ),
               ),
               const Spacer(),
-              Text(
-                '14 GAMES',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                  borderRadius: BorderRadius.circular(999),
                 ),
+                child: Text('14 GAMES', style: AppTypography.overline(context)),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Play is how you master. Same mastery, more fun.',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
-            ),
-          ),
+          const SizedBox(height: 10),
+          Text('Play is how you master. Same mastery, more fun.', style: AppTypography.bodySecondary(context)),
           const SizedBox(height: 14),
           AdaptiveGrid(
             compact: 2,
@@ -1059,7 +1164,8 @@ class _GameZoneSection extends StatelessWidget {
             wide: 4,
             spacing: 10,
             runSpacing: 10,
-            children: featured.map((f) {
+            children: featuredTypes.map((type) {
+              final identity = GameVisualRegistry.of(type);
               return GestureDetector(
                 onTap: () {
                   if (topicId == null || topicId.isEmpty) {
@@ -1070,32 +1176,33 @@ class _GameZoneSection extends StatelessWidget {
                   final sid = _subjectIdForGames();
                   context.push(Routes.gameHub(topicId, subjectId: sid, subjectName: name), extra: name);
                 },
-                child: Container(
+                child: GameIdentitySurface(
+                  accent: identity.accent,
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceHigh.withValues(alpha: 0.55) : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: f.$4.withValues(alpha: 0.22)),
-                  ),
+                  radius: AppRadius.lg,
                   child: Column(
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
-                          color: f.$4.withValues(alpha: 0.14),
+                          gradient: identity.gradient,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(f.$3, size: 18, color: f.$4),
+                        alignment: Alignment.center,
+                        child: Icon(identity.icon, size: 18, color: Colors.white),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        f.$2,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-                        ),
+                        identity.type.displayName,
+                        style: AppTypography.badgeLabel(context, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        identity.category.toUpperCase(),
+                        style: AppTypography.overline(context).copyWith(fontSize: 9),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -1136,7 +1243,59 @@ class _GameZoneSection extends StatelessWidget {
   }
 }
 
-// 7. STREAK preview (also achievements above)
+// 7. NOVA — dedicated AI companion entry
+class _NovaSection extends StatelessWidget {
+  const _NovaSection({required this.dashboard});
+  final Dashboard dashboard;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasRec = dashboard.recommendations.isNotEmpty;
+    final nextTopic = hasRec ? dashboard.recommendations.first.topicName : null;
+    return GameIdentitySurface(
+      accent: AppColors.secondary,
+      showGlow: false,
+      child: Row(
+        children: [
+          NovaCompanion(size: 56, mood: hasRec ? NovaMood.encouraging : NovaMood.idle),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('NOVA', style: AppTypography.overline(context).copyWith(color: AppColors.secondary)),
+                const SizedBox(height: 2),
+                Text(
+                  hasRec && nextTopic != null
+                      ? 'Ready to guide you through $nextTopic'
+                      : 'Your AI learning companion is here',
+                  style: AppTypography.h3(context),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ask for hints, explanations, or a study plan — never the answer.',
+                  style: AppTypography.caption(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          IconActionButton(
+            icon: AppIcons.nova,
+            semanticLabel: 'Open Nova tutor',
+            color: AppColors.secondary,
+            filled: true,
+            onTap: () => context.push(Routes.tutor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 8. STREAK preview (also achievements above)
 class _StreakPreview extends StatelessWidget {
   const _StreakPreview({required this.dashboard});
   final Dashboard dashboard;
