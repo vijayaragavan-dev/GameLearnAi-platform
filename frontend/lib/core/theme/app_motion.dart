@@ -1,4 +1,3 @@
-import 'package:flutter/animation.dart';
 import 'package:flutter/widgets.dart';
 
 /// Centralized motion token system for GameLearn AI — Version 2.0

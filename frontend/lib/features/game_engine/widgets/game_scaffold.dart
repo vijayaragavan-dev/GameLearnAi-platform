@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
-import '../../../core/theme/app_typography.dart';
 import '../models/game_models.dart';
 import 'game_hud.dart';
 import '../engine/game_combo.dart';

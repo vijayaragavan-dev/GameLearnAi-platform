@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../features/game_engine/models/game_models.dart';
 import 'app_colors.dart';
-import 'app_icons.dart';
 import 'app_styles.dart';
 
 /// Visual identity for a single game.

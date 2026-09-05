@@ -5,7 +5,6 @@ import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_depth.dart';
 import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/game_visual_identity.dart';

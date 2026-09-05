@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
-import 'app_icons.dart';
 import 'app_styles.dart';
 
 /// Visual identity for a subject/world.
