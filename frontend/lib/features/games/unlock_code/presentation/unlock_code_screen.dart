@@ -8,12 +8,15 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
+import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
 import '../data/unlock_challenges.dart';
 import '../models/unlock_challenge.dart';
@@ -179,6 +182,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
     final ch = _challenges[_index];
     final progress = (_index + (_showResult ? 1 : 0)) / _challenges.length;
     final isWide = MediaQuery.sizeOf(context).width > 700;
+    final identity = GameVisualRegistry.of(GameType.unlockCode);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -186,96 +190,79 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
           SafeArea(
             child: Column(
               children: [
-                // HUD
-                Container(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  decoration: BoxDecoration(color: AppColors.surface.withValues(alpha: 0.92), border: Border(bottom: BorderSide(color: AppColors.border))),
-                  child: Column(
+                GameHud(
+                  score: _score,
+                  progress: progress,
+                  progressLabel: 'CHALLENGE ${_index + 1} / ${_challenges.length}',
+                  timeRemaining: _fmt(_timer.remaining),
+                  combo: _combo,
+                  difficultyLabel: _difficulty.displayName,
+                  accent: identity.accent,
+                  gameIcon: identity.icon,
+                  gameTitle: GameType.unlockCode.displayName,
+                  onPause: () => setState(() { _paused = true; _timer.pause(); }),
+                ),
+                // Preserve lives indicator outside HUD so tests and UX still see hearts
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.lock_rounded, size: 14, color: AppColors.warning),
-                          const SizedBox(width: 6),
-                          const Text('UNLOCK THE CODE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.warning)),
-                          const Spacer(),
-                          Row(children: [const Icon(Icons.star_rounded, size: 18, color: AppColors.xp), const SizedBox(width: 4), Text('$_score', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.xp))]),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: _timerColor().withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: _timerColor().withValues(alpha: 0.4))),
-                            child: Row(children: [Icon(Icons.timer_outlined, size: 14, color: _timerColor()), const SizedBox(width: 5), Text(_fmt(_timer.remaining), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor()))]),
-                          ),
-                          IconButton(tooltip: 'Pause', onPressed: () => setState(() { _paused = true; _timer.pause(); }), icon: const Icon(Icons.pause_rounded, size: 18), constraints: const BoxConstraints.tightFor(width: 36, height: 36), padding: EdgeInsets.zero),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(borderRadius: BorderRadius.circular(AppRadius.pill), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: AppMotion.fast, builder: (context, value, _) => LinearProgressIndicator(value: value.clamp(0, 1), minHeight: 6, backgroundColor: AppColors.surfaceHigh, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.warning)))),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text('CHALLENGE ${_index + 1} / ${_challenges.length}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textTertiary, letterSpacing: 1)),
-                          const Spacer(),
-                          _LivesIndicator(lives: _lives),
-                          const SizedBox(width: 8),
-                          if (_combo.current >= 2)
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(gradient: _combo.isOnFire ? AppGradients.streakFire : AppGradients.xpGold, borderRadius: BorderRadius.circular(AppRadius.pill)), child: Text(_combo.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textOnColor))),
-                        ],
-                      ),
+                      _LivesIndicator(lives: _lives),
+                      const Spacer(),
+                      Text('CODE: ${_vault.isUnlocked(_correctCount) ? _vault.display : _revealed.map((e) => e ?? '?').join(' ')}', style: const TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
-                // Vault
-                Container(
-                  margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [AppColors.primaryDeep.withValues(alpha: 0.25), AppColors.surfaceElevated]),
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-                    boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 8))],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(_vault.isUnlocked(_correctCount) ? Icons.lock_open_rounded : Icons.lock_rounded, size: 18, color: _vault.isUnlocked(_correctCount) ? AppColors.success : AppColors.warning),
-                          const SizedBox(width: 8),
-                          Text(_vault.isUnlocked(_correctCount) ? 'VAULT UNLOCKED' : 'LOCKED VAULT', style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: _vault.isUnlocked(_correctCount) ? AppColors.success : AppColors.warning)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: List.generate(_vault.length, (i) {
-                          final revealed = _revealed[i];
-                          final isRevealed = revealed != null;
-                          return Semantics(
-                            label: isRevealed ? 'Code fragment ${i + 1}: $revealed' : 'Code fragment ${i + 1} hidden',
-                            child: AnimatedContainer(
-                              duration: AppMotion.normal,
-                              curve: AppMotion.easeOut,
-                              width: isWide ? 64 : 56,
-                              height: isWide ? 64 : 56,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: isRevealed ? AppColors.success.withValues(alpha: 0.14) : AppColors.surfaceHigh,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: isRevealed ? AppColors.success : AppColors.border, width: isRevealed ? 1.6 : 1.0),
-                                boxShadow: isRevealed ? [BoxShadow(color: AppColors.success.withValues(alpha: 0.25), blurRadius: 12)] : null,
+                // Vault — premium challenge surface with identity accent
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: GameChallengeSurface(
+                    accent: identity.accent,
+                    title: 'VAULT',
+                    icon: identity.icon,
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_vault.isUnlocked(_correctCount) ? Icons.lock_open_rounded : Icons.lock_rounded, size: 18, color: _vault.isUnlocked(_correctCount) ? AppColors.success : AppColors.warning),
+                            const SizedBox(width: 8),
+                            Text(_vault.isUnlocked(_correctCount) ? 'VAULT UNLOCKED' : 'LOCKED VAULT', style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: _vault.isUnlocked(_correctCount) ? AppColors.success : AppColors.warning)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: List.generate(_vault.length, (i) {
+                            final revealed = _revealed[i];
+                            final isRevealed = revealed != null;
+                            return Semantics(
+                              label: isRevealed ? 'Code fragment ${i + 1}: $revealed' : 'Code fragment ${i + 1} hidden',
+                              child: AnimatedContainer(
+                                duration: AppMotion.normal,
+                                curve: AppMotion.easeOut,
+                                width: isWide ? 64 : 56,
+                                height: isWide ? 64 : 56,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isRevealed ? AppColors.success.withValues(alpha: 0.14) : AppColors.surfaceHigh,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: isRevealed ? AppColors.success : AppColors.border, width: isRevealed ? 1.6 : 1.0),
+                                  boxShadow: isRevealed ? [BoxShadow(color: AppColors.success.withValues(alpha: 0.25), blurRadius: 12)] : null,
+                                ),
+                                child: revealed != null
+                                    ? Text(revealed, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.success))
+                                    : const Text('?', style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
                               ),
-                              child: revealed != null
-                                  ? Text(revealed, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.success))
-                                  : const Text('?', style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 10),
-                      Text('CODE: ${_vault.isUnlocked(_correctCount) ? _vault.display : _revealed.map((e) => e ?? '?').join(' ')}', style: const TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-                    ],
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 10),
+                        Text('CODE: ${_vault.isUnlocked(_correctCount) ? _vault.display : _revealed.map((e) => e ?? '?').join(' ')}', style: const TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -318,13 +305,12 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
                           ),
                         if (_showResult) ...[
                           const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.1) : AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.4) : AppColors.error.withValues(alpha: 0.4))),
+                          GameFeedbackSurface(
+                            isCorrect: _wasCorrect,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(children: [Icon(_wasCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: _wasCorrect ? AppColors.success : AppColors.error), const SizedBox(width: 6), Text(_wasCorrect ? 'CORRECT! CODE FRAGMENT REVEALED' : 'ACCESS DENIED', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _wasCorrect ? AppColors.success : AppColors.error))]),
+                                Text(_wasCorrect ? 'CORRECT! CODE FRAGMENT REVEALED' : 'ACCESS DENIED', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _wasCorrect ? AppColors.success : AppColors.error)),
                                 const SizedBox(height: 6),
                                 Text(ch.explanation, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary)),
                                 if (_wasCorrect) ...[

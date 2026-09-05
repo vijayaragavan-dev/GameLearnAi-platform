@@ -8,12 +8,15 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
+import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
 import '../data/sequence_challenges.dart';
 import '../models/sequence_challenge.dart';
@@ -195,6 +198,7 @@ class _SequenceMasterScreenState extends ConsumerState<SequenceMasterScreen> {
     final ch = _current;
     final progress = (_index + (_showResult ? 1 : 0)) / _challenges.length;
     final isArrange = ch.mode == SequenceMode.arrange;
+    final identity = GameVisualRegistry.of(GameType.sequenceMaster);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -203,43 +207,26 @@ class _SequenceMasterScreenState extends ConsumerState<SequenceMasterScreen> {
           SafeArea(
             child: Column(
               children: [
-                // HUD
-                Container(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  decoration: BoxDecoration(color: AppColors.surface.withValues(alpha: 0.92), border: Border(bottom: BorderSide(color: AppColors.border))),
-                  child: Column(
+                GameHud(
+                  score: _score,
+                  progress: progress,
+                  progressLabel: 'SEQUENCE ${_index + 1} / ${_challenges.length}',
+                  timeRemaining: _fmt(_timer.remaining),
+                  combo: _combo,
+                  difficultyLabel: _difficulty.displayName,
+                  accent: identity.accent,
+                  gameIcon: identity.icon,
+                  gameTitle: GameType.sequenceMaster.displayName,
+                  onPause: () => setState(() { _paused = true; _timer.pause(); }),
+                ),
+                // Preserve lives + mode indicator outside HUD so tests and UX still see hearts
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.swap_vert_rounded, size: 14, color: AppColors.secondary),
-                          const SizedBox(width: 6),
-                          const Text('SEQUENCE MASTER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.secondary)),
-                          const Spacer(),
-                          Row(children: [const Icon(Icons.star_rounded, size: 18, color: AppColors.xp), const SizedBox(width: 4), Text('$_score', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.xp))]),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: _timerColor().withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: _timerColor().withValues(alpha: 0.4))),
-                            child: Row(children: [Icon(Icons.timer_outlined, size: 14, color: _timerColor()), const SizedBox(width: 5), Text(_fmt(_timer.remaining), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor()))]),
-                          ),
-                          IconButton(tooltip: 'Pause', onPressed: () => setState(() { _paused = true; _timer.pause(); }), icon: const Icon(Icons.pause_rounded, size: 18), constraints: const BoxConstraints.tightFor(width: 36, height: 36), padding: EdgeInsets.zero),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(borderRadius: BorderRadius.circular(AppRadius.pill), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: AppMotion.fast, builder: (context, value, _) => LinearProgressIndicator(value: value.clamp(0, 1), minHeight: 6, backgroundColor: AppColors.surfaceHigh, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary)))),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text('SEQUENCE ${_index + 1} / ${_challenges.length}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textTertiary, letterSpacing: 1)),
-                          const Spacer(),
-                          _LivesIndicator(lives: _lives),
-                          const SizedBox(width: 8),
-                          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: ch.mode == SequenceMode.arrange ? AppColors.primary.withValues(alpha: 0.14) : AppColors.warning.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: ch.mode == SequenceMode.arrange ? AppColors.primary.withValues(alpha: 0.45) : AppColors.warning.withValues(alpha: 0.45))), child: Text(ch.mode == SequenceMode.arrange ? 'ARRANGE' : 'COMPLETE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: ch.mode == SequenceMode.arrange ? AppColors.primary : AppColors.warning))),
-                          const SizedBox(width: 8),
-                          if (_combo.current >= 2)
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(gradient: _combo.isOnFire ? AppGradients.streakFire : AppGradients.xpGold, borderRadius: BorderRadius.circular(AppRadius.pill)), child: Text(_combo.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textOnColor))),
-                        ],
-                      ),
+                      _LivesIndicator(lives: _lives),
+                      const Spacer(),
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: ch.mode == SequenceMode.arrange ? AppColors.primary.withValues(alpha: 0.14) : AppColors.warning.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: ch.mode == SequenceMode.arrange ? AppColors.primary.withValues(alpha: 0.45) : AppColors.warning.withValues(alpha: 0.45))), child: Text(ch.mode == SequenceMode.arrange ? 'ARRANGE' : 'COMPLETE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: ch.mode == SequenceMode.arrange ? AppColors.primary : AppColors.warning))),
                     ],
                   ),
                 ),
@@ -288,58 +275,94 @@ class _SequenceMasterScreenState extends ConsumerState<SequenceMasterScreen> {
                         ),
                         const SizedBox(height: 16),
                         if (isArrange) ...[
-                          // Arrange mode: Available + Sequence Area
-                          Text('SEQUENCE AREA (${_selectedIds.length}/${ch.correctOrder.length})', style: const TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
-                          const SizedBox(height: 8),
-                          Container(
-                            constraints: const BoxConstraints(minHeight: 140),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                              border: Border.all(color: _showResult ? (_wasCorrect ? AppColors.success : AppColors.error) : AppColors.border, width: _showResult ? 1.6 : 1.0),
-                            ),
-                            child: _selectedIds.isEmpty
-                                ? Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 24),
-                                      child: Text('Tap blocks below to build sequence →', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: AppColors.textTertiary.withValues(alpha: 0.9))),
-                                    ),
-                                  )
-                                : Column(
-                                    children: [
-                                      ReorderableListView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        buildDefaultDragHandles: false,
-                                        itemCount: _selectedIds.length,
-                                        onReorder: _onReorderArrange,
-                                        itemBuilder: (context, idx) {
-                                          final id = _selectedIds[idx];
-                                          final block = ch.sequenceBlocks.firstWhere((b) => b.id == id, orElse: () => ch.sequenceBlocks.first);
-                                          final correctPos = _showResult ? ch.correctOrder[idx] == id : null;
-                                          return Padding(
-                                            key: ValueKey('seq_$id'),
-                                            padding: const EdgeInsets.only(bottom: 8),
-                                            child: _SequenceBlockCard(
-                                              block: block,
-                                              index: idx,
-                                              showResult: _showResult,
-                                              isCorrectPos: correctPos,
-                                              onRemove: () => _onTapSelectedArrange(idx),
-                                            ),
-                                          );
-                                        },
+                          GameChallengeSurface(
+                            accent: identity.accent,
+                            title: 'SEQUENCE AREA (${_selectedIds.length}/${ch.correctOrder.length})',
+                            icon: identity.icon,
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 140),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(AppRadius.lg),
+                                border: Border.all(color: _showResult ? (_wasCorrect ? AppColors.success : AppColors.error) : AppColors.border, width: _showResult ? 1.6 : 1.0),
+                              ),
+                              child: _selectedIds.isEmpty
+                                  ? Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 24),
+                                        child: Text('Tap blocks below to build sequence →', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: AppColors.textTertiary.withValues(alpha: 0.9))),
                                       ),
-                                      // Arrows between blocks are visual via block card's bottom arrow (inside _SequenceBlockCard)
-                                      if (!_showResult)
-                                        Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: _onClearArrange, icon: const Icon(Icons.clear_rounded, size: 14), label: const Text('CLEAR'))),
-                                    ],
-                                  ),
+                                    )
+                                  : Column(
+                                      children: [
+                                        ReorderableListView.builder(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          buildDefaultDragHandles: false,
+                                          itemCount: _selectedIds.length,
+                                          onReorder: _onReorderArrange,
+                                          itemBuilder: (context, idx) {
+                                            final id = _selectedIds[idx];
+                                            final block = ch.sequenceBlocks.firstWhere((b) => b.id == id, orElse: () => ch.sequenceBlocks.first);
+                                            final correctPos = _showResult ? ch.correctOrder[idx] == id : null;
+                                            return Padding(
+                                              key: ValueKey('seq_$id'),
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: _SequenceBlockCard(
+                                                block: block,
+                                                index: idx,
+                                                showResult: _showResult,
+                                                isCorrectPos: correctPos,
+                                                onRemove: () => _onTapSelectedArrange(idx),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        if (!_showResult)
+                                          Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: _onClearArrange, icon: const Icon(Icons.clear_rounded, size: 14), label: const Text('CLEAR'))),
+                                      ],
+                                    ),
+                            ),
                           ),
                           if (_showResult) ...[
                             const SizedBox(height: 12),
-                            _FeedbackCard(wasCorrect: _wasCorrect, explanation: ch.explanation, correctBlocks: ch.sequenceBlocks.where((b) => ch.correctOrder.contains(b.id)).toList(), scoreDelta: _wasCorrect ? GameScoring.scoreForHit(difficulty: ch.difficulty, combo: _combo.current, responseTimeSeconds: 3) : 0, comboLabel: _combo.label),
+                            GameFeedbackSurface(
+                              isCorrect: _wasCorrect,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [Icon(_wasCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: _wasCorrect ? AppColors.success : AppColors.error), const SizedBox(width: 6), Text(_wasCorrect ? 'SEQUENCE MASTERED!' : 'SEQUENCE INCORRECT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _wasCorrect ? AppColors.success : AppColors.error))]),
+                                  const SizedBox(height: 6),
+                                  Text(ch.explanation, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary)),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.35) : AppColors.border)),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(_wasCorrect ? 'YOUR SEQUENCE (CORRECT)' : 'CORRECT SEQUENCE', style: TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: _wasCorrect ? AppColors.success : AppColors.textTertiary)),
+                                        const SizedBox(height: 6),
+                                        ...ch.sequenceBlocks.where((b) => ch.correctOrder.contains(b.id)).toList().asMap().entries.map((e) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 4),
+                                              child: Row(children: [
+                                                Container(width: 22, height: 22, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.success.withValues(alpha: 0.12), border: Border.all(color: AppColors.success)), child: Text('${e.key + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.success))),
+                                                const SizedBox(width: 8),
+                                                Expanded(child: Text(e.value.label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600))),
+                                                const Icon(Icons.arrow_downward_rounded, size: 12, color: AppColors.textTertiary),
+                                              ]),
+                                            )),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_wasCorrect) ...[
+                                    const SizedBox(height: 6),
+                                    Text('+${GameScoring.scoreForHit(difficulty: ch.difficulty, combo: _combo.current, responseTimeSeconds: 3)} ${_combo.label}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success)),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ],
                           const SizedBox(height: 16),
                           Text('AVAILABLE BLOCKS', style: const TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
@@ -350,63 +373,101 @@ class _SequenceMasterScreenState extends ConsumerState<SequenceMasterScreen> {
                             onTap: _onTapAvailableArrange,
                           ),
                         ] else ...[
-                          // Complete mode: Show sequence with missing slots
-                          Text('COMPLETE THE SEQUENCE', style: const TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: AppColors.surfaceElevated, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: _showResult ? (_wasCorrect ? AppColors.success : AppColors.error) : AppColors.border, width: _showResult ? 1.6 : 1.0)),
-                            child: Column(
-                              children: List.generate(ch.sequenceBlocks.length, (i) {
-                                final isMissing = ch.missingPositions?.contains(i) ?? false;
-                                final block = ch.sequenceBlocks[i];
-                                final candidate = isMissing ? ch.candidateBlocks?.firstWhere((c) => c.id == _selectedComplete, orElse: () => ch.candidateBlocks!.first) : null;
-                                return Column(
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                      decoration: BoxDecoration(
-                                        color: isMissing
-                                            ? (_showResult
-                                                ? (_wasCorrect ? AppColors.success.withValues(alpha: 0.12) : AppColors.error.withValues(alpha: 0.12))
-                                                : (_selectedComplete != null ? AppColors.warning.withValues(alpha: 0.14) : AppColors.surfaceHigh))
-                                            : AppColors.surface,
-                                        borderRadius: BorderRadius.circular(AppRadius.md),
-                                        border: Border.all(color: isMissing ? (_showResult ? (_wasCorrect ? AppColors.success : AppColors.error) : (_selectedComplete != null ? AppColors.warning : AppColors.border)) : AppColors.border, width: isMissing ? 1.4 : 1.0),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 28,
-                                            height: 28,
-                                            alignment: Alignment.center,
-                                            decoration: BoxDecoration(shape: BoxShape.circle, color: isMissing ? AppColors.warning.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.12), border: Border.all(color: isMissing ? AppColors.warning : AppColors.primary)),
-                                            child: Text('${i + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isMissing ? AppColors.warning : AppColors.primary)),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              isMissing ? (_selectedComplete != null ? candidate!.label : '???') : block.label,
-                                              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: isMissing && _selectedComplete == null ? AppColors.textTertiary : AppColors.textPrimary),
+                          GameChallengeSurface(
+                            accent: identity.accent,
+                            title: 'SEQUENCE BOARD',
+                            icon: identity.icon,
+                            subtitle: _selectedComplete != null ? '1 SELECTED' : 'SELECT MISSING',
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: AppColors.surfaceElevated, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: _showResult ? (_wasCorrect ? AppColors.success : AppColors.error) : AppColors.border, width: _showResult ? 1.6 : 1.0)),
+                              child: Column(
+                                children: List.generate(ch.sequenceBlocks.length, (i) {
+                                  final isMissing = ch.missingPositions?.contains(i) ?? false;
+                                  final block = ch.sequenceBlocks[i];
+                                  final candidate = isMissing ? ch.candidateBlocks?.firstWhere((c) => c.id == _selectedComplete, orElse: () => ch.candidateBlocks!.first) : null;
+                                  return Column(
+                                    children: [
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: isMissing
+                                              ? (_showResult
+                                                  ? (_wasCorrect ? AppColors.success.withValues(alpha: 0.12) : AppColors.error.withValues(alpha: 0.12))
+                                                  : (_selectedComplete != null ? AppColors.warning.withValues(alpha: 0.14) : AppColors.surfaceHigh))
+                                              : AppColors.surface,
+                                          borderRadius: BorderRadius.circular(AppRadius.md),
+                                          border: Border.all(color: isMissing ? (_showResult ? (_wasCorrect ? AppColors.success : AppColors.error) : (_selectedComplete != null ? AppColors.warning : AppColors.border)) : AppColors.border, width: isMissing ? 1.4 : 1.0),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 28,
+                                              height: 28,
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(shape: BoxShape.circle, color: isMissing ? AppColors.warning.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.12), border: Border.all(color: isMissing ? AppColors.warning : AppColors.primary)),
+                                              child: Text('${i + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isMissing ? AppColors.warning : AppColors.primary)),
                                             ),
-                                          ),
-                                          if (isMissing && _showResult)
-                                            Icon(_wasCorrect ? Icons.check_rounded : Icons.close_rounded, size: 16, color: _wasCorrect ? AppColors.success : AppColors.error)
-                                          else if (!isMissing)
-                                            const Icon(Icons.check_circle_outline_rounded, size: 14, color: AppColors.textTertiary),
-                                        ],
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                isMissing ? (_selectedComplete != null ? candidate!.label : '???') : block.label,
+                                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: isMissing && _selectedComplete == null ? AppColors.textTertiary : AppColors.textPrimary),
+                                              ),
+                                            ),
+                                            if (isMissing && _showResult)
+                                              Icon(_wasCorrect ? Icons.check_rounded : Icons.close_rounded, size: 16, color: _wasCorrect ? AppColors.success : AppColors.error)
+                                            else if (!isMissing)
+                                              const Icon(Icons.check_circle_outline_rounded, size: 14, color: AppColors.textTertiary),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    if (i < ch.sequenceBlocks.length - 1) const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Icon(Icons.arrow_downward_rounded, size: 14, color: AppColors.textTertiary)),
-                                  ],
-                                );
-                              }),
+                                      if (i < ch.sequenceBlocks.length - 1) const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Icon(Icons.arrow_downward_rounded, size: 14, color: AppColors.textTertiary)),
+                                    ],
+                                  );
+                                }),
+                              ),
                             ),
                           ),
                           if (_showResult) ...[
                             const SizedBox(height: 12),
-                            _FeedbackCard(wasCorrect: _wasCorrect, explanation: ch.explanation, correctBlocks: ch.sequenceBlocks, scoreDelta: _wasCorrect ? GameScoring.scoreForHit(difficulty: ch.difficulty, combo: _combo.current, responseTimeSeconds: 3) : 0, comboLabel: _combo.label),
+                            GameFeedbackSurface(
+                              isCorrect: _wasCorrect,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [Icon(_wasCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: _wasCorrect ? AppColors.success : AppColors.error), const SizedBox(width: 6), Text(_wasCorrect ? 'SEQUENCE MASTERED!' : 'SEQUENCE INCORRECT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _wasCorrect ? AppColors.success : AppColors.error))]),
+                                  const SizedBox(height: 6),
+                                  Text(ch.explanation, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary)),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.35) : AppColors.border)),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(_wasCorrect ? 'YOUR SEQUENCE (CORRECT)' : 'CORRECT SEQUENCE', style: TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: _wasCorrect ? AppColors.success : AppColors.textTertiary)),
+                                        const SizedBox(height: 6),
+                                        ...ch.sequenceBlocks.asMap().entries.map((e) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 4),
+                                              child: Row(children: [
+                                                Container(width: 22, height: 22, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.success.withValues(alpha: 0.12), border: Border.all(color: AppColors.success)), child: Text('${e.key + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.success))),
+                                                const SizedBox(width: 8),
+                                                Expanded(child: Text(e.value.label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600))),
+                                                const Icon(Icons.arrow_downward_rounded, size: 12, color: AppColors.textTertiary),
+                                              ]),
+                                            )),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_wasCorrect) ...[
+                                    const SizedBox(height: 6),
+                                    Text('+${GameScoring.scoreForHit(difficulty: ch.difficulty, combo: _combo.current, responseTimeSeconds: 3)} ${_combo.label}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success)),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ],
                           const SizedBox(height: 16),
                           Text('CANDIDATE BLOCKS', style: const TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),

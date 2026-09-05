@@ -10,7 +10,9 @@ import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/audio/game_sound_controller.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
@@ -197,6 +199,7 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
   }
 
   Widget _buildWideLayout() {
+    final identity = GameVisualRegistry.of(GameType.dragDrop);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -204,55 +207,58 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
         children: [
           Expanded(
             flex: 5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('DRAG ITEMS', style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: _items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) {
-                      final item = _items[i];
-                      final placed = _placements[item.id];
-                      final fb = _feedback[item.id];
-                      return _DraggableCard(item: item, isPlaced: placed != null, feedback: fb);
-                    },
-                  ),
+            child: GameChallengeSurface(
+              accent: identity.accent,
+              title: 'DRAG ITEMS',
+              icon: identity.icon,
+              subtitle: '${_placements.values.where((v) => v != null).length}/${_items.length} PLACED',
+              child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * 0.55,
+                child: ListView.separated(
+                  itemCount: _items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final item = _items[i];
+                    final placed = _placements[item.id];
+                    final fb = _feedback[item.id];
+                    return _DraggableCard(item: item, isPlaced: placed != null, feedback: fb);
+                  },
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             flex: 6,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('DROP ZONES', style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: _zones.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      final zone = _zones[i];
-                      final itemsInZone = _items.where((it) => _placements[it.id] == zone).toList();
-                      return _DropZone(zone: zone, items: itemsInZone, onAccept: (item) => _onDrop(item, zone));
-                    },
+            child: GameChallengeSurface(
+              accent: identity.accent,
+              title: 'DROP ZONES',
+              icon: Icons.flag_rounded,
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 420,
+                    child: ListView.separated(
+                      itemCount: _zones.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final zone = _zones[i];
+                        final itemsInZone = _items.where((it) => _placements[it.id] == zone).toList();
+                        return _DropZone(zone: zone, items: itemsInZone, onAccept: (item) => _onDrop(item, zone));
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _checkCompletion() ? _finish : null,
-                    icon: const Icon(Icons.check_rounded),
-                    label: const Text('COMPLETE CHALLENGE'),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _checkCompletion() ? _finish : null,
+                      icon: const Icon(Icons.check_rounded),
+                      label: const Text('COMPLETE CHALLENGE'),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -261,39 +267,47 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
   }
 
   Widget _buildNarrowLayout() {
+    final identity = GameVisualRegistry.of(GameType.dragDrop);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Zones first (targets)
-          const Align(alignment: Alignment.centerLeft, child: Text('DROP ZONES', style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary))),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 180,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _zones.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, i) {
-                final zone = _zones[i];
-                final itemsInZone = _items.where((it) => _placements[it.id] == zone).toList();
-                return SizedBox(width: 180, child: _DropZone(zone: zone, items: itemsInZone, onAccept: (item) => _onDrop(item, zone)));
-              },
+          // Zones — premium challenge surface with identity accent
+          GameChallengeSurface(
+            accent: identity.accent,
+            title: 'DROP ZONES',
+            icon: Icons.flag_rounded,
+            child: SizedBox(
+              height: 180,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _zones.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, i) {
+                  final zone = _zones[i];
+                  final itemsInZone = _items.where((it) => _placements[it.id] == zone).toList();
+                  return SizedBox(width: 180, child: _DropZone(zone: zone, items: itemsInZone, onAccept: (item) => _onDrop(item, zone)));
+                },
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          const Align(alignment: Alignment.centerLeft, child: Text('DRAG ITEMS', style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: AppColors.textTertiary))),
-          const SizedBox(height: 10),
           Expanded(
-            child: ListView.separated(
-              itemCount: _items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, i) {
-                final item = _items[i];
-                final placed = _placements[item.id];
-                final fb = _feedback[item.id];
-                return _DraggableCard(item: item, isPlaced: placed != null, feedback: fb);
-              },
+            child: GameChallengeSurface(
+              accent: identity.accent,
+              title: 'DRAG ITEMS',
+              icon: identity.icon,
+              subtitle: '${_placements.values.where((v) => v != null).length}/${_items.length} PLACED',
+              child: ListView.separated(
+                itemCount: _items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, i) {
+                  final item = _items[i];
+                  final placed = _placements[item.id];
+                  final fb = _feedback[item.id];
+                  return _DraggableCard(item: item, isPlaced: placed != null, feedback: fb);
+                },
+              ),
             ),
           ),
           const SizedBox(height: 10),

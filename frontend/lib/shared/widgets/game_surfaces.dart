@@ -602,7 +602,7 @@ class GameFeedbackSurface extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(shape: BoxShape.circle, color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.16), border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.45))),
-            child: Icon(isCorrect ? Icons.check_rounded : Icons.close_rounded, size: 16, color: isCorrect ? AppColors.success : AppColors.error),
+            child: Icon(isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: isCorrect ? AppColors.success : AppColors.error),
           ),
           const SizedBox(width: 10),
           Expanded(child: child),

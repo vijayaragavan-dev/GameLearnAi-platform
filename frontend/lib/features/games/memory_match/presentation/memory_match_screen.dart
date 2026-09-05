@@ -12,7 +12,9 @@ import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/audio/game_sound_controller.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
@@ -236,6 +238,7 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
       child: LayoutBuilder(builder: (context, constraints) {
         final isWide = constraints.maxWidth > 700;
         final crossAxisCount = isWide ? 4 : 3;
+        final identity = GameVisualRegistry.of(GameType.memoryMatch);
         // On narrow, adjust card aspect to avoid overflow
         return Padding(
           padding: const EdgeInsets.all(16),

@@ -9,7 +9,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
+import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
@@ -272,6 +275,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
   @override
   Widget build(BuildContext context) {
     final progress = _board.size == 0 ? 0.0 : _state.currentPosition / _board.size;
+    final identity = GameVisualRegistry.of(GameType.snakeAndLadder);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -279,53 +283,34 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
           SafeArea(
             child: Column(
               children: [
-                // HUD
-                Container(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  decoration: BoxDecoration(color: AppColors.surface.withValues(alpha: 0.92), border: Border(bottom: BorderSide(color: AppColors.border))),
-                  child: Column(
+                GameHud(
+                  score: _score,
+                  progress: progress,
+                  progressLabel: 'POS ${_state.currentPosition} / ${_board.size}',
+                  timeRemaining: _fmt(_timer.remaining),
+                  combo: _combo,
+                  difficultyLabel: _difficulty.displayName,
+                  accent: identity.accent,
+                  gameIcon: identity.icon,
+                  gameTitle: GameType.snakeAndLadder.displayName,
+                  onPause: () => setState(() { _paused = true; _timer.pause(); }),
+                ),
+                // Preserve lives/resets/roll indicator outside HUD so semantics/tests still find them
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.casino_rounded, size: 14, color: Color(0xFFF59E0B)),
-                          const SizedBox(width: 6),
-                          const Text('SNAKE & LADDER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: Color(0xFFF59E0B))),
-                          const Spacer(),
-                          Row(children: [const Icon(Icons.star_rounded, size: 18, color: AppColors.xp), const SizedBox(width: 4), Text('$_score', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.xp))]),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: _timerColor().withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: _timerColor().withValues(alpha: 0.4))),
-                            child: Row(children: [Icon(Icons.timer_outlined, size: 14, color: _timerColor()), const SizedBox(width: 5), Text(_fmt(_timer.remaining), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor()))]),
-                          ),
-                          IconButton(tooltip: 'Pause', onPressed: () => setState(() { _paused = true; _timer.pause(); }), icon: const Icon(Icons.pause_rounded, size: 18), constraints: const BoxConstraints.tightFor(width: 36, height: 36), padding: EdgeInsets.zero),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(borderRadius: BorderRadius.circular(AppRadius.pill), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: AppMotion.fast, builder: (context, v, _) => LinearProgressIndicator(value: v.clamp(0, 1), minHeight: 6, backgroundColor: AppColors.surfaceHigh, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B))))),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text('POS ${_state.currentPosition} / ${_board.size}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textTertiary, letterSpacing: 1)),
-                          const Spacer(),
-                          _LivesIndicator(lives: _state.lives),
-                          const SizedBox(width: 8),
-                          Text('RESETS $_resets', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
-                          const SizedBox(width: 8),
-                          if (_combo.current >= 2)
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(gradient: _combo.isOnFire ? AppGradients.streakFire : AppGradients.xpGold, borderRadius: BorderRadius.circular(AppRadius.pill)), child: Text(_combo.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textOnColor))),
-                        ],
-                      ),
-                      if (_state.lastRoll != null) ...[
-                        const SizedBox(height: 6),
-                        Center(child: Text('Last roll: ${_state.lastRoll}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600))),
-                      ],
+                      _LivesIndicator(lives: _state.lives),
+                      const SizedBox(width: 8),
+                      Text('RESETS $_resets', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
+                      const Spacer(),
+                      if (_state.lastRoll != null) Text('Last roll: ${_state.lastRoll}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -338,17 +323,19 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                           const SizedBox(height: 10),
                         ],
                         if (_feedback != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(color: (_showSnake || _showLadder) ? AppColors.warning.withValues(alpha: 0.1) : AppColors.surface, borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: (_showSnake || _showLadder) ? AppColors.warning.withValues(alpha: 0.3) : AppColors.border)),
+                          GameFeedbackSurface(
+                            isCorrect: _showLadder ? true : _showSnake ? false : true,
+                            accent: identity.accent,
                             child: Text(_feedback!, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: (_showSnake || _showLadder) ? AppColors.warning : AppColors.textSecondary), textAlign: TextAlign.center),
                           ),
                           const SizedBox(height: 10),
                         ],
-                        // Board
-                        Container(
+                        // Board — premium challenge surface with identity accent
+                        GameChallengeSurface(
+                          accent: identity.accent,
+                          title: 'ADVENTURE BOARD',
+                          icon: identity.icon,
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.border)),
                           child: Column(
                             children: [
                               Row(
@@ -360,7 +347,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                                   Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: AppColors.surfaceHigh, borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: AppColors.border)), child: Text('${_board.size} CELLS', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary))),
                                 ],
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 6),
                               // Board grid 10x10
                               GridView.builder(
                                 shrinkWrap: true,
@@ -435,7 +422,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                                   );
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -451,7 +438,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 6),
                         // Roll button
                         FilledButton.icon(
                           onPressed: (_state.challengeActive || _showChallenge || _state.isGameOver || _state.isFinished || _state.isRolling) ? null : _onRoll,
@@ -459,12 +446,12 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                           label: const Text('ROLL', style: TextStyle(letterSpacing: 1.4, fontWeight: FontWeight.w800)),
                           style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 54), backgroundColor: const Color(0xFFF59E0B), disabledBackgroundColor: AppColors.surfaceHigh, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Center(child: Text(_state.challengeActive || _showChallenge ? 'Complete challenge to continue' : 'Roll to move', style: const TextStyle(fontSize: 11, color: AppColors.textTertiary))),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 6),
                         // Challenge panel
                         if (_showChallenge && _currentChallenge != null) _buildChallengePanel(_currentChallenge!),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         TextButton(onPressed: () => context.pop(), child: const Text('EXIT GAME')),
                       ],
                     ),

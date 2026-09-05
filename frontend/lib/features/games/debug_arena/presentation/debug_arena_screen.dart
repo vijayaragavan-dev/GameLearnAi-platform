@@ -8,12 +8,15 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
+import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
 import '../data/debug_challenges.dart';
 import '../models/debug_challenge.dart';
@@ -175,6 +178,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
     }
     final ch = _challenges[_index];
     final progress = (_index + (_showResult ? 1 : 0)) / _challenges.length;
+    final identity = GameVisualRegistry.of(GameType.debugArena);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -183,53 +187,26 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
           SafeArea(
             child: Column(
               children: [
-                // HUD — custom for Debug Arena with lives + level
-                Container(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  decoration: BoxDecoration(color: AppColors.surface.withValues(alpha: 0.92), border: Border(bottom: BorderSide(color: AppColors.border))),
-                  child: Column(
+                GameHud(
+                  score: _score,
+                  progress: progress,
+                  progressLabel: 'CHALLENGE ${_index + 1} / ${_challenges.length}',
+                  timeRemaining: _fmt(_timer.remaining),
+                  combo: _combo,
+                  difficultyLabel: _difficulty.displayName,
+                  accent: identity.accent,
+                  gameIcon: identity.icon,
+                  gameTitle: GameType.debugArena.displayName,
+                  onPause: () => setState(() { _paused = true; _timer.pause(); }),
+                ),
+                // Preserve lives indicator outside HUD so tests and UX still see hearts
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: AppColors.primary.withValues(alpha: 0.45))),
-                            child: Text('LEVEL ${ch.level.number}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: AppColors.secondary.withValues(alpha: 0.45))),
-                            child: Text(ch.bugCategory.displayName.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.secondary)),
-                          ),
-                          const Spacer(),
-                          Row(children: [const Icon(Icons.star_rounded, size: 18, color: AppColors.xp), const SizedBox(width: 4), Text('$_score', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.xp))]),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: _timerColor().withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: _timerColor().withValues(alpha: 0.4))),
-                            child: Row(children: [Icon(Icons.timer_outlined, size: 14, color: _timerColor()), const SizedBox(width: 5), Text(_fmt(_timer.remaining), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor()))]),
-                          ),
-                          IconButton(tooltip: 'Pause', onPressed: () => setState(() { _paused = true; _timer.pause(); }), icon: const Icon(Icons.pause_rounded, size: 18), constraints: const BoxConstraints.tightFor(width: 36, height: 36), padding: EdgeInsets.zero),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(borderRadius: BorderRadius.circular(AppRadius.pill), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: AppMotion.fast, builder: (context, value, _) => LinearProgressIndicator(value: value.clamp(0, 1), minHeight: 6, backgroundColor: AppColors.surfaceHigh, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary)))),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text('CHALLENGE ${_index + 1} / ${_challenges.length}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textTertiary, letterSpacing: 1)),
-                          const Spacer(),
-                          _LivesIndicator(lives: _lives),
-                          const SizedBox(width: 8),
-                          if (_combo.current >= 2)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(gradient: _combo.isOnFire ? AppGradients.streakFire : AppGradients.xpGold, borderRadius: BorderRadius.circular(AppRadius.pill)),
-                              child: Text(_combo.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textOnColor)),
-                            ),
-                        ],
-                      ),
+                      _LivesIndicator(lives: _lives),
+                      const Spacer(),
+                      Text(ch.bugCategory.displayName.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -245,22 +222,26 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
                           decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.error.withValues(alpha: 0.35))),
                           child: Row(children: [Container(width: 32, height: 32, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.error.withValues(alpha: 0.18), border: Border.all(color: AppColors.error)), child: const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.error)), const SizedBox(width: 10), const Expanded(child: Text('SYSTEM ERROR DETECTED', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: AppColors.error)))]),
                         ),
-                        const SizedBox(height: 14),
-                        // Topic + language badge
-                        Row(children: [Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: AppColors.surfaceHigh, borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: AppColors.border)), child: Text(ch.language.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary))), const SizedBox(width: 8), Text(ch.topic, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary, fontWeight: FontWeight.w600)), const Spacer(), Text(ch.level.label, style: const TextStyle(fontSize: 10, letterSpacing: 1, fontWeight: FontWeight.w700, color: AppColors.textTertiary))]),
+                         const SizedBox(height: 14),
+                        Row(children: [Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: AppColors.surfaceHigh, borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: AppColors.border)), child: Text(ch.language.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary))), const SizedBox(width: 8), Text(ch.topic, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary, fontWeight: FontWeight.w600)), const Spacer()]),
+                        Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(top: 4), child: Text('LEVEL ${ch.level.index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.textTertiary)))),
                         const SizedBox(height: 12),
-                        // Code block
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.borderStrong)),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(children: [const Icon(Icons.code_rounded, size: 14, color: AppColors.secondary), const SizedBox(width: 6), Text('${ch.language} • ${ch.title}', style: const TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.w600)), const Spacer(), if (ch.hint != null) const Icon(Icons.lightbulb_outline_rounded, size: 14, color: AppColors.textTertiary)]),
-                              const SizedBox(height: 10),
-                              SelectableText(ch.buggyCode, style: const TextStyle(fontFamily: 'monospace', fontSize: 13.5, height: 1.6, color: AppColors.textPrimary)),
-                            ],
+                        GameChallengeSurface(
+                          accent: identity.accent,
+                          title: 'DEBUG ARENA',
+                          icon: identity.icon,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.borderStrong)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [const Icon(Icons.code_rounded, size: 14, color: AppColors.secondary), const SizedBox(width: 6), Text('${ch.language} • ${ch.title}', style: const TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.w600)), const Spacer(), if (ch.hint != null) const Icon(Icons.lightbulb_outline_rounded, size: 14, color: AppColors.textTertiary)]),
+                                const SizedBox(height: 10),
+                                SelectableText(ch.buggyCode, style: const TextStyle(fontFamily: 'monospace', fontSize: 13.5, height: 1.6, color: AppColors.textPrimary)),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -293,13 +274,12 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
                         // Inline feedback
                         if (_showResult) ...[
                           const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.1) : AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.4) : AppColors.error.withValues(alpha: 0.4))),
+                          GameFeedbackSurface(
+                            isCorrect: _wasCorrect,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(children: [Icon(_wasCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: _wasCorrect ? AppColors.success : AppColors.error), const SizedBox(width: 6), Text(_wasCorrect ? 'BUG FOUND! +${GameScoring.scoreForHit(difficulty: ch.difficulty, combo: _combo.current, responseTimeSeconds: 3)}' : 'WRONG DIAGNOSIS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _wasCorrect ? AppColors.success : AppColors.error))]),
+                                Text(_wasCorrect ? 'BUG FOUND! +${GameScoring.scoreForHit(difficulty: ch.difficulty, combo: _combo.current, responseTimeSeconds: 3)}' : 'WRONG DIAGNOSIS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _wasCorrect ? AppColors.success : AppColors.error)),
                                 const SizedBox(height: 6),
                                 Text(ch.explanation, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary)),
                                 if (ch.fixedCode != null && _wasCorrect) ...[

@@ -8,12 +8,15 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
+import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
 import '../data/mystery_cases.dart';
 import '../models/mystery_case.dart';
@@ -210,6 +213,7 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
     final c = _current;
     final progress = (_index + (_showCaseResult && _wasCorrect ? 1 : 0)) / _cases.length;
     final evidenceProgress = c.requiredEvidence == 0 ? 1.0 : (_collected.length / c.requiredEvidence).clamp(0.0, 1.0);
+    final identity = GameVisualRegistry.of(GameType.mysteryCase);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -218,41 +222,25 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
           SafeArea(
             child: Column(
               children: [
-                // HUD
-                Container(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  decoration: BoxDecoration(color: AppColors.surface.withValues(alpha: 0.92), border: Border(bottom: BorderSide(color: AppColors.border))),
-                  child: Column(
+                GameHud(
+                  score: _score,
+                  progress: progress,
+                  progressLabel: 'CASE ${_index + 1} / ${_cases.length}',
+                  timeRemaining: _fmt(_timer.remaining),
+                  combo: _combo,
+                  difficultyLabel: _difficulty.displayName,
+                  accent: identity.accent,
+                  gameIcon: identity.icon,
+                  gameTitle: GameType.mysteryCase.displayName,
+                  onPause: () => setState(() { _paused = true; _timer.pause(); }),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.search_rounded, size: 14, color: Color(0xFF8B5CF6)),
-                          const SizedBox(width: 6),
-                          const Text('MYSTERY CASE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: Color(0xFF8B5CF6))),
-                          const Spacer(),
-                          Row(children: [const Icon(Icons.star_rounded, size: 18, color: AppColors.xp), const SizedBox(width: 4), Text('$_score', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.xp))]),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(color: _timerColor().withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: _timerColor().withValues(alpha: 0.4))),
-                            child: Row(children: [Icon(Icons.timer_outlined, size: 14, color: _timerColor()), const SizedBox(width: 5), Text(_fmt(_timer.remaining), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor()))]),
-                          ),
-                          IconButton(tooltip: 'Pause', onPressed: () => setState(() { _paused = true; _timer.pause(); }), icon: const Icon(Icons.pause_rounded, size: 18), constraints: const BoxConstraints.tightFor(width: 36, height: 36), padding: EdgeInsets.zero),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(borderRadius: BorderRadius.circular(AppRadius.pill), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: progress), duration: AppMotion.fast, builder: (context, value, _) => LinearProgressIndicator(value: value.clamp(0, 1), minHeight: 6, backgroundColor: AppColors.surfaceHigh, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6))))),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text('CASE ${_index + 1} / ${_cases.length}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textTertiary, letterSpacing: 1)),
-                          const Spacer(),
-                          _LivesIndicator(lives: _lives),
-                          const SizedBox(width: 8),
-                          if (_combo.current >= 2)
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(gradient: _combo.isOnFire ? AppGradients.streakFire : AppGradients.xpGold, borderRadius: BorderRadius.circular(AppRadius.pill)), child: Text(_combo.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textOnColor))),
-                        ],
-                      ),
+                      _LivesIndicator(lives: _lives),
+                      const Spacer(),
+                      Text('EVIDENCE  ${_collected.length} / ${c.requiredEvidence}', style: const TextStyle(fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: Color(0xFF8B5CF6))),
                     ],
                   ),
                 ),
@@ -374,13 +362,22 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
   }
 
   Widget _buildInvestigationBoard(MysteryCase c, double evidenceProgress) {
+    final identity = GameVisualRegistry.of(GameType.mysteryCase);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Case objective header
-          Container(
+          GameChallengeSurface(
+            accent: identity.accent,
+            title: 'CASE FILE',
+            icon: identity.icon,
+            subtitle: c.topic.toUpperCase(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Case objective header
+                Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF8B5CF6).withValues(alpha: 0.14), AppColors.surfaceElevated]), borderRadius: BorderRadius.circular(AppRadius.xl), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.30))),
             child: Column(
@@ -527,6 +524,9 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
               );
             },
           ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           // Deduction / Solutions
           Container(
@@ -574,9 +574,8 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
                 ],
                 if (_showCaseResult) ...[
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.1) : AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: _wasCorrect ? AppColors.success.withValues(alpha: 0.4) : AppColors.error.withValues(alpha: 0.4))),
+                  GameFeedbackSurface(
+                    isCorrect: _wasCorrect,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
