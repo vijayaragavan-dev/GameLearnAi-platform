@@ -155,9 +155,9 @@ void main() {
       expect(find.text('85%'), findsOneWidget);
       // Status icon for EXCELLENT should be star
       expect(find.byIcon(Icons.star_rounded), findsWidgets);
-      // Score, combo, time
-      expect(find.text('420'), findsOneWidget);
-      expect(find.text('x3'), findsOneWidget);
+      // Score, combo, time — premium shows score dominant + stat card
+      expect(find.text('420'), findsWidgets);
+      expect(find.text('x3'), findsWidgets);
       // Replay button
       expect(find.text('PLAY AGAIN'), findsOneWidget);
       expect(find.text('CONTINUE'), findsOneWidget);
