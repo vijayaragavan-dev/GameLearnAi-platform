@@ -18,6 +18,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/game_visual_identity.dart';
 import '../../../core/theme/subject_visual_identity.dart';
 import '../../../core/utils/formatters.dart';
+import '../../leaderboard/widgets/dashboard_leaderboard_teaser.dart';
 import '../../../shared/widgets/achievement_icon.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/badges.dart';
@@ -383,6 +384,11 @@ class _DashboardBody extends StatelessWidget {
 
         // Streak prominence (also part of achievements)
         _staggered(i++, _StreakPreview(dashboard: d)),
+        const SizedBox(height: 18),
+
+        // Champions Arena teaser — overall rank via myPosition (not full leaderboard)
+        _staggered(i++, const SectionHeader(title: 'Champions Arena')),
+        _staggered(i++, const DashboardLeaderboardTeaser()),
         const SizedBox(height: 18),
 
         // Keep existing Phase 2 strips as compact density helpers (not fabricating)

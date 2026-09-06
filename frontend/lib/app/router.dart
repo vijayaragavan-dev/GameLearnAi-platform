@@ -47,6 +47,7 @@ import '../features/games/puzzle_arena/presentation/puzzle_arena_screen.dart';
 import '../features/games/connectivity_lab/presentation/connectivity_lab_screen.dart';
 import '../features/games/snake_and_ladder/presentation/snake_and_ladder_screen.dart';
 import '../features/design_showcase/design_showcase_screen.dart';
+import '../features/leaderboard/presentation/champions_arena_screen.dart';
 
 /// Route builder helpers keep navigation strings in one place.
 abstract final class Routes {
@@ -63,6 +64,7 @@ abstract final class Routes {
   static const achievements = '/achievements';
   static const streak = '/streak';
   static const settings = '/settings';
+  static const arena = '/arena';
   // DEV ONLY — not in production nav
   static const designShowcase = '/design-showcase';
 
@@ -547,6 +549,14 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
           ),
           state: s,
           begin: const Offset(1, 0),
+        ),
+      ),
+      GoRoute(
+        path: Routes.arena,
+        pageBuilder: (_, s) => _page(
+          child: ChampionsArenaScreen(initialSubjectId: s.uri.queryParameters['subjectId']),
+          state: s,
+          begin: const Offset(0, 0.06),
         ),
       ),
     ],
