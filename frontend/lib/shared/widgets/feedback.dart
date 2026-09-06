@@ -416,9 +416,11 @@ class OfflineBanner extends StatelessWidget {
 
 /// Compact inline empty note used inside cards/sections.
 class EmptyMiniCard extends StatelessWidget {
-  const EmptyMiniCard({super.key, required this.text});
+  const EmptyMiniCard({super.key, required this.text, this.icon, this.action});
 
   final String text;
+  final IconData? icon;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -433,14 +435,21 @@ class EmptyMiniCard extends StatelessWidget {
           color: isDark ? AppColors.border : AppLightColors.border,
         ),
       ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12.5,
-          color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+          const SizedBox(height: 6),
+        ],
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12.5,
+            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+          ),
         ),
-      ),
+        if (action != null) ...[const SizedBox(height: 10), action!],
+      ]),
     );
   }
 }

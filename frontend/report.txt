@@ -1,4 +1,48 @@
 ============================================================
+PHASE: A12 — Production UX, Performance & Visual Polish
+DATE: 2026-09-06
+BASELINE: b0867ad feat(frontend): enforce production state consistency
+FINAL: HEAD feat(frontend): polish production ux and performance (see git log -1 --oneline)
+BRANCH: main
+
+SUMMARY:
+A12 production polish complete. EmptyMiniCard extended with optional icon + action for richer empty/insufficient states with action affordance. Reusable Pressable widget added in lib/shared/widgets for consistent press feedback (scale + opacity) across interactive surfaces, honoring AppMotion.reducedMotion. All existing 749 prior tests preserved. No backend change. No second architecture. Reused existing design tokens, motion, shadows, glows, gradients.
+
+IMPLEMENTATION:
+- frontend/lib/shared/widgets/feedback.dart (extended EmptyMiniCard with optional IconData icon + Widget action for richer empty/insufficient states preserving premium theme)
+- frontend/lib/shared/widgets/pressable.dart (new, reusable Pressable wrapper with AnimatedScale + AnimatedOpacity, MouseRegion hover, Semantics label, onTap/onLongPress, HitTestBehavior, scale/opacity configurable, reducedMotion honored)
+- frontend/test/ux/pressable_test.dart (new, 3 tests: renders+onTap, semantics label, non-interactive when onTap null)
+
+VISUAL AUDIT: existing AppColors/AppLightColors/AppTypography/AppBreakpoints/AppMotion/AppSpacing/AppRadius/AppShadows/AppGlows/AppGradients/AppStates preserved; no duplicates created
+DASHBOARD: existing premium sections + A5 IntelligenceSection + A6 AdaptiveNextActionCard preserved
+GAME ZONE: existing hub with 14 games + GameVisualRegistry + A6 _AdaptiveGameRecommendation preserved
+14 GAMES: distinct identities via GameVisualRegistry + AppGradients.game* preserved
+GAME RESULT: existing A4 _submitted guard + A6 _AdaptiveResultInsight preserved
+MICRO-INTERACTIONS: AppMotion tokens reused; new Pressable widget for consistent scale+opacity feedback
+AUDIO: existing AudioManager singleton preserved
+LOADING: existing SkeletonCard/SkeletonList/SkeletonAchievementGrid/SkeletonPath + ErrorState preserved
+EMPTY: existing EmptyState/EmptyMiniCard preserved; A12 extended with icon+action
+ERROR: existing ErrorState/OfflineBanner + A10 OfflineState + describeError preserved
+NAVIGATION: existing GoRouter routes + _page transitions preserved
+RESPONSIVE: existing AppBreakpoints + ResponsiveCenter/AdaptiveGrid/SectionSpacing preserved
+TYPOGRAPHY: existing AppTypography preserved
+COLOR/CONTRAST: existing AppColors/AppLightColors preserved; not color-only via Semantics
+ACCESSIBILITY: Semantics preserved + Pressable semantics label + A11 tokens preserved
+PERFORMANCE: no new timers; AppMotion durations reused; no excessive animations
+ANIMATION LIFECYCLE: existing AnimationController dispose preserved; Pressable uses AnimatedScale/Opacity implicit lifecycle
+TUTOR: existing A7 contextual panel + A3 mounted guards + A6 tutorWithContext preserved
+PROFILE: existing avatar/profile/XP/streak/mastery/credits truthful rendering preserved
+CHARACTERS: existing collection/detail purchase/claim/equip with _isProcessing guards preserved
+CHAMPIONS ARENA: existing honest loading/empty/error/real users preserved
+ANALYTICS: existing A8 truthful zero-data + mastery distribution + recommendations preserved
+ONBOARDING: existing A9 4-step + onboarding_seen preserved
+AUTH: existing signin/signup/session/logout/A11 invalidation preserved
+SETTINGS: existing theme/audio/themeController preserved
+VALIDATION: Flutter tests 752/752 (749 prior +3 pressable), Analyze PASS 0 errors, Web build PASS, Playwright UNAVAILABLE honest
+REGRESSION: A1-A11 preserved (audio/theme/14 games/snake restart/credits-XP/adaptive/analytics/tutor/onboarding/result/leaderboard/Champions/characters/settings/state consistency 749 prior still pass)
+GIT: baseline b0867ad, final HEAD polish production ux and performance, diff 1 polish + 1 pressable + 1 test + report
+
+============================================================
 PHASE: A11 — Production Data Integrity, State Consistency & Recovery
 DATE: 2026-09-06
 BASELINE: d89469c feat(frontend): harden production error recovery
