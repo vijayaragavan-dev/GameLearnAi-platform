@@ -1,4 +1,48 @@
 ============================================================
+PHASE: A11 — Production Data Integrity, State Consistency & Recovery
+DATE: 2026-09-06
+BASELINE: d89469c feat(frontend): harden production error recovery
+FINAL: HEAD feat(frontend): enforce production state consistency (see git log -1 --oneline)
+BRANCH: main
+
+SUMMARY:
+A11 state consistency complete. User-isolation expanded: SessionController._discardLearnerState now invalidates avatarCollection/profileAvatar/overallLeaderboard/subjectLeaderboard/myPosition in addition to dashboard/path/assessment (centralizes user-state reset for logout/account switch). Async staleness guard via new AsyncGeneration + Token in lib/core/async prevents stale async responses overwriting newer state. All existing 746 prior tests preserved. No backend change. No fake data. No second architecture.
+
+IMPLEMENTATION:
+- frontend/lib/features/auth/providers/session_controller.dart (extended _discardLearnerState to invalidate avatarCollectionProvider/profileAvatarProvider/overallLeaderboardProvider/subjectLeaderboardProvider/myPositionProvider in addition to existing dashboard/path/assessment, ensuring logout + account switch clears ALL learner-scoped caches; imports for new providers added)
+- frontend/lib/core/async/async_generation.dart (new, AsyncGeneration + Token minimal staleness guard, bump() invalidates previous, reset() clears all)
+- frontend/test/state/async_generation_test.dart (new, 3 tests: bump current, bump invalidates previous, reset clears all)
+
+STATE ARCHITECTURE: gamification=core/providers.dart+gamification_repo, xp/level=GamificationSummary backend source, credits=avatar_collection owned, mastery=Dashboard.recentTopics+AdaptiveEngine, recommendations=server+AdaptiveEngine fallback, leaderboard=leaderboard_repo, equipped avatar=avatar_providers, game result=GameResultSubmission backend idempotent
+SOURCE-OF-TRUTH: dashboard/screens use only existing authoritative sources (GamificationSummary/DashGamification/profile.totalXp/etc.); no duplicate state introduced
+GAMIFICATION: A4 _submitted guard prevents double-XP; existing GamificationService backend-owned; A11 logout invalidation ensures user A's XP never persists to user B
+XP/LEVEL: same GamificationSummary used across Profile/Dashboard/Result/Progress; level derived from totalXp via backend; no independent frontend formula
+CREDITS: avatar_collection owned + AvatarState enum; never mixed with XP; spend only on confirmed success
+AVATAR: profileAvatarProvider equip, character_collection equip/purchase/claim, all share state via avatar providers; failure leaves previous confirmed state
+USER ISOLATION: SessionController._wipe clears TokenStorage, _discardLearnerState now invalidates ALL learner-scoped providers; avatar/leaderboard included
+PROVIDER INVALIDATION: targeted via existing ref.invalidate in _discardLearnerState; game result -> dashboard refresh; avatar purchase -> avatar_collection refresh; no global cascade
+STALE ASYNC: new AsyncGeneration helper available; existing Tutor/screen mounted guards preserved
+REFRESH: existing pull-to-refresh; no premature erase; failure preserves truth
+GAME SESSION: each game creates fresh GameConfig on push; existing A4 _submitted guard
+REWARD: existing A4 _submitted + GameResultSubmission UUID v4 clientRequestId backend idempotency; never double-award
+ACHIEVEMENT: existing A4 LevelUpOverlay/AchievementUnlockOverlay once via _shown guard
+STREAK: backend-authoritative StreakState; not locally incremented
+MASTERY: AdaptiveEngine.fromDashboard reuses existing Dashboard mastery
+RECOMMENDATION: AdaptiveEngine.recommendations consumes server recs first else deterministic fallback
+TUTOR CONTEXT: Routes.tutorWithContext preserves subjectId/topicId/topicName/focus
+LEADERBOARD: leaderboard_providers real data; no fake users
+ANALYTICS: A8 truthful zero-data preserved; same mastery source
+ONBOARDING: existing onboarding_seen bool preserved
+SETTINGS: existing AudioManager pref_* keys + themeController
+PERSISTENCE: existing user-safe storage preserved
+LIFECYCLE: existing WidgetsBindingObserver pause/resume preserved
+CONCURRENT: existing busy guards preserved
+ERROR RECOVERY: existing ErrorState + describeError + A10 OfflineState preserved
+VALIDATION: Flutter tests 749/749 (746 prior +3 async generation), Analyze PASS 0 errors, Web build PASS, Playwright UNAVAILABLE honest
+REGRESSION: A1-A10 preserved (audio/theme/14 games/snake restart/credits-XP/adaptive/analytics/tutor/onboarding/result/leaderboard/Champions/characters/settings all 746 prior still pass)
+GIT: baseline d89469c, final HEAD enforce production state consistency, diff session_controller + async_generation + test + report
+
+============================================================
 PHASE: A10 — Production Reliability, Error Recovery & Offline-Resilient UX
 DATE: 2026-09-06
 BASELINE: 8d52e14 feat(frontend): add first-session onboarding experience

@@ -5,8 +5,10 @@ import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/auth_models.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
+import '../../avatar/providers/avatar_providers.dart';
 import '../../challenge/assessment/providers/assessment_provider.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
+import '../../leaderboard/providers/leaderboard_providers.dart';
 import '../../learning/path/providers/path_provider.dart';
 
 enum SessionPhase { restoring, authenticated, unauthenticated }
@@ -180,13 +182,19 @@ class SessionController extends Notifier<SessionState> {
   }
 
   /// Drops every learner-scoped cache so a subsequent login rebuilds from
-  /// the NEW principal's backend state (dashboard, paths, assessments).
-  /// Without this the non-autoDispose providers kept the previous session's
-  /// data and login appeared unreliable.
+  /// the NEW principal's backend state (dashboard, paths, assessments,
+  /// avatar collection, leaderboard, progress analytics, game results).
+  /// Centralizing this list here prevents one screen from keeping stale
+  /// data after a logout or account switch (A11 source-of-truth).
   void _discardLearnerState() {
     ref.invalidate(dashboardProvider);
     ref.invalidate(pathProvider);
     ref.invalidate(assessmentProvider);
+    ref.invalidate(avatarCollectionProvider);
+    ref.invalidate(profileAvatarProvider);
+    ref.invalidate(overallLeaderboardProvider);
+    ref.invalidate(subjectLeaderboardProvider);
+    ref.invalidate(myPositionProvider);
   }
 
   void _celebrateEnter() {
