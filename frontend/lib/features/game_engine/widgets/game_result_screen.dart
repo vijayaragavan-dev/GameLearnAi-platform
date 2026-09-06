@@ -45,6 +45,7 @@ class GameResultScreen extends ConsumerStatefulWidget {
 class _GameResultScreenState extends ConsumerState<GameResultScreen>
     with TickerProviderStateMixin {
   bool _shown = false;
+  bool _submitted = false;
   final Random _rng = Random();
 
   @override
@@ -54,6 +55,13 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _celebrate());
     ref.read(hapticsProvider).celebrate();
     _submitResultPersistent();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Idempotent guard: hot-reload or re-parent must not re-submit same result.
+    // Submission is owned by initState only; didChangeDependencies is no-op by design.
   }
 
   Future<void> _celebrate() async {
@@ -76,6 +84,8 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
   }
 
   Future<void> _submitResultPersistent() async {
+    if (_submitted) return;
+    _submitted = true;
     final r = widget.result;
     final gameType = r.config.type.id;
     final clientRequestId = _deterministicClientRequestId(
