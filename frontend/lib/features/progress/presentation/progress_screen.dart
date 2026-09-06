@@ -5,13 +5,16 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../core/error/user_facing_error.dart';
+import '../../../core/intelligence/learner_intelligence.dart';
 import '../../../core/models/dashboard_models.dart' hide Dashboard;
 import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/adaptive_next_action.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/recommendation_card.dart'
@@ -535,6 +538,36 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                   'Complete a few missions to reveal your skill trend.',
                             ),
                           ],
+
+                          // ── MASTERY DISTRIBUTION (A8)
+                          const SizedBox(height: 18),
+                          _MasteryDistribution(topics: topics),
+                          // ── GAME PERFORMANCE (A8)
+                          const SizedBox(height: 18),
+                          _GamePerformance(quizzes: quizzes),
+                          // ── LEARNING CONSISTENCY (A8)
+                          const SizedBox(height: 18),
+                          _ConsistencySection(streak: streak, quizzes: quizzes),
+                          // ── ACHIEVEMENT PROGRESS (A8)
+                          const SizedBox(height: 18),
+                          _AchievementProgress(summary: summary),
+                          // ── RECOMMENDED NEXT ACTION (A8) via AdaptiveEngine
+                          const SizedBox(height: 18),
+                          _ProgressRecommendedNext(topics: topics, quizzes: quizzes),
+                          // ── CONNECTIONS: Tutor / Path / Leaderboard (A8)
+                          const SizedBox(height: 18),
+                          _ProgressConnections(focusTopic: focus),
+                          const SizedBox(height: 8),
+                          // Honest historical trend note when insufficient series
+                          if (quizzes.length < 3)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: AppColors.primary.withValues(alpha: 0.14))),
+                                child: Row(children: [const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary), const SizedBox(width: 8), Expanded(child: Text('Historical trend requires 3+ completed activities. Your current view shows the latest available state.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)))]),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -546,6 +579,175 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
       ),
     );
+  }
+}
+
+class _MasteryDistribution extends StatelessWidget {
+  const _MasteryDistribution({required this.topics});
+  final List<RecentTopicMastery> topics;
+  @override
+  Widget build(BuildContext context) {
+    final mastered = topics.where((t) => t.masteryLevel == 'MASTERED').length;
+    final proficient = topics.where((t) => t.masteryLevel == 'PROFICIENT').length;
+    final developing = topics.where((t) => t.masteryLevel == 'DEVELOPING').length;
+    final beginner = topics.where((t) => t.masteryLevel == 'BEGINNER').length;
+    final total = topics.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (total == 0) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SectionHeader(title: 'Mastery distribution'), const SizedBox(height: 8), const EmptyMiniCard(text: 'Complete more learning activities to unlock deeper mastery insights.')]);
+    }
+    Widget bar(String label, int count, Color color) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(children: [
+            SizedBox(width: 90, child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))),
+            Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: total == 0 ? 0 : count / total, minHeight: 8, color: color, backgroundColor: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh))),
+            const SizedBox(width: 8),
+            Text('$count', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+          ]),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SectionHeader(title: 'Mastery distribution'),
+      const SizedBox(height: 8),
+      GameCard(child: Column(children: [bar('Mastered', mastered, AppColors.xp), bar('Strong', proficient, AppColors.success), bar('Developing', developing, AppColors.warning), bar('Needs Practice', beginner, AppColors.error)])),
+    ]);
+  }
+}
+
+class _GamePerformance extends StatelessWidget {
+  const _GamePerformance({required this.quizzes});
+  final List<RecentQuizRun> quizzes;
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (quizzes.isEmpty) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SectionHeader(title: 'Game performance'), const SizedBox(height: 8), const EmptyMiniCard(text: 'No game activity yet. Play a game to see your performance.')]);
+    }
+    // Show recent quiz performance as proxy for game performance (real data only)
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SectionHeader(title: 'Game performance'),
+      const SizedBox(height: 8),
+      GameCard(
+        child: Column(
+          children: [
+            for (final q in quizzes.take(5))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  Container(width: 32, height: 32, decoration: BoxDecoration(shape: BoxShape.circle, color: (q.score >= 80 ? AppColors.success : q.score >= 50 ? AppColors.warning : AppColors.error).withValues(alpha: 0.14)), child: Icon(q.score >= 80 ? Icons.emoji_events_rounded : q.score >= 50 ? Icons.trending_up_rounded : Icons.flag_rounded, size: 16, color: q.score >= 80 ? AppColors.success : q.score >= 50 ? AppColors.warning : AppColors.error)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(q.topicName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)), Text('${Formatters.percent(q.score)} • ${q.correctCount}/${q.totalQuestions} correct • ${Formatters.shortDate(q.submittedAt)}', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))])),
+                  const SizedBox(width: 8),
+                  MasteryBadge(score: q.score),
+                ]),
+              ),
+            const SizedBox(height: 8),
+            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadius.md)), child: Row(children: [const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary), const SizedBox(width: 8), Expanded(child: Text('Unplayed games remain clearly unplayed — complete more games to populate this view.', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)))])),
+          ],
+        ),
+      ),
+    ]);
+  }
+}
+
+class _ConsistencySection extends StatelessWidget {
+  const _ConsistencySection({required this.streak, required this.quizzes});
+  final StreakState streak;
+  final List<RecentQuizRun> quizzes;
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SectionHeader(title: 'Learning consistency'),
+      const SizedBox(height: 8),
+      GameCard(
+        child: Row(children: [
+          Expanded(child: StatCard(label: 'CURRENT STREAK', value: '${streak.currentStreakDays}', sub: 'days', tint: AppColors.streak)),
+          const SizedBox(width: 12),
+          Expanded(child: StatCard(label: 'BEST STREAK', value: '${streak.longestStreakDays}', sub: 'days', tint: AppColors.warning)),
+        ]),
+      ),
+      const SizedBox(height: 8),
+      Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)), child: Row(children: [Icon(Icons.calendar_today_rounded, size: 14, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary), const SizedBox(width: 8), Expanded(child: Text(quizzes.isEmpty ? 'No recent activity yet. Your consistency will appear after a few learning days.' : 'Recent activity: ${quizzes.length} completed ${quizzes.length == 1 ? 'mission' : 'missions'} • Keep your streak alive by learning daily.', style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)))])),
+    ]);
+  }
+}
+
+class _AchievementProgress extends StatelessWidget {
+  const _AchievementProgress({required this.summary});
+  final GamificationSummary summary;
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SectionHeader(title: 'Achievements'),
+      const SizedBox(height: 8),
+      GameCard(
+        child: Row(children: [
+          Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.xp.withValues(alpha: 0.14), border: Border.all(color: AppColors.xp.withValues(alpha: 0.32))), child: const Icon(Icons.emoji_events_rounded, size: 22, color: AppColors.xp)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${summary.unlockedAchievements} Badges earned', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)), const SizedBox(height: 2), Text('Keep completing challenges to unlock rare achievements.', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))])),
+          const SizedBox(width: 8),
+          FilledButton(onPressed: () => context.go(Routes.achievements), style: FilledButton.styleFrom(backgroundColor: AppColors.xp, foregroundColor: Colors.black), child: const Text('VIEW')),
+        ]),
+      ),
+    ]);
+  }
+}
+
+class _ProgressRecommendedNext extends StatelessWidget {
+  const _ProgressRecommendedNext({required this.topics, required this.quizzes});
+  final List<RecentTopicMastery> topics;
+  final List<RecentQuizRun> quizzes;
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Derive weak/strong via same thresholds as AdaptiveEngine for consistency
+    final weak = topics.where((t) => t.masteryScore < 40 || (t.trend == 'DECLINING' && t.masteryScore < 60)).toList()..sort((a, b) => a.masteryScore.compareTo(b.masteryScore));
+    if (weak.isNotEmpty) {
+      final w = weak.first;
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SectionHeader(title: 'Recommended next'),
+        const SizedBox(height: 8),
+        AdaptiveNextActionCard(title: 'Practice ${w.topicName}', reason: 'Mastery ${w.masteryScore.round()}% • needs practice — focused revision will help.', topicName: w.topicName, difficulty: w.currentDifficulty.isEmpty ? 'EASY' : w.currentDifficulty, gameType: 'quiz_battle', actionLabel: 'Practice', onAction: () => context.push(Routes.topic(w.topicId))),
+      ]);
+    }
+    if (topics.any((t) => t.masteryScore >= 80)) {
+      final s = topics.where((t) => t.masteryScore >= 80).first;
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SectionHeader(title: 'Recommended next'),
+        const SizedBox(height: 8),
+        AdaptiveNextActionCard(title: 'Challenge ${s.topicName}', reason: 'Strong mastery ${s.masteryScore.round()}% — ready for harder challenges.', topicName: s.topicName, difficulty: 'HARD', gameType: 'boss_battle', actionLabel: 'Challenge', onAction: () => context.push(Routes.topic(s.topicId))),
+      ]);
+    }
+    if (topics.isNotEmpty) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SectionHeader(title: 'Recommended next'),
+        const SizedBox(height: 8),
+        AdaptiveNextActionCard(title: 'Continue learning', reason: 'Keep exploring your learning path to unlock deeper insights.', actionLabel: 'Continue', onAction: () => context.go(Routes.subjects)),
+      ]);
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SectionHeader(title: 'Recommended next'),
+      const SizedBox(height: 8),
+      Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)), child: Row(children: [const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.primary), const SizedBox(width: 8), Expanded(child: Text('Complete your first assessment to unlock personalized next steps.', style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)))])),
+    ]);
+  }
+}
+
+class _ProgressConnections extends StatelessWidget {
+  const _ProgressConnections({required this.focusTopic});
+  final RecentTopicMastery? focusTopic;
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SectionHeader(title: 'Continue your journey'),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        FilledButton.icon(onPressed: () => context.push(focusTopic != null ? Routes.tutorWithContext(topicId: focusTopic!.topicId, topicName: focusTopic!.topicName, focus: focusTopic!.topicName) : Routes.tutor), icon: const Icon(Icons.psychology_rounded, size: 16), label: const Text('ASK TUTOR'), style: FilledButton.styleFrom(backgroundColor: AppColors.secondary)),
+        OutlinedButton.icon(onPressed: () => context.go(Routes.subjects), icon: const Icon(Icons.school_rounded, size: 16), label: const Text('LEARNING PATH')),
+        OutlinedButton.icon(onPressed: () => context.go(Routes.arena), icon: const Icon(Icons.leaderboard_rounded, size: 16), label: const Text('LEADERBOARD')),
+      ]),
+    ]);
   }
 }
 
