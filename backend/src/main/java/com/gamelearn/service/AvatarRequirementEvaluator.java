@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -53,11 +54,19 @@ public class AvatarRequirementEvaluator {
         if (json == null || json.isBlank() || json.trim().equals("null")) {
             return new EvaluationResult(true, List.of());
         }
-        RequirementSpec spec;
+        // Handle MySQL/H2 JSON column quirk: value may be stored as JSON string "\"{\\\"levelMin\\\":2}\""
+        String toParse = json.trim();
+        if (toParse.startsWith("\"") && toParse.endsWith("\"")) {
+            try {
+                toParse = objectMapper.readValue(toParse, String.class);
+            } catch (Exception ignored) {}
+        }
+        Map<String, Object> map;
         try {
-            spec = objectMapper.readValue(json, RequirementSpec.class);
+            map = objectMapper.readValue(toParse, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
-            // invalid config => treat as not eligible, expose as failed checklist
+            org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AvatarRequirementEvaluator.class);
+            log.warn("AVATAR_REQUIREMENT_PARSE_FAILED id={} json={} toParse={} error={}", avatar.getId(), json, toParse, e.toString());
             return new EvaluationResult(false, List.of(
                     new ChecklistItem("requirement_config", false, "invalid", "valid json")));
         }
@@ -67,20 +76,29 @@ public class AvatarRequirementEvaluator {
         LearnerProfile profile = learnerProfileRepository.findByUserId(userId).orElse(null);
         int level = profile != null ? profile.getCurrentLevel() : 1;
 
-        if (spec.levelMin != null) {
-            boolean met = level >= spec.levelMin;
-            items.add(new ChecklistItem("Level " + spec.levelMin, met, String.valueOf(level), String.valueOf(spec.levelMin)));
+        Integer levelMin = map.get("levelMin") == null ? null : ((Number) map.get("levelMin")).intValue();
+        Double syllabusCompletionMin = map.get("syllabusCompletionMin") == null ? null : ((Number) map.get("syllabusCompletionMin")).doubleValue();
+        String syllabusSubjectId = map.get("syllabusSubjectId") == null ? null : map.get("syllabusSubjectId").toString();
+        Integer streakCurrentMin = map.get("streakCurrentMin") == null ? null : ((Number) map.get("streakCurrentMin")).intValue();
+        Integer streakLongestMin = map.get("streakLongestMin") == null ? null : ((Number) map.get("streakLongestMin")).intValue();
+        Integer bossBattlesMin = map.get("bossBattlesMin") == null ? null : ((Number) map.get("bossBattlesMin")).intValue();
+        Integer masteredCountMin = map.get("masteredCountMin") == null ? null : ((Number) map.get("masteredCountMin")).intValue();
+        Double subjectMasteryAvgMin = map.get("subjectMasteryAvgMin") == null ? null : ((Number) map.get("subjectMasteryAvgMin")).doubleValue();
+
+        if (levelMin != null) {
+            boolean met = level >= levelMin;
+            items.add(new ChecklistItem("Level " + levelMin, met, String.valueOf(level), String.valueOf(levelMin)));
             eligible &= met;
         }
-        if (spec.syllabusCompletionMin != null) {
-            UUID subjectId = spec.syllabusSubjectId != null ? UUID.fromString(spec.syllabusSubjectId)
+        if (syllabusCompletionMin != null) {
+            UUID subjectId = syllabusSubjectId != null ? UUID.fromString(syllabusSubjectId)
                     : (avatar.getHomeSubject() != null ? avatar.getHomeSubject().getId() : null);
             if (subjectId == null) {
-                items.add(new ChecklistItem("Syllabus " + spec.syllabusCompletionMin + "%", false, "no subject", String.valueOf(spec.syllabusCompletionMin)));
+                items.add(new ChecklistItem("Syllabus " + syllabusCompletionMin + "%", false, "no subject", String.valueOf(syllabusCompletionMin)));
                 eligible = false;
             } else {
                 BigDecimal actual = syllabusService.syllabusCompletion(userId, subjectId);
-                BigDecimal required = BigDecimal.valueOf(spec.syllabusCompletionMin).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal required = BigDecimal.valueOf(syllabusCompletionMin).setScale(2, RoundingMode.HALF_UP);
                 boolean met = actual.compareTo(required) >= 0;
                 items.add(new ChecklistItem("Syllabus " + required.toPlainString() + "%", met,
                         actual.setScale(2, RoundingMode.HALF_UP).toPlainString() + "%",
@@ -88,31 +106,31 @@ public class AvatarRequirementEvaluator {
                 eligible &= met;
             }
         }
-        if (spec.streakCurrentMin != null) {
+        if (streakCurrentMin != null) {
             int current = streakRepository.findByUserId(userId).map(s -> s.getCurrentStreakDays()).orElse(0);
-            boolean met = current >= spec.streakCurrentMin;
-            items.add(new ChecklistItem("Streak " + spec.streakCurrentMin + " days", met, String.valueOf(current), String.valueOf(spec.streakCurrentMin)));
+            boolean met = current >= streakCurrentMin;
+            items.add(new ChecklistItem("Streak " + streakCurrentMin + " days", met, String.valueOf(current), String.valueOf(streakCurrentMin)));
             eligible &= met;
         }
-        if (spec.streakLongestMin != null) {
+        if (streakLongestMin != null) {
             int longest = streakRepository.findByUserId(userId).map(s -> s.getLongestStreakDays()).orElse(0);
-            boolean met = longest >= spec.streakLongestMin;
-            items.add(new ChecklistItem("Longest streak " + spec.streakLongestMin + " days", met, String.valueOf(longest), String.valueOf(spec.streakLongestMin)));
+            boolean met = longest >= streakLongestMin;
+            items.add(new ChecklistItem("Longest streak " + streakLongestMin + " days", met, String.valueOf(longest), String.valueOf(streakLongestMin)));
             eligible &= met;
         }
-        if (spec.bossBattlesMin != null) {
+        if (bossBattlesMin != null) {
             long count = gameResultRepository.countCompletedByUserIdAndGameType(userId, "BOSS_BATTLE");
-            boolean met = count >= spec.bossBattlesMin;
-            items.add(new ChecklistItem("Boss battles " + spec.bossBattlesMin, met, String.valueOf(count), String.valueOf(spec.bossBattlesMin)));
+            boolean met = count >= bossBattlesMin;
+            items.add(new ChecklistItem("Boss battles " + bossBattlesMin, met, String.valueOf(count), String.valueOf(bossBattlesMin)));
             eligible &= met;
         }
-        if (spec.masteredCountMin != null) {
+        if (masteredCountMin != null) {
             long count = topicMasteryRepository.countByUserIdAndMasteryLevel(userId, MasteryLevel.MASTERED);
-            boolean met = count >= spec.masteredCountMin;
-            items.add(new ChecklistItem("Mastered topics " + spec.masteredCountMin, met, String.valueOf(count), String.valueOf(spec.masteredCountMin)));
+            boolean met = count >= masteredCountMin;
+            items.add(new ChecklistItem("Mastered topics " + masteredCountMin, met, String.valueOf(count), String.valueOf(masteredCountMin)));
             eligible &= met;
         }
-        if (spec.subjectMasteryAvgMin != null) {
+        if (subjectMasteryAvgMin != null) {
             // not implemented for L1 without subject join; treat as not eligible if present
             // placeholder: keep eligible=false to avoid false unlock; wire later L2
             // For now, skip (no check) to avoid blocking seeded avatars that don't use it.
@@ -120,7 +138,9 @@ public class AvatarRequirementEvaluator {
         return new EvaluationResult(eligible, items);
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     public static class RequirementSpec {
+        public RequirementSpec() {}
         public Integer levelMin;
         public Double syllabusCompletionMin;
         public String syllabusSubjectId;

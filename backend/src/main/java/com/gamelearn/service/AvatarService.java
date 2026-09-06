@@ -8,6 +8,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gamelearn.dto.AvatarCatalogItem;
+import com.gamelearn.dto.AvatarCollectionItem;
+import com.gamelearn.dto.AvatarCollectionResponse;
+import com.gamelearn.dto.ProfileAvatarResponse;
 import com.gamelearn.entity.Avatar;
 import com.gamelearn.entity.LearnerProfile;
 import com.gamelearn.entity.User;
@@ -34,19 +39,22 @@ public class AvatarService {
     private final LearnerProfileRepository learnerProfileRepository;
     private final CreditService creditService;
     private final AvatarRequirementEvaluator requirementEvaluator;
+    private final ObjectMapper objectMapper;
 
     public AvatarService(AvatarRepository avatarRepository,
                          UserAvatarRepository userAvatarRepository,
                          UserRepository userRepository,
                          LearnerProfileRepository learnerProfileRepository,
                          CreditService creditService,
-                         AvatarRequirementEvaluator requirementEvaluator) {
+                         AvatarRequirementEvaluator requirementEvaluator,
+                         ObjectMapper objectMapper) {
         this.avatarRepository = avatarRepository;
         this.userAvatarRepository = userAvatarRepository;
         this.userRepository = userRepository;
         this.learnerProfileRepository = learnerProfileRepository;
         this.creditService = creditService;
         this.requirementEvaluator = requirementEvaluator;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -159,7 +167,7 @@ public class AvatarService {
     }
 
     /**
-     * Equip avatar (or null to reset to default). Validates ownership.
+     * Equip avatar (or null to reset to default). Validates ownership and active status.
      */
     @Transactional
     public LearnerProfile equip(UUID userId, UUID avatarId) {
@@ -175,7 +183,104 @@ public class AvatarService {
                     ErrorCode.AVATAR_NOT_OWNED.name(), "Avatar not owned");
         }
         Avatar avatar = getOrThrow(avatarId);
+        if (!avatar.isActive()) {
+            throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND.getHttpStatus(),
+                    ErrorCode.RESOURCE_NOT_FOUND.name(), "Avatar not available");
+        }
         profile.setEquippedAvatar(avatar);
         return learnerProfileRepository.save(profile);
+    }
+
+    // --- DTO mappings for L3 ---
+
+    @Transactional(readOnly = true)
+    public List<AvatarCatalogItem> catalogItems() {
+        return catalog(false).stream().map(this::toCatalogItem).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AvatarCollectionResponse collection(UUID userId) {
+        List<Avatar> catalog = catalog(false);
+        var ownedList = owned(userId);
+        var ownedIds = new java.util.HashSet<UUID>();
+        for (var ua : ownedList) ownedIds.add(ua.getAvatar().getId());
+        LearnerProfile profile = learnerProfileRepository.findByUserId(userId).orElse(null);
+        UUID equippedId = profile != null && profile.getEquippedAvatar() != null ? profile.getEquippedAvatar().getId() : null;
+        int balance = creditService.balance(userId);
+        List<AvatarCollectionItem> items = new java.util.ArrayList<>();
+        for (Avatar av : catalog) {
+            boolean owned = ownedIds.contains(av.getId());
+            boolean equipped = av.getId().equals(equippedId);
+            var eval = requirementEvaluator.evaluate(userId, av);
+            String state;
+            boolean eligible = eval.eligible();
+            Integer creditsShort = null;
+            if (equipped) state = "EQUIPPED";
+            else if (owned) state = "OWNED";
+            else if (!eligible) state = "LOCKED";
+            else if (av.getCreditCost() != null) {
+                if (balance >= av.getCreditCost()) state = "PURCHASABLE";
+                else {
+                    state = "INSUFFICIENT_CREDITS";
+                    creditsShort = av.getCreditCost() - balance;
+                }
+            } else {
+                state = "ELIGIBLE_TO_CLAIM";
+            }
+            List<AvatarCollectionItem.RequirementCheck> checks = eval.checklist().stream()
+                    .map(c -> new AvatarCollectionItem.RequirementCheck(c.label(), c.required(), c.current(), c.met()))
+                    .toList();
+            items.add(new AvatarCollectionItem(
+                    av.getId().toString(), av.getCode(), av.getDisplayName(), av.getDescription(),
+                    av.getAssetKey(), av.getRarity(), av.getCreditCost(), av.isActive(), av.getDisplayOrder(),
+                    owned, equipped, state, eligible,
+                    av.getCreditCost(), balance, creditsShort, checks));
+        }
+        AvatarCatalogItem equippedItem = null;
+        if (equippedId != null) {
+            Avatar eq = avatarRepository.findById(equippedId).orElse(null);
+            if (eq != null) equippedItem = toCatalogItem(eq);
+        }
+        return new AvatarCollectionResponse(balance, equippedId == null ? null : equippedId.toString(), equippedItem, items);
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileAvatarResponse profileAvatar(UUID userId) {
+        LearnerProfile profile = learnerProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND.getHttpStatus(),
+                        ErrorCode.RESOURCE_NOT_FOUND.name(), "Learner profile not found"));
+        Avatar equipped = profile.getEquippedAvatar();
+        if (equipped == null) {
+            AvatarCatalogItem def = new AvatarCatalogItem(
+                    "00000000-0000-0000-0000-000000000000",
+                    "initiates_spark", "Nova Spark", "Curious and bright — your first companion.",
+                    "characters/nova_spark", "INITIATE", null, true, 0, null);
+            return new ProfileAvatarResponse(null, def);
+        }
+        return new ProfileAvatarResponse(equipped.getId().toString(), toCatalogItem(equipped));
+    }
+
+    private AvatarCatalogItem toCatalogItem(Avatar av) {
+        AvatarCatalogItem.RequirementInfo req = null;
+        if (av.getRequirementJson() != null && !av.getRequirementJson().isBlank() && !"null".equals(av.getRequirementJson().trim())) {
+            try {
+                String raw = av.getRequirementJson().trim();
+                if (raw.startsWith("\"") && raw.endsWith("\"")) {
+                    try { raw = objectMapper.readValue(raw, String.class); } catch (Exception ignored) {}
+                }
+                var map = objectMapper.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+                Integer levelMin = map.get("levelMin") == null ? null : ((Number) map.get("levelMin")).intValue();
+                Double syllabusCompletionMin = map.get("syllabusCompletionMin") == null ? null : ((Number) map.get("syllabusCompletionMin")).doubleValue();
+                String syllabusSubjectId = map.get("syllabusSubjectId") == null ? null : map.get("syllabusSubjectId").toString();
+                Integer streakCurrentMin = map.get("streakCurrentMin") == null ? null : ((Number) map.get("streakCurrentMin")).intValue();
+                Integer streakLongestMin = map.get("streakLongestMin") == null ? null : ((Number) map.get("streakLongestMin")).intValue();
+                Integer bossBattlesMin = map.get("bossBattlesMin") == null ? null : ((Number) map.get("bossBattlesMin")).intValue();
+                Integer masteredCountMin = map.get("masteredCountMin") == null ? null : ((Number) map.get("masteredCountMin")).intValue();
+                req = new AvatarCatalogItem.RequirementInfo(levelMin, syllabusCompletionMin, syllabusSubjectId, streakCurrentMin, streakLongestMin, bossBattlesMin, masteredCountMin);
+            } catch (Exception ignored) {}
+        }
+        return new AvatarCatalogItem(
+                av.getId().toString(), av.getCode(), av.getDisplayName(), av.getDescription(),
+                av.getAssetKey(), av.getRarity(), av.getCreditCost(), av.isActive(), av.getDisplayOrder(), req);
     }
 }
