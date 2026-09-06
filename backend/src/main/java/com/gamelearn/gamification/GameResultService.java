@@ -39,6 +39,7 @@ import com.gamelearn.repository.StreakRepository;
 import com.gamelearn.repository.TopicMasteryRepository;
 import com.gamelearn.repository.UserAchievementRepository;
 import com.gamelearn.repository.XpTransactionRepository;
+import com.gamelearn.service.CreditService;
 
 /**
  * Game-result pipeline (Persistent Gamification + Player Progression phase).
@@ -82,6 +83,7 @@ public class GameResultService {
     private final UserAchievementRepository userAchievementRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final TopicMasteryRepository topicMasteryRepository;
+    private final CreditService creditService;
 
     private Clock clock = Clock.systemUTC();
 
@@ -93,7 +95,8 @@ public class GameResultService {
                              AchievementRepository achievementRepository,
                              UserAchievementRepository userAchievementRepository,
                              QuizAttemptRepository quizAttemptRepository,
-                             TopicMasteryRepository topicMasteryRepository) {
+                             TopicMasteryRepository topicMasteryRepository,
+                             CreditService creditService) {
         this.gameResultRepository = gameResultRepository;
         this.xpTransactionRepository = xpTransactionRepository;
         this.learnerProfileRepository = learnerProfileRepository;
@@ -103,6 +106,7 @@ public class GameResultService {
         this.userAchievementRepository = userAchievementRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.topicMasteryRepository = topicMasteryRepository;
+        this.creditService = creditService;
     }
 
     void setClock(Clock clock) {
@@ -246,6 +250,11 @@ public class GameResultService {
         row.setReferenceId(null);
         row.setDescription("Game completion: " + gameType);
         xpTransactionRepository.save(row);
+        try {
+            creditService.awardForXpTransaction(learner, row);
+        } catch (Exception e) {
+            log.warn("CREDIT_DERIVATION_FAILED gameType={} xp={}", gameType, xp, e);
+        }
 
         // Streak projection under lock BEFORE achievements so STREAK_DAYS observes this pass's day.
         LocalDate today = LocalDate.now(clock.withZone(ZoneOffset.UTC));
@@ -327,6 +336,7 @@ public class GameResultService {
             String desc = "Achievement unlocked: " + achievement.getCode();
             rewardRow.setDescription(desc.length() > 255 ? desc.substring(0, 255) : desc);
             xpTransactionRepository.save(rewardRow);
+            try { creditService.awardForXpTransaction(learner, rewardRow); } catch (Exception e) { log.warn("CREDIT_DERIVATION_FAILED achievement={}", achievement.getCode(), e); }
             rewardXp += reward;
             unlockedCodes.add(achievement.getCode());
         }
@@ -366,6 +376,7 @@ public class GameResultService {
             bonus.setReferenceId(null);
             bonus.setDescription("Streak milestone: " + decision.newCurrent() + " days");
             xpTransactionRepository.save(bonus);
+            try { creditService.awardForXpTransaction(learner, bonus); } catch (Exception e) { log.warn("CREDIT_DERIVATION_FAILED streak milestone", e); }
         }
     }
 

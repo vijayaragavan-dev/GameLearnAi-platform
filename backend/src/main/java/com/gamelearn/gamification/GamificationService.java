@@ -37,6 +37,7 @@ import com.gamelearn.repository.StreakRepository;
 import com.gamelearn.repository.TopicMasteryRepository;
 import com.gamelearn.repository.UserAchievementRepository;
 import com.gamelearn.repository.XpTransactionRepository;
+import com.gamelearn.service.CreditService;
 
 /**
  * Gamification Engine (Phase 7) — XP · levels · achievements · streaks
@@ -68,6 +69,7 @@ public class GamificationService {
     private final LearnerProfileRepository learnerProfileRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final TopicMasteryRepository topicMasteryRepository;
+    private final CreditService creditService;
 
     /** Injectable for deterministic streak-date tests; UTC in production. */
     private Clock clock = Clock.systemUTC();
@@ -78,7 +80,8 @@ public class GamificationService {
                                StreakRepository streakRepository,
                                LearnerProfileRepository learnerProfileRepository,
                                QuizAttemptRepository quizAttemptRepository,
-                               TopicMasteryRepository topicMasteryRepository) {
+                               TopicMasteryRepository topicMasteryRepository,
+                               CreditService creditService) {
         this.xpTransactionRepository = xpTransactionRepository;
         this.achievementRepository = achievementRepository;
         this.userAchievementRepository = userAchievementRepository;
@@ -86,6 +89,7 @@ public class GamificationService {
         this.learnerProfileRepository = learnerProfileRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.topicMasteryRepository = topicMasteryRepository;
+        this.creditService = creditService;
     }
 
     void setClock(Clock clock) {
@@ -240,6 +244,12 @@ public class GamificationService {
         row.setReferenceId(referenceId);
         row.setDescription(description.length() > 255 ? description.substring(0, 255) : description);
         xpTransactionRepository.save(row);
+        // Phase L1: derive Credits floor(xp*0.60) in same transaction, idempotent
+        try {
+            creditService.awardForXpTransaction(learner, row);
+        } catch (Exception e) {
+            log.warn("CREDIT_DERIVATION_FAILED user={} xpType={} amount={}", learner.getId(), eventType, amount, e);
+        }
     }
 
     // ------------------------------------------------------------------

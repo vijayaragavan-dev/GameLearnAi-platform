@@ -13,7 +13,9 @@ import com.gamelearn.entity.LearnerProfile;
 import com.gamelearn.entity.User;
 import com.gamelearn.entity.enums.UserStatus;
 import com.gamelearn.exception.ApiException;
+import com.gamelearn.entity.UserCredit;
 import com.gamelearn.repository.LearnerProfileRepository;
+import com.gamelearn.repository.UserCreditRepository;
 import com.gamelearn.repository.UserRepository;
 
 /**
@@ -30,15 +32,18 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final LearnerProfileRepository learnerProfileRepository;
+    private final UserCreditRepository userCreditRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public AuthService(UserRepository userRepository,
                        LearnerProfileRepository learnerProfileRepository,
+                       UserCreditRepository userCreditRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService) {
         this.userRepository = userRepository;
         this.learnerProfileRepository = learnerProfileRepository;
+        this.userCreditRepository = userCreditRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -62,6 +67,12 @@ public class AuthService {
         LearnerProfile profile = new LearnerProfile();
         profile.setUser(user);
         learnerProfileRepository.save(profile);
+
+        // Phase L1: pre-create credits row so concurrent game submissions never race on lazy creation.
+        UserCredit credit = new UserCredit();
+        credit.setUser(user);
+        credit.setBalance(0);
+        userCreditRepository.save(credit);
 
         return buildAuthResponse(user);
     }

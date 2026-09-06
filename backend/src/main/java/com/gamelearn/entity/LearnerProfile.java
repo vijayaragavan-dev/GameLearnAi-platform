@@ -35,6 +35,10 @@ public class LearnerProfile extends BaseEntity {
     @JoinColumn(name = "current_topic_id")
     private Topic currentTopic;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "equipped_avatar_id")
+    private Avatar equippedAvatar;
+
     public User getUser() {
         return user;
     }
@@ -81,5 +85,13 @@ public class LearnerProfile extends BaseEntity {
 
     public void setCurrentTopic(Topic currentTopic) {
         this.currentTopic = currentTopic;
+    }
+
+    public Avatar getEquippedAvatar() {
+        return equippedAvatar;
+    }
+
+    public void setEquippedAvatar(Avatar equippedAvatar) {
+        this.equippedAvatar = equippedAvatar;
     }
 }
