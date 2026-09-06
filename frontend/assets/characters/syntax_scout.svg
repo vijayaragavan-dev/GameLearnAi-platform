@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#64748B" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#94A3B8" stop-opacity="0.04"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="92" fill="url(#bg)" stroke="#64748B" stroke-opacity="0.12" stroke-width="1.5"/>
+  <!-- Body -->
+  <rect x="88" y="115" width="24" height="22" rx="6" fill="#64748B" opacity="0.9"/>
+  <!-- Head -->
+  <circle cx="100" cy="85" r="32" fill="#F1F5F9" stroke="#64748B" stroke-opacity="0.25" stroke-width="1.5"/>
+  <circle cx="100" cy="85" r="29" fill="white" opacity="0.95"/>
+  <!-- Eyes -->
+  <ellipse cx="90" cy="82" rx="5" ry="6" fill="#0F172A"/>
+  <ellipse cx="110" cy="82" rx="5" ry="6" fill="#0F172A"/>
+  <circle cx="91.5" cy="80" r="1.8" fill="white" opacity="0.9"/>
+  <circle cx="111.5" cy="80" r="1.8" fill="white" opacity="0.9"/>
+  <!-- Smile -->
+  <path d="M92 95 Q100 102 108 95" fill="none" stroke="#0F172A" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+  <!-- Accessory -->
+  <circle cx="100" cy="45" r="10" fill="#64748B" opacity="0.85"/>
+  <!-- Rarity accent dot -->
+  <circle cx="100" cy="150" r="3.5" fill="#64748B" opacity="0.9"/>
+</svg>

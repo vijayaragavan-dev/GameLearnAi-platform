@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/models/leaderboard_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/avatar_asset_resolver.dart';
 
 /// Safe avatar renderer for leaderboard — uses backend assetKey but falls back
 /// to a deterministic stylized placeholder when no local asset exists.
@@ -37,18 +39,7 @@ class LeaderboardAvatarView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final rarityColor = _rarityColor(avatar.rarity);
-    final initial = displayName.isEmpty ? '?' : displayName[0].toUpperCase();
-    // Deterministic gradient based on assetKey hash for placeholder variety
-    final hash = avatar.assetKey.hashCode;
-    final gradient = LinearGradient(
-      colors: [
-        rarityColor.withValues(alpha: 0.85),
-        rarityColor.withValues(alpha: 0.55),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-
+    final assetPath = resolveAvatarAsset(avatar.assetKey);
     return Semantics(
       label: '$displayName avatar, ${avatar.rarity.name} tier',
       child: Container(
@@ -56,7 +47,7 @@ class LeaderboardAvatarView extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: gradient,
+          color: Theme.of(context).colorScheme.surface,
           border: Border.all(
             color: rarityBorder ? rarityColor.withValues(alpha: isDark ? 0.55 : 0.35) : Colors.transparent,
             width: rarityBorder ? (size > 60 ? 2.5 : 1.5) : 0,
@@ -65,15 +56,22 @@ class LeaderboardAvatarView extends StatelessWidget {
               ? [BoxShadow(color: rarityColor.withValues(alpha: 0.28), blurRadius: 14, spreadRadius: 1)]
               : null,
         ),
-        alignment: Alignment.center,
-        child: Text(
-          initial,
-          style: TextStyle(
-            fontFamily: AppTypography.displayFamily,
-            fontSize: size * 0.42,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 4)],
+        clipBehavior: Clip.antiAlias,
+        child: SvgPicture.asset(
+          assetPath,
+          width: size * 0.9,
+          height: size * 0.9,
+          fit: BoxFit.contain,
+          placeholderBuilder: (ctx) => Center(
+            child: Text(
+              displayName.isEmpty ? '?' : displayName[0].toUpperCase(),
+              style: TextStyle(
+                fontFamily: AppTypography.displayFamily,
+                fontSize: size * 0.42,
+                fontWeight: FontWeight.w800,
+                color: rarityColor,
+              ),
+            ),
           ),
         ),
       ),

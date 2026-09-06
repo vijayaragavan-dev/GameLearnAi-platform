@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/models/avatar_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/avatar_asset_resolver.dart';
 
 /// Premium character visual — deterministic, original, no copyrighted assets.
 /// Uses assetKey hash for gradient variety, rarity for border/glow, and
@@ -41,9 +43,9 @@ class AvatarVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final rarityColor = _rarityColor(rarity, isDark);
-    final initial = displayName.isEmpty ? '?' : displayName[0].toUpperCase();
     final isLegendary = rarity.toLowerCase() == 'legendary' || rarity.toLowerCase() == 'prestige';
     final isEpic = rarity.toLowerCase() == 'epic';
+    final assetPath = resolveAvatarAsset(assetKey);
 
     return Semantics(
       label: '$displayName, $rarity character',
@@ -58,13 +60,14 @@ class AvatarVisual extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: isLegendary
-                    ? [AppColors.xp.withValues(alpha: 0.9), AppColors.primary.withValues(alpha: 0.7)]
+                    ? [AppColors.xp.withValues(alpha: 0.12), AppColors.primary.withValues(alpha: 0.08)]
                     : isEpic
-                        ? [AppColors.primary.withValues(alpha: 0.85), AppColors.secondary.withValues(alpha: 0.6)]
-                        : [rarityColor.withValues(alpha: 0.85), rarityColor.withValues(alpha: 0.55)],
+                        ? [AppColors.primary.withValues(alpha: 0.14), AppColors.secondary.withValues(alpha: 0.08)]
+                        : [rarityColor.withValues(alpha: 0.10), Colors.transparent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              color: Theme.of(context).colorScheme.surface,
               border: Border.all(
                 color: rarityColor.withValues(alpha: isDark ? 0.65 : 0.45),
                 width: isLegendary ? 2.5 : (isEpic ? 2 : 1.5),
@@ -79,15 +82,22 @@ class AvatarVisual extends StatelessWidget {
                     ]
                   : null,
             ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: TextStyle(
-                fontFamily: AppTypography.displayFamily,
-                fontSize: size * 0.38,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6)],
+            clipBehavior: Clip.antiAlias,
+            child: SvgPicture.asset(
+              assetPath,
+              width: size * 0.92,
+              height: size * 0.92,
+              fit: BoxFit.contain,
+              placeholderBuilder: (ctx) => Center(
+                child: Text(
+                  displayName.isEmpty ? '?' : displayName[0].toUpperCase(),
+                  style: TextStyle(
+                    fontFamily: AppTypography.displayFamily,
+                    fontSize: size * 0.38,
+                    fontWeight: FontWeight.w800,
+                    color: rarityColor,
+                  ),
+                ),
               ),
             ),
           ),
