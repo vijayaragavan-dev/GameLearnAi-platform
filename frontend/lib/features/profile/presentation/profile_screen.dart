@@ -7,6 +7,7 @@ import '../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
@@ -19,6 +20,8 @@ import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../../shared/widgets/xp_bar.dart' show XPBar;
+import '../../avatar/providers/avatar_providers.dart';
+import '../../avatar/widgets/avatar_visual.dart';
 
 /// USER-001 player profile with premium progression clarity — only backend-provided fields.
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -108,42 +111,62 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const SizedBox(height: 6),
-                          // Identity hero — premium circular badge + Nova
-                          Column(
-                            children: [
-                              Stack(
-                                clipBehavior: Clip.none,
-                                alignment: Alignment.bottomRight,
+                          // YOUR CHARACTER hero — premium, real avatar
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final avatarState = ref.watch(profileAvatarProvider);
+                              final avatar = avatarState.data;
+                              final displayName = avatar?.avatar?.displayName ?? 'Nova Spark';
+                              final rarity = avatar?.avatar?.rarity ?? 'INITIATE';
+                              final assetKey = avatar?.avatar?.assetKey ?? 'characters/nova_spark';
+                              return Column(
                                 children: [
-                                  Container(
-                                    width: 92,
-                                    height: 92,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: const LinearGradient(colors: [Color(0xFF5B21B6), AppColors.primary]),
-                                      border: Border.all(color: AppColors.primaryBright, width: 2),
-                                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.34), blurRadius: 22)],
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        profile.displayName.isEmpty ? '?' : profile.displayName[0].toUpperCase(),
-                                        style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white),
+                                  Semantics(
+                                    label: 'Your character $displayName, $rarity',
+                                    child: FeaturedSurface(
+                                      accent: rarity.toLowerCase() == 'legendary' ? AppColors.xp : AppColors.primary,
+                                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                                      child: Column(
+                                        children: [
+                                          Text('YOUR CHARACTER', style: AppTypography.overline(context).copyWith(color: AppColors.primaryBright, letterSpacing: 1.4)),
+                                          const SizedBox(height: 12),
+                                          Stack(
+                                            clipBehavior: Clip.none,
+                                            alignment: Alignment.bottomRight,
+                                            children: [
+                                              AvatarVisual(assetKey: assetKey, displayName: displayName, rarity: rarity, size: 92, showGlow: true, showRarityBadge: true),
+                                              const Positioned(bottom: -2, right: -2, child: NovaCompanion(size: 28, mood: NovaMood.idle)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(displayName.toUpperCase(), style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5), textAlign: TextAlign.center),
+                                          Text(rarity.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
+                                          const SizedBox(height: 8),
+                                          Text(profile.displayName, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 15, fontWeight: FontWeight.w700)),
+                                          Text(profile.email, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999), border: Border.all(color: AppColors.primary.withValues(alpha: 0.22))),
+                                            child: Text('LEVEL ${profile.currentLevel} • ${Formatters.count(profile.totalXp)} XP', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: FilledButton.icon(
+                                              onPressed: () => context.push('/profile/characters'),
+                                              icon: const Icon(Icons.collections_rounded, size: 16),
+                                              label: const Text('CHANGE CHARACTER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                                              style: FilledButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 10)),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                  const NovaCompanion(size: 30, mood: NovaMood.idle),
                                 ],
-                              ),
-                              const SizedBox(height: 14),
-                              Text(profile.displayName, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 21, fontWeight: FontWeight.w700)),
-                              Text(profile.email, style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999), border: Border.all(color: AppColors.primary.withValues(alpha: 0.22))),
-                                child: Text('LEVEL ${profile.currentLevel} • ${Formatters.count(profile.totalXp)} XP', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                           const SizedBox(height: 18),
                           // Level / XP — consistent language XP / LEVEL everywhere

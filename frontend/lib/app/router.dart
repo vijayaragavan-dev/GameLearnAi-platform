@@ -48,6 +48,8 @@ import '../features/games/connectivity_lab/presentation/connectivity_lab_screen.
 import '../features/games/snake_and_ladder/presentation/snake_and_ladder_screen.dart';
 import '../features/design_showcase/design_showcase_screen.dart';
 import '../features/leaderboard/presentation/champions_arena_screen.dart';
+import '../features/avatar/presentation/character_collection_screen.dart';
+import '../features/avatar/presentation/character_detail_screen.dart';
 
 /// Route builder helpers keep navigation strings in one place.
 abstract final class Routes {
@@ -555,6 +557,22 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
         path: Routes.arena,
         pageBuilder: (_, s) => _page(
           child: ChampionsArenaScreen(initialSubjectId: s.uri.queryParameters['subjectId']),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/characters',
+        pageBuilder: (_, s) => _page(
+          child: const CharacterCollectionScreen(),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/characters/:avatarId',
+        pageBuilder: (_, s) => _page(
+          child: CharacterDetailScreen(avatarId: s.pathParameters['avatarId']!),
           state: s,
           begin: const Offset(0, 0.06),
         ),
