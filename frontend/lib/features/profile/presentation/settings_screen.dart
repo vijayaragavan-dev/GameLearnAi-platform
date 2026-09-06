@@ -11,6 +11,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../auth/providers/session_controller.dart';
 import '../../../shared/widgets/game_card.dart';
+import '../../../shared/widgets/responsive_layout.dart';
 
 /// Local preferences only (audio, haptics). Server-side settings do not
 /// exist yet (USER-002 is deferred), so nothing here claims to be synced.
@@ -29,9 +30,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('SETTINGS')),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: [
+        child: ResponsiveCenter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           SectionCard(
             title: 'APPEARANCE',
             children: [
@@ -137,6 +141,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   setState(() {});
                 },
               ),
+              VolumeTile(
+                icon: Icons.music_note_rounded,
+                title: 'Music Volume',
+                subtitle: audio.musicEnabled
+                    ? '${(audio.musicVolume * 100).round()}% • ${audio.musicVolume == 0 ? 'muted' : audio.musicVolume < 0.33 ? 'quiet' : audio.musicVolume < 0.66 ? 'medium' : audio.musicVolume < 0.9 ? 'loud' : 'maximum'}'
+                    : 'Music is disabled',
+                value: audio.musicVolume,
+                enabled: audio.musicEnabled,
+                onChanged: (v) async {
+                  await audio.setMusicVolume(v);
+                  setState(() {});
+                },
+              ),
               SwitchTile(
                 icon: Icons.volume_up_rounded,
                 title: 'Sound effects',
@@ -145,6 +162,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (v) async {
                   await audio.setSfxEnabled(v);
                   if (v) audio.play(Sfx.buttonConfirm);
+                  setState(() {});
+                },
+              ),
+              VolumeTile(
+                icon: Icons.volume_up_rounded,
+                title: 'Sound Effects Volume',
+                subtitle: audio.sfxEnabled
+                    ? '${(audio.sfxVolume * 100).round()}% • ${audio.sfxVolume == 0 ? 'muted' : audio.sfxVolume < 0.33 ? 'quiet' : audio.sfxVolume < 0.66 ? 'medium' : audio.sfxVolume < 0.9 ? 'loud' : 'maximum'}'
+                    : 'Sound effects are disabled',
+                value: audio.sfxVolume,
+                enabled: audio.sfxEnabled,
+                onChanged: (v) async {
+                  await audio.setSfxVolume(v);
+                  if (v > 0) audio.play(Sfx.buttonTap);
                   setState(() {});
                 },
               ),
@@ -206,6 +237,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -270,6 +303,68 @@ class SectionCard extends StatelessWidget {
   );
 }
 
+class VolumeTile extends StatelessWidget {
+  const VolumeTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final double value;
+  final bool enabled;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: enabled ? AppColors.secondary : (isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, fontFamily: AppTypography.bodyFamily, color: enabled ? (isDark ? AppColors.textPrimary : AppLightColors.textPrimary) : (isDark ? AppColors.textTertiary : AppLightColors.textTertiary))),
+                      Text(subtitle, style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary, fontFamily: AppTypography.bodyFamily)),
+                    ],
+                  ),
+                ),
+                Text('${(value * 100).round()}%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: enabled ? AppColors.primary : (isDark ? AppColors.textTertiary : AppLightColors.textTertiary))),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Semantics(
+              label: '$title ${(value * 100).round()} percent',
+              child: Slider(
+                value: value,
+                min: 0.0,
+                max: 1.0,
+                divisions: 20,
+                label: '${(value * 100).round()}%',
+                activeColor: AppColors.primary,
+                inactiveColor: isDark ? AppColors.border : AppLightColors.border,
+                onChanged: enabled ? onChanged : null,
+              ),
+            ),
+          ],
+        ),
+      );
+  }
+}
+
 class SwitchTile extends StatelessWidget {
   const SwitchTile({
     super.key,
@@ -287,7 +382,9 @@ class SwitchTile extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  Widget build(BuildContext context) => Material(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
     color: Colors.transparent,
     borderRadius: BorderRadius.circular(AppRadius.lg),
     clipBehavior: Clip.antiAlias,
@@ -295,17 +392,18 @@ class SwitchTile extends StatelessWidget {
       secondary: Icon(icon, size: 20, color: AppColors.secondary),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14.5,
           fontWeight: FontWeight.w600,
           fontFamily: AppTypography.bodyFamily,
+          color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
-          color: AppColors.textSecondary,
+          color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
           fontFamily: AppTypography.bodyFamily,
         ),
       ),
@@ -314,4 +412,5 @@ class SwitchTile extends StatelessWidget {
       onChanged: onChanged,
     ),
   );
+  }
 }

@@ -1,4 +1,6 @@
-﻿import 'package:audioplayers/audioplayers.dart';
+﻿import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,7 +17,8 @@ enum Sfx {
   missionComplete('sfx_mission.wav'),
   nodeUnlock('sfx_node.wav'),
   streakContinue('sfx_streak.wav'),
-  notification('sfx_notification.wav');
+  notification('sfx_notification.wav'),
+  typingFast('sfx/keyboard_typing_faast.wav');
 
   const Sfx(this.asset);
 
@@ -23,9 +26,10 @@ enum Sfx {
 }
 
 /// Ambient contexts; one looping track per context, subtle by design.
+/// Uses gamelearnai_ambient_theme as the premium default for HOME/MENU.
 enum MusicContext {
-  menu('music_menu.wav'),
-  dashboard('music_menu.wav'),
+  menu('music/gamelearnai_ambient_theme.mp3'),
+  dashboard('music/gamelearnai_ambient_theme.mp3'),
   adventure('music_adventure.wav'),
   quiz('music_quiz.wav'),
   celebration('music_adventure.wav'),
@@ -44,17 +48,23 @@ class AudioManager {
     musicEnabled = _prefs?.getBool(_kMusic) ?? true;
     sfxEnabled = _prefs?.getBool(_kSfx) ?? true;
     hapticsEnabled = _prefs?.getBool(_kHaptics) ?? true;
+    musicVolume = (_prefs?.getDouble(_kMusicVolume) ?? 1.0).clamp(0.0, 1.0);
+    sfxVolume = (_prefs?.getDouble(_kSfxVolume) ?? 1.0).clamp(0.0, 1.0);
   }
 
   static const String _kMusic = 'pref_music_enabled';
   static const String _kSfx = 'pref_sfx_enabled';
   static const String _kHaptics = 'pref_haptics_enabled';
+  static const String _kMusicVolume = 'pref_music_volume';
+  static const String _kSfxVolume = 'pref_sfx_volume';
 
   final SharedPreferences? _prefs;
 
   bool musicEnabled = true;
   bool sfxEnabled = true;
   bool hapticsEnabled = true;
+  double musicVolume = 1.0;
+  double sfxVolume = 1.0;
 
   bool _platformBroken = false;
   bool _disposed = false;
@@ -63,6 +73,7 @@ class AudioManager {
 
   final Map<String, AudioPlayer> _musicPlayers = {};
   AudioPlayer? _sfxPlayer;
+  AudioPlayer? _typingPlayer;
   MusicContext? _currentContext;
 
   // ---- Settings -----------------------------------------------------------
@@ -70,17 +81,69 @@ class AudioManager {
   Future<void> setMusicEnabled(bool value) async {
     musicEnabled = value;
     await _prefs?.setBool(_kMusic, value);
-    if (!value) await stopMusic();
+    if (!value) {
+      await stopMusic();
+    } else if (musicVolume > 0) {
+      // Resume current context if any, otherwise play menu
+      final ctx = _currentContext ?? MusicContext.menu;
+      // Clear current so playContext will replay
+      _currentContext = null;
+      await playContext(ctx);
+    }
   }
 
   Future<void> setSfxEnabled(bool value) async {
     sfxEnabled = value;
     await _prefs?.setBool(_kSfx, value);
+    if (!value) {
+      try {
+        await _typingPlayer?.stop();
+      } catch (_) {}
+    }
   }
 
   Future<void> setHapticsEnabled(bool value) async {
     hapticsEnabled = value;
     await _prefs?.setBool(_kHaptics, value);
+  }
+
+  Future<void> setMusicVolume(double value) async {
+    final v = value.clamp(0.0, 1.0);
+    musicVolume = v;
+    await _prefs?.setDouble(_kMusicVolume, v);
+    // Apply to currently playing music immediately
+    if (_currentContext != null && musicEnabled) {
+      final player = _musicPlayers[_currentContext!.asset];
+      if (player != null) {
+        try {
+          await player.setVolume(_musicEffectiveVolume());
+        } catch (e) {
+          if (!_isBenignAudioError(e)) debugPrint('AudioManager setMusicVolume: $e');
+        }
+      }
+      // If volume is 0, keep player but silent; if was 0 and now >0, ensure playing
+      if (v == 0) {
+        // Keep music paused conceptually but not stopped; just silent
+      }
+    }
+  }
+
+  Future<void> setSfxVolume(double value) async {
+    final v = value.clamp(0.0, 1.0);
+    sfxVolume = v;
+    await _prefs?.setDouble(_kSfxVolume, v);
+    // SFX volume is applied per-play, no need to update ongoing SFX
+  }
+
+  double _musicEffectiveVolume() {
+    // Base music volume is subtle (0.16) scaled by user musicVolume
+    // When musicVolume is 0, effective is 0 (silent)
+    return 0.16 * musicVolume;
+  }
+
+  double _sfxEffectiveVolume() {
+    // Base SFX volume 0.9 scaled by user sfxVolume
+    return 0.9 * sfxVolume;
   }
 
   // ---- SFX ----------------------------------------------------------------
@@ -90,7 +153,7 @@ class AudioManager {
   Sfx? _lastSfx;
 
   Future<void> play(Sfx sfx) async {
-    if (!sfxEnabled || _platformBroken || _disposed) return;
+    if (!sfxEnabled || sfxVolume == 0 || _platformBroken || _disposed) return;
     final now = DateTime.now();
     if (_lastSfx == sfx &&
         now.difference(_lastPlay) < const Duration(milliseconds: 60)) {
@@ -101,10 +164,8 @@ class AudioManager {
     try {
       if (_disposed) return;
       _sfxPlayer ??= AudioPlayer();
-      // Each operation is individually guarded; a closed stream must not
-      // crash or spam logs. _isStreamClosed errors degrade silently.
       try {
-        await _sfxPlayer!.setVolume(0.9);
+        await _sfxPlayer!.setVolume(_sfxEffectiveVolume());
       } catch (e) {
         if (_isBenignAudioError(e)) {
           _silentDegrade();
@@ -124,19 +185,69 @@ class AudioManager {
     }
   }
 
+  // ---- Typing SFX (throttled, non-spamming) -------------------------------
+
+  DateTime _lastTypingPlay = DateTime.fromMillisecondsSinceEpoch(0);
+  Timer? _typingInactivityTimer;
+  bool _typingActive = false;
+
+  /// Call this on actual text input (e.g., onChanged with non-empty diff).
+  /// Throttles to prevent spam: at most one playback per 120ms, no overlapping.
+  Future<void> playTyping() async {
+    if (!sfxEnabled || sfxVolume == 0 || _platformBroken || _disposed) return;
+    if (_typingActive && DateTime.now().difference(_lastTypingPlay) < const Duration(milliseconds: 120)) {
+      return;
+    }
+    // Prevent overlapping: if typing player is still playing, skip
+    if (_typingPlayer != null) {
+      try {
+        final state = _typingPlayer!.state;
+        if (state == PlayerState.playing) return;
+      } catch (_) {}
+    }
+    _typingActive = true;
+    _lastTypingPlay = DateTime.now();
+    _typingInactivityTimer?.cancel();
+    _typingInactivityTimer = Timer(const Duration(milliseconds: 800), () {
+      _typingActive = false;
+    });
+    try {
+      _typingPlayer ??= AudioPlayer();
+      await _typingPlayer!.setVolume(_sfxEffectiveVolume() * 0.85);
+      await _typingPlayer!.play(AssetSource('audio/${Sfx.typingFast.asset}'));
+    } catch (e) {
+      if (_isBenignAudioError(e)) {
+        _silentDegrade();
+      } else {
+        _degrade(e);
+      }
+    }
+  }
+
+  void resetTyping() {
+    _typingActive = false;
+    _typingInactivityTimer?.cancel();
+    _typingInactivityTimer = null;
+  }
+
   // ---- Music --------------------------------------------------------------
 
   Future<void> playContext(MusicContext context) async {
-    if (!musicEnabled || _platformBroken || _disposed) return;
-    if (_currentContext == context) return;
+    if (!musicEnabled || musicVolume == 0 || _platformBroken || _disposed) return;
+    if (_currentContext == context) {
+      // If same context but volume changed, update volume
+      final player = _musicPlayers[context.asset];
+      if (player != null) {
+        try {
+          await player.setVolume(_musicEffectiveVolume());
+        } catch (_) {}
+      }
+      return;
+    }
     final int seq = ++_contextSeq;
-    // Stop previous music first; if a newer request arrives while stopping,
-    // abort this attempt so the latest context wins.
     try {
       await stopMusic();
-    } catch (_) {
-      // stopMusic already guards; ignore here.
-    }
+    } catch (_) {}
     if (_disposed || _platformBroken || seq != _contextSeq) return;
 
     AudioPlayer? player;
@@ -159,22 +270,18 @@ class AudioManager {
         await _safeDisposePlayer(player);
         return;
       }
-      // Register early so stopMusic can dispose it if a concurrent
-      // playContext/stop/dispose arrives.
       _musicPlayers[context.asset] = player;
       try {
-        await player.setVolume(0.16);
+        await player.setVolume(_musicEffectiveVolume());
       } catch (e) {
         if (_isBenignAudioError(e)) {
           _silentDegrade();
-          // Keep player registered but silent; do not throw.
         } else {
           _degrade(e);
           return;
         }
       }
       if (_disposed || seq != _contextSeq) {
-        // Stale request: clean up this player.
         _musicPlayers.remove(context.asset);
         await _safeDisposePlayer(player);
         return;
@@ -187,7 +294,6 @@ class AudioManager {
       }
       _currentContext = context;
     } catch (e) {
-      // Ensure partially-created player does not leak.
       if (player != null) {
         _musicPlayers.remove(context.asset);
         await _safeDisposePlayer(player);
@@ -203,13 +309,7 @@ class AudioManager {
   Future<void> stopMusic() async {
     if (_stoppingMusic) return;
     _stoppingMusic = true;
-    // Increment seq to invalidate any in-flight playContext that has not
-    // yet finished preparation; caller playContext already captures seq.
-    // Do not increment here for explicit stopMusic from UI — but guard
-    // against race where stopMusic is called concurrently with playContext.
     try {
-      // Copy and clear atomically to avoid concurrent modification
-      // if stopMusic is called re-entrantly from playContext.
       final players = Map<String, AudioPlayer>.from(_musicPlayers);
       _musicPlayers.clear();
       _currentContext = null;
@@ -232,13 +332,40 @@ class AudioManager {
     }
   }
 
+  // Lifecycle helpers
+  Future<void> pauseForBackground() async {
+    for (final p in _musicPlayers.values) {
+      try {
+        await p.pause();
+      } catch (_) {}
+    }
+    try {
+      await _sfxPlayer?.pause();
+    } catch (_) {}
+    try {
+      await _typingPlayer?.pause();
+    } catch (_) {}
+  }
+
+  Future<void> resumeFromBackground() async {
+    if (!musicEnabled || musicVolume == 0 || _disposed || _platformBroken) return;
+    if (_currentContext != null) {
+      final player = _musicPlayers[_currentContext!.asset];
+      if (player != null) {
+        try {
+          await player.resume();
+          return;
+        } catch (_) {}
+      }
+      // If resume fails, replay context
+      final ctx = _currentContext!;
+      _currentContext = null;
+      await playContext(ctx);
+    }
+  }
+
   bool _isBenignAudioError(Object e) {
     final s = e.toString();
-    // audioplayers throws "Stream closed before it got prepared",
-    // "Player has been disposed", StateError/Bad state etc. when
-    // dispose races with prepare. These are expected on web/hot-reload
-    // and should degrade silently rather than spamming logs.
-    // MissingPluginException is benign in tests / unsupported platforms.
     return s.contains('Stream closed') ||
         s.contains('Stream has already been listened') ||
         s.contains('Bad state') ||
@@ -251,9 +378,6 @@ class AudioManager {
 
   void _silentDegrade() {
     _platformBroken = true;
-    // Graceful silent fallback — no noisy debugPrint for benign
-    // browser/platform races (autoplay blocked, stream closed on
-    // dispose, etc.). App remains fully functional.
   }
 
   void _degrade(Object e) {
@@ -261,8 +385,6 @@ class AudioManager {
       _silentDegrade();
       return;
     }
-    // One hard failure (missing asset/plugin) disables audio for the session
-    // instead of spamming errors. App remains fully functional.
     _platformBroken = true;
     debugPrint('AudioManager degraded to silent mode: $e');
   }
@@ -280,8 +402,9 @@ class AudioManager {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    // Invalidate any pending playContext.
     _contextSeq++;
+    _typingInactivityTimer?.cancel();
+    _typingInactivityTimer = null;
     await stopMusic();
     try {
       await _sfxPlayer?.stop();
@@ -292,5 +415,12 @@ class AudioManager {
       await _safeDisposePlayer(_sfxPlayer!);
     }
     _sfxPlayer = null;
+    if (_typingPlayer != null) {
+      try {
+        await _typingPlayer?.stop();
+      } catch (_) {}
+      await _safeDisposePlayer(_typingPlayer!);
+      _typingPlayer = null;
+    }
   }
 }

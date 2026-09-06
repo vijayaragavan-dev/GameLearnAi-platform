@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
+import '../../../core/audio/typing_sound_controller.dart';
 import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/tutor_models.dart';
 import '../../../core/network/api_exception.dart';
@@ -27,6 +28,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
   final FocusNode _focus = FocusNode();
+  late final TypingSoundController _typingController;
 
   final List<_Bubble> _messages = [];
   bool _sending = false;
@@ -37,6 +39,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
   @override
   void initState() {
     super.initState();
+    _typingController = TypingSoundController(audioManager: ref.read(audioManagerProvider));
     ref.read(audioManagerProvider).playContext(MusicContext.tutor);
     _messages.add(
       const _Bubble(
@@ -50,6 +53,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
 
   @override
   void dispose() {
+    _typingController.dispose();
     _input.dispose();
     _scroll.dispose();
     _focus.dispose();
@@ -134,6 +138,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -141,14 +146,14 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         titleSpacing: 0,
-        title: const Row(
+        title: Row(
           children: [
-            NovaCompanion(size: 34, mood: NovaMood.idle),
-            SizedBox(width: 10),
+            const NovaCompanion(size: 34, mood: NovaMood.idle),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'NOVA TUTOR',
                   style: TextStyle(fontSize: 14.5, letterSpacing: 1),
                 ),
@@ -156,7 +161,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                   'AI learning companion',
                   style: TextStyle(
                     fontSize: 10.5,
-                    color: AppColors.textSecondary,
+                    color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
                   ),
                 ),
               ],
@@ -266,30 +271,32 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                         maxLength: _maxQuestionChars,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
+                        onChanged: (v) => _typingController.onChanged(v),
                         enabled: !_sending,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: AppTypography.bodyFamily,
                           fontSize: 14.5,
+                          color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Ask Nova about your topic...',
                           counterText: '',
                           filled: true,
-                          fillColor: AppColors.surfaceElevated,
+                          fillColor: isDark ? AppColors.surfaceElevated : AppLightColors.surface,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 13,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(22),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
+                            borderSide: BorderSide(
+                              color: isDark ? AppColors.border : AppLightColors.border,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(22),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
+                            borderSide: BorderSide(
+                              color: isDark ? AppColors.border : AppLightColors.border,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
@@ -298,6 +305,9 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                               color: AppColors.secondary,
                               width: 1.4,
                             ),
+                          ),
+                          hintStyle: TextStyle(
+                            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
                           ),
                         ),
                       ),
@@ -359,6 +369,7 @@ class _MessageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLearner = bubble.role == 'LEARNER';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Align(
       alignment: isLearner ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -373,14 +384,19 @@ class _MessageTile extends StatelessWidget {
           gradient: isLearner
               ? null
               : LinearGradient(
-                  colors: [
-                    AppColors.secondary.withValues(alpha: 0.1),
-                    AppColors.surfaceElevated,
-                  ],
+                  colors: isDark
+                      ? [
+                          AppColors.secondary.withValues(alpha: 0.1),
+                          AppColors.surfaceElevated,
+                        ]
+                      : [
+                          AppColors.secondary.withValues(alpha: 0.08),
+                          AppLightColors.surface,
+                        ],
                 ),
           color: isLearner
               ? AppColors.primaryDeep.withValues(alpha: 0.75)
-              : null,
+              : (isDark ? null : AppLightColors.surface),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(AppRadius.lg),
             topRight: const Radius.circular(AppRadius.lg),
@@ -404,11 +420,11 @@ class _MessageTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       bubble.text,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: AppTypography.bodyFamily,
                         fontSize: 13.8,
                         height: 1.5,
-                        color: AppColors.textPrimary,
+                        color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
                       ),
                     ),
                   ),
@@ -518,30 +534,33 @@ class _SendButton extends StatelessWidget {
   final bool busy;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: busy ? null : onTap,
-    child: Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: busy
-            ? null
-            : const LinearGradient(
-                colors: [AppColors.secondaryDeep, AppColors.secondary],
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: busy ? null : onTap,
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: busy
+              ? null
+              : const LinearGradient(
+                  colors: [AppColors.secondaryDeep, AppColors.secondary],
+                ),
+          color: busy ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh) : null,
+        ),
+        child: busy
+            ? const Padding(
+                padding: EdgeInsets.all(13),
+                child: CircularProgressIndicator(strokeWidth: 2.2),
+              )
+            : const Icon(
+                Icons.send_rounded,
+                size: 19,
+                color: AppColors.textOnColor,
               ),
-        color: busy ? AppColors.surfaceHigh : null,
       ),
-      child: busy
-          ? const Padding(
-              padding: EdgeInsets.all(13),
-              child: CircularProgressIndicator(strokeWidth: 2.2),
-            )
-          : const Icon(
-              Icons.send_rounded,
-              size: 19,
-              color: AppColors.textOnColor,
-            ),
-    ),
-  );
+    );
+  }
 }
