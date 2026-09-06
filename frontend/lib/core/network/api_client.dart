@@ -176,7 +176,16 @@ class ApiClient {
         return UnauthorizedException(
           message.isEmpty ? 'Session expired' : message,
         );
+      case 402:
+        return InsufficientCreditsException(
+          message.isEmpty ? 'Not enough credits' : message,
+        );
       case 403:
+        if (code == 'AVATAR_REQUIREMENTS_NOT_MET') {
+          return RequirementsNotMetException(
+            message.isEmpty ? 'Requirements not met' : message,
+          );
+        }
         return ForbiddenException(message.isEmpty ? 'Not permitted' : message);
       case 404:
         return NotFoundException(message.isEmpty ? 'Not found' : message);

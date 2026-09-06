@@ -53,6 +53,16 @@ final class RateLimitedException extends ApiException {
     : super(statusCode: 429, errorCode: 'AI_RATE_LIMITED');
 }
 
+final class InsufficientCreditsException extends ApiException {
+  const InsufficientCreditsException([super.message = 'Not enough credits'])
+    : super(statusCode: 402, errorCode: 'INSUFFICIENT_CREDITS');
+}
+
+final class RequirementsNotMetException extends ApiException {
+  const RequirementsNotMetException([super.message = 'Requirements not met'])
+    : super(statusCode: 403, errorCode: 'AVATAR_REQUIREMENTS_NOT_MET');
+}
+
 final class AiUnavailableException extends ApiException {
   const AiUnavailableException([super.message = 'AI service unavailable'])
     : super(statusCode: 503, errorCode: 'AI_SERVICE_UNAVAILABLE');
