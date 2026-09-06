@@ -8,6 +8,7 @@ import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/content_models.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
+import '../widgets/intelligence_section.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_depth.dart';
@@ -314,6 +315,11 @@ class _DashboardBody extends StatelessWidget {
           _staggered(i++, MasteryStrip(topics: d.mastery.recentTopics)),
           const SizedBox(height: 8),
         ],
+
+        // 4.5 LEARNING INTELLIGENCE — adaptive mastery/weak/strong/revision (A5)
+        _staggered(i++, const SectionHeader(title: 'Learning Intelligence')),
+        _staggered(i++, const IntelligenceSection()),
+        const SizedBox(height: 8),
 
         // 5. DAILY QUESTS — truthful (uses real recommendations or empty)
         _staggered(i++, const SectionHeader(title: 'Daily quests')),

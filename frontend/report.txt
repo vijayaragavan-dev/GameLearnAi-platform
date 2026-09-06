@@ -1,4 +1,28 @@
 ============================================================
+PHASE: A5 — AI & Adaptive Learning Intelligence
+DATE: 2026-09-06
+BASELINE: a75021a feat(frontend): deepen game experiences
+FINAL: HEAD feat(ai): add adaptive learning intelligence (see git log -1 --oneline)
+BRANCH: main
+
+SUMMARY:
+A5 adaptive intelligence complete. Real learner mastery via Dashboard recentTopics/masteryScore/trend/difficulty, weak/strong detection, insufficient-data truthful state, ranked recommendations (server recs preserved else deterministic fallback), adaptive difficulty EASY/MEDIUM/HARD with hysteresis, personalized game selection for 14 games, mistake insights, revision queue, AI Tutor context via backend TutorContextBuilder (subject/topic/mastery) already, intelligent revision, personalized missions via adaptive recommendations, dashboard Learning Intelligence section integrated, path/result aware via mastery, AI failure fallback deterministic, loading/error/empty states, auth privacy preserved, responsive 360-1440, a11y, perf cached, 729 tests, analyze+build PASS.
+
+IMPLEMENTATION:
+- frontend/lib/core/intelligence/learner_intelligence.dart (new, 357 lines, pure deterministic engine: mastery thresholds 80/60/40, weak <40 or DECLINING<60, strong >=80 or >=60+IMPROVING/STABLE, overall trend majority, nextDifficulty weak->EASY strong>=2->HARD else MEDIUM, mistakes from low mastery + low quiz accuracy, recommendedGames weak->quiz_battle/concept_builder etc., recommendations ranking)
+- frontend/lib/features/dashboard/widgets/intelligence_section.dart (new, 260 lines, premium visuals: FeaturedSurface mastery overview, recommended next cards, focus areas, strong areas, revision priority, mistakes, personalized games AdaptiveGrid, AI Tutor suggestion, insufficient-data state with truthful message)
+- frontend/lib/features/dashboard/presentation/dashboard_screen.dart (integration: import IntelligenceSection + SectionHeader + staggered Learning Intelligence after mastery radar)
+- frontend/test/intelligence/adaptive_engine_test.dart (new, 134 lines, 11 tests covering mastery/insufficient/weak/strong/recommendations/difficulty hysteresis/server preservation/mistakes/game selection)
+
+BACKEND CHANGES: NONE (existing AdaptiveLearningService + AiTutorService/Gemini already provide server-side intelligence; frontend uses Dashboard DASH-001 mastery/recentTopics/recommendations/recentActivity as real data source)
+DATABASE MIGRATIONS: NONE
+AI INTEGRATION: Existing Gemini via AiTutorService (tutor prompt versioned, rate-limited, validation, audit) reused; fallback deterministic via AdaptiveEngine when AI unavailable (insufficient-data + local recommendations)
+ADAPTIVE INTELLIGENCE: mastery via masteryScore/trend, weak via <40 or DECLINING<60, strong via >=80 or >=60+IMPROVING, revisionQueue weak+declining, nextDifficulty hysteresis, game selection via GameDefinition.all, mistakes via low mastery + quiz accuracy, revision via weak queue, missions via recommendations priority
+VALIDATION: Flutter tests 729/729 (718 prior +11 adaptive), Analyze PASS 0 errors, Web build PASS Built build/web, Playwright UNAVAILABLE honest widget/build verification, Responsive 360-1440 via hub/catalog no overflow
+REGRESSION: A1 audio/theme, A2 flows, A3 reliability, A4 gameplay all preserved (718 prior still pass +11 new)
+GIT: baseline a75021a, final HEAD feat(ai): add adaptive learning intelligence, diff 3 new +1 modified + report
+
+============================================================
 PHASE: A4 — Real Gameplay Depth & Game Quality
 DATE: 2026-09-06
 BASELINE: 5460396 feat(frontend): harden production reliability
