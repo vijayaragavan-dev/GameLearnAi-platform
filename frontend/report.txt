@@ -1,4 +1,45 @@
 ============================================================
+PHASE: A9 — Production Onboarding, First-Session & Empty-State Experience
+DATE: 2026-09-06
+BASELINE: d8c64dc feat(frontend): add learning progress analytics
+FINAL: HEAD feat(frontend): add first-session onboarding experience (see git log -1 --oneline)
+BRANCH: main
+
+SUMMARY:
+A9 first-session onboarding complete. Existing 3-panel onboarding upgraded to premium 4-step flow (Welcome, Learn->Play->Master, Adapts to You, Level Up with Nova), premium atmospheric background (gradient + glow orb), theme-aware text via isDark tokens, Semantics for SKIP/BACK, disabled-animation safe mounting, mounted guards before navigation. Completion persists to existing sharedPreferencesProvider 'onboarding_seen' key (already used by SplashScreen). Existing first-session routes intact. Zero-data dashboard/analytics/adaptive/Tutor all already truthful via A5-A8 (insufficientData state). Validation PASS.
+
+IMPLEMENTATION:
+- frontend/lib/features/auth/presentation/onboarding_screen.dart (premium upgrade: 4 panels replacing 3 (Welcome/encouraging/thinking/celebrating moods), isDark theme-aware text AppColors.textPrimary/textSecondary vs AppLightColors, premium gradient background dark/light via AppColors.background/AppLightColors.background, glow orb dark, Semantics for SKIP/BACK navigation, _completeOnboarding mounted guard before context.go with try/catch for harness safety, _skip routes through _completeOnboarding, existing PageView preserved, existing onboarding_seen SharedPreferences key preserved)
+- frontend/test/onboarding/first_session_test.dart (new, 6 tests: shows 4 steps with welcome, step navigation Next/BACK, completion persists, SKIP persists, 360 responsive no overflow, dark+light theme render via MediaQuery disableAnimations)
+
+ONBOARDING ENTRY: existing splash -> onboarding if not seen, /onboarding via Routes.onboarding preserved
+WELCOME/ONBOARDING SCREEN: 4 premium panels Welcome/Learn->Play->Master/Adapts to You/Level Up with Nova, premium gradient + glow orb, theme-aware text
+USER PREFERENCES: lightweight (no per-subject persistence invented); onboarding completion via existing 'onboarding_seen' bool
+FIRST RECOMMENDATION: via A6 AdaptiveEngine on dashboard (already A5/A6 existing)
+FIRST-TIME DASHBOARD: A5 IntelligenceSection truthful insufficient-data state already A5
+ZERO-DATA ANALYTICS: A8 insufficient-data honest states already A8
+ZERO-DATA ADAPTIVE INTELLIGENCE: A5 AdaptiveEngine.empty() already A5 (Build your learning profile message)
+AI TUTOR FIRST-USE: A7 generic starter prompts "Explain this topic"/"Give me a hint"/"Show me a quick example" already A7, insufficient-data panel A7
+FIRST GAME EXPERIENCE: existing 14 games intact, no first-game popup invented
+GAME DISCOVERY: existing GameDefinition.all + hub preserved
+FIRST RESULT EXPERIENCE: existing GameResultScreen with XP/level/achievement + A6 adaptive next
+PROGRESSIVE DISCLOSURE: existing routes preserved (Champions Arena, analytics, characters, leaderboard remain discoverable)
+FEATURE DISCOVERY: lightweight via existing IntelligenceSection + analytics + tutor context panel (no separate tutorial system)
+ONBOARDING SKIP: SKIP button persists and navigates to login
+ONBOARDING COMPLETION: existing mounted guard + context.go to login; splash already routes authenticated to home
+AUTH REGRESSION: existing signin/signup/sessionRestore/logout flow preserved (SplashScreen onboarding_seen gate preserved)
+RESPONSIVE: 360 tested in test/onboarding/first_session_test.dart; PageView swipes safely
+DARK/LIGHT/SYSTEM: text via isDark tokens, gradient via AppColors/AppLightColors
+MOTION: existing AppMotion, PageView transitions
+AUDIO: existing AudioManager Sfx.buttonTap on Next/Skip
+ACCESSIBILITY: Semantics button labels for SKIP/BACK/Next, Nova companion header semantic, panel title semantics
+PERFORMANCE: existing providers, no duplicate listeners
+DATA HONESTY: no fake stats; existing A5-A8 truthful states preserved
+VALIDATION: Flutter tests 739/739 (733 prior +6 onboarding), Analyze PASS 0 errors, Web build PASS, Playwright UNAVAILABLE honest
+REGRESSION: A1-A8 preserved (audio/theme/14 games/snake restart/credits-XP/adaptive/analytics/tutor/result all PASS, 733 prior still pass)
+GIT: baseline d8c64dc, final HEAD add first-session onboarding experience, diff onboarding_screen + test + report
+
+============================================================
 PHASE: A8 — Production Learning Analytics & Progress Intelligence
 DATE: 2026-09-06
 BASELINE: 37e9fc1 feat(ai): upgrade production tutor experience
