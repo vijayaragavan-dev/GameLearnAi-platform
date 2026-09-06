@@ -127,7 +127,7 @@ class PersistenceContextTest {
         Integer appliedMigrations = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND installed_rank > 0",
                 Integer.class);
-        assertThat(appliedMigrations).isEqualTo(20);
+        assertThat(appliedMigrations).isEqualTo(21);
     }
 
     @Test
