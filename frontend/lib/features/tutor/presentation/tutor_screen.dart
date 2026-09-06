@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
 import '../../../core/audio/typing_sound_controller.dart';
 import '../../../core/error/user_facing_error.dart';
+import '../../../core/intelligence/learner_intelligence.dart';
 import '../../../core/models/tutor_models.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
@@ -12,13 +13,21 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/adaptive_next_action.dart';
+import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../dashboard/providers/dashboard_provider.dart';
 
 /// NOVA TUTOR - conversational AI learning companion backed by AI-001.
 /// Stateless v1: the client holds a bounded window (<=8 messages, <=1000
 /// chars each) and sends it with every request per the approved contract.
 class TutorScreen extends ConsumerStatefulWidget {
-  const TutorScreen({super.key});
+  const TutorScreen({super.key, this.initialSubjectId, this.initialTopicId, this.initialTopicName, this.initialFocus});
+
+  final String? initialSubjectId;
+  final String? initialTopicId;
+  final String? initialTopicName;
+  final String? initialFocus;
 
   @override
   ConsumerState<TutorScreen> createState() => _TutorScreenState();
@@ -70,6 +79,31 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
       ))
         TutorMessage(role: m.role, content: m.text),
     ];
+  }
+
+  List<String> _contextualPrompts() {
+    try {
+      final dash = ref.read(dashboardProvider).data;
+      if (dash != null) {
+        final intel = AdaptiveEngine.fromDashboard(dash);
+        if (intel.weakTopics.isNotEmpty) {
+          final t = intel.weakTopics.first.topicName;
+          return ['Explain $t simply', 'Give me a hint for $t', 'Help me revise $t'];
+        }
+        if (intel.strongTopics.isNotEmpty) {
+          final t = intel.strongTopics.first.topicName;
+          return ['Give me a harder example for $t', 'Challenge me on $t', 'Show my next steps for $t'];
+        }
+        if (!intel.insufficientData) {
+          return const ['Explain this topic in simple words', 'Give me a hint, no spoilers', 'Show me a quick example'];
+        }
+      }
+    } catch (_) {}
+    final focus = widget.initialTopicName ?? widget.initialFocus;
+    if (focus != null && focus.isNotEmpty) {
+      return ['Explain $focus simply', 'Why did I get $focus wrong?', 'Give me a practice question for $focus'];
+    }
+    return const ['Explain this topic in simple words', 'Give me a hint, no spoilers', 'Show me a quick example'];
   }
 
   Future<void> _send() async {
@@ -183,6 +217,12 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
           policy: OrderedTraversalPolicy(),
           child: Column(
             children: [
+              // Contextual personalization card (A7) — visible when topic/subject or intelligence available
+              _TutorContextPanel(
+                initialTopicName: widget.initialTopicName,
+                initialSubjectId: widget.initialSubjectId,
+                initialFocus: widget.initialFocus,
+              ),
               Expanded(
                 child: ListView.builder(
                   controller: _scroll,
@@ -198,18 +238,15 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                     if (_messages.length <= 1 &&
                         !_sending &&
                         i == _messages.length) {
-                      // Nova companion starter prompts (real sends, AI-001).
+                      // Contextual starter prompts (A7) — weak/strong/insufficient aware
+                      final prompts = _contextualPrompts();
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            for (final s in const [
-                              'Explain this topic in simple words',
-                              'Give me a hint, no spoilers',
-                              'Show me a quick example',
-                            ])
+                            for (final s in prompts)
                               _SuggestionChip(
                                 label: s,
                                 onTap: () {
@@ -545,31 +582,99 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: busy ? null : onTap,
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: busy
-              ? null
-              : const LinearGradient(
-                  colors: [AppColors.secondaryDeep, AppColors.secondary],
+    return Semantics(
+      button: true,
+      label: busy ? 'Sending' : 'Send message',
+      child: GestureDetector(
+        onTap: busy ? null : onTap,
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: busy
+                ? null
+                : const LinearGradient(
+                    colors: [AppColors.secondaryDeep, AppColors.secondary],
+                  ),
+            color: busy ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh) : null,
+          ),
+          child: busy
+              ? const Padding(
+                  padding: EdgeInsets.all(13),
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                )
+              : const Icon(
+                  Icons.send_rounded,
+                  size: 19,
+                  color: AppColors.textOnColor,
                 ),
-          color: busy ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh) : null,
         ),
-        child: busy
-            ? const Padding(
-                padding: EdgeInsets.all(13),
-                child: CircularProgressIndicator(strokeWidth: 2.2),
-              )
-            : const Icon(
-                Icons.send_rounded,
-                size: 19,
-                color: AppColors.textOnColor,
-              ),
       ),
     );
+  }
+}
+
+class _TutorContextPanel extends ConsumerWidget {
+  const _TutorContextPanel({this.initialSubjectId, this.initialTopicId, this.initialTopicName, this.initialFocus});
+  final String? initialSubjectId;
+  final String? initialTopicId;
+  final String? initialTopicName;
+  final String? initialFocus;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Prefer query context, fallback to intelligence
+    if (initialTopicName != null && initialTopicName!.isNotEmpty) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Container(width: 28, height: 28, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.secondary.withValues(alpha: 0.14)), child: const Icon(Icons.psychology_rounded, size: 16, color: AppColors.secondary)), const SizedBox(width: 8), Text('LEARNING FOCUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.secondary)), const Spacer(), if (initialFocus != null) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)), child: Text(initialFocus!.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.warning)))]),
+          const SizedBox(height: 8),
+          Text(initialTopicName!, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
+          if (initialSubjectId != null) Text('Topic • Tap a quick prompt below to start', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+        ]),
+      );
+    }
+    // Try intelligence
+    try {
+      final dash = ref.watch(dashboardProvider).data;
+      if (dash != null) {
+        final intel = AdaptiveEngine.fromDashboard(dash);
+        if (intel.insufficientData) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+            child: Row(children: [const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.secondary), const SizedBox(width: 8), Expanded(child: Text('Build your learning profile by completing a few activities.', style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)))]),
+          );
+        }
+        final weak = intel.weakTopics.isNotEmpty ? intel.weakTopics.first : null;
+        final mastery = intel.overallMastery;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: isDark ? [AppColors.secondary.withValues(alpha: 0.10), AppColors.surfaceElevated] : [AppColors.secondary.withValues(alpha: 0.06), AppLightColors.surface]), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.secondary.withValues(alpha: 0.22))),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.secondary), const SizedBox(width: 6), Text('LEARNING FOCUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.secondary)), const Spacer(), MasteryBadge(score: mastery)]),
+            const SizedBox(height: 8),
+            if (weak != null) ...[
+              Text(weak.topicName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
+              Text('Mastery ${weak.masteryScore.round()}% • ${weak.trend.isEmpty ? 'needs practice' : weak.trend.toLowerCase()} • Next: ${intel.nextDifficulty}', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+            ] else ...[
+              Text('${mastery.round()}% Mastery • ${intel.trend.replaceAll('_', ' ')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
+              Text('Next: ${intel.nextDifficulty} • ${intel.topicsAssessed} topics assessed', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+            ],
+            if (intel.revisionQueue.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text('Recommended: Practice ${intel.revisionQueue.first.topicName}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+            ],
+          ]),
+        );
+      }
+    } catch (_) {}
+    return const SizedBox.shrink();
   }
 }

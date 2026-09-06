@@ -63,6 +63,14 @@ abstract final class Routes {
   static const progress = '/progress';
   static const profile = '/profile';
   static const tutor = '/tutor';
+  static String tutorWithContext({String? subjectId, String? topicId, String? focus, String? topicName}) {
+    final q = <String>[];
+    if (subjectId != null && subjectId.isNotEmpty) q.add('subjectId=${Uri.encodeComponent(subjectId)}');
+    if (topicId != null && topicId.isNotEmpty) q.add('topicId=${Uri.encodeComponent(topicId)}');
+    if (topicName != null && topicName.isNotEmpty) q.add('topicName=${Uri.encodeComponent(topicName)}');
+    if (focus != null && focus.isNotEmpty) q.add('focus=${Uri.encodeComponent(focus)}');
+    return q.isEmpty ? tutor : '$tutor?${q.join('&')}';
+  }
   static const achievements = '/achievements';
   static const streak = '/streak';
   static const settings = '/settings';
@@ -320,7 +328,15 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.tutor,
-        pageBuilder: (_, s) => _page(child: const TutorScreen(), state: s),
+        pageBuilder: (_, s) => _page(
+          child: TutorScreen(
+            initialSubjectId: s.uri.queryParameters['subjectId'],
+            initialTopicId: s.uri.queryParameters['topicId'],
+            initialTopicName: s.uri.queryParameters['topicName'],
+            initialFocus: s.uri.queryParameters['focus'],
+          ),
+          state: s,
+        ),
       ),
       GoRoute(
         path: Routes.achievements,

@@ -1,4 +1,27 @@
 ============================================================
+PHASE: A7 — Production AI Tutor & Personalization
+DATE: 2026-09-06
+BASELINE: 7269ff3 feat(frontend): integrate adaptive learning experience
+FINAL: HEAD feat(ai): upgrade production tutor experience (see git log -1 --oneline)
+BRANCH: main
+
+SUMMARY:
+A7 production Tutor upgrade complete. Contextual premium Tutor with Learning Focus panel (subject/topic/mastery/next difficulty/recommended), dynamic quick prompts (weak->explain/hint/revise, strong->harder/challenge, insufficient->generic, focus->explain wrong/practice), Game->Tutor via Routes.tutorWithContext preserving subjectId/topicId/focus, wrong-answer explanation via contextual prompts, AI response quality preserved (refusal/validator/rateLimit/audit), loading/error/offline with mounted guards + retry, conversation UX with distinguishable bubbles + Semantics + reducedMotion, typing 120ms preserved, personalization card near header, dashboard->tutor weak/revision/result entry points contextual, routing via query params, responsive 360-1440, dark/light/system, a11y, perf, validation PASS.
+
+IMPLEMENTATION:
+- frontend/lib/app/router.dart (added Routes.tutorWithContext helper + tutor GoRoute now passes initialSubjectId/topicId/topicName/focus to TutorScreen)
+- frontend/lib/features/tutor/presentation/tutor_screen.dart (premium upgrade: imports intelligence/adaptive_next_action/game_surfaces/dashboard_provider, added _contextualPrompts() weak/strong/focus aware, added _TutorContextPanel ConsumerWidget showing Learning Focus/mastery/recommended when topic or intelligence available else truthful insufficient-data, dynamic suggestion chips via _contextualPrompts, enhanced _SendButton Semantics, context panel above ListView, existing typing/audio/theme/disposal preserved)
+- frontend/lib/features/dashboard/widgets/intelligence_section.dart (updated Tutor buttons to use tutorWithContext with topicId/name/focus for contextual launch)
+- frontend/lib/features/game_engine/widgets/game_result_screen.dart (updated weak adaptive next to use tutorWithContext)
+- Reused existing intelligence (AdaptiveEngine), Gemini backend (AiTutorService/TutorContextBuilder), audio (TypingSoundController 120ms), design system
+BACKEND CHANGES: NONE
+DATABASE CHANGES: NONE
+AI INTEGRATION: Existing Gemini via AiTutorService/GeminiClient/TutorContextBuilder (subject/topic/mastery/trend/attemptCount) reused, frontend now passes topic context via query, fallback deterministic via AdaptiveEngine insufficient-data
+VALIDATION: Flutter tests 729/729 (718 prior +11 adaptive), Analyze PASS 0 errors, Web build PASS, Playwright UNAVAILABLE honest widget/build verification, Responsive 360-1440 no overflow (ListView + context panel)
+REGRESSION: A1 audio/theme (120ms), A2 flows, A3 reliability (mounted), A4 gameplay (14 games distinct, snake restart), A5 mastery (intelligence), A6 adaptive UX all preserved (729 tests)
+GIT: baseline 7269ff3, final HEAD upgrade production tutor experience, diff router+tutor+intelligence_section+game_result+report
+
+============================================================
 PHASE: A6 — Adaptive Learning UX & AI Experience
 DATE: 2026-09-06
 BASELINE: f0ac755 feat(ai): add adaptive learning intelligence

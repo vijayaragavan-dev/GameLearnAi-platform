@@ -525,7 +525,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
               actionLabel: isWeak ? 'Practice' : (isStrong ? 'Challenge' : 'Continue'),
               onAction: () {
                 if (isWeak) {
-                  context.push(Routes.tutor);
+                  context.push(Routes.tutorWithContext(topicId: result.config.topicId, topicName: result.config.topicName, focus: result.config.topicName));
                 } else if (result.config.subjectId != null) {
                   context.go(Routes.gameHub(result.config.topicId, subjectId: result.config.subjectId, subjectName: result.config.subjectName), extra: result.config.topicName);
                 } else {
