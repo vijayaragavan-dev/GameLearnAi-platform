@@ -13,6 +13,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/intelligence/learner_intelligence.dart';
+import '../../../core/models/dashboard_models.dart';
+import '../../../shared/widgets/adaptive_next_action.dart';
+import '../../dashboard/providers/dashboard_provider.dart';
 import '../../../core/theme/game_visual_identity.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/celebrations.dart';
@@ -403,6 +407,9 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                         child: const Row(children: [Icon(Icons.emoji_events_rounded, size: 16, color: AppColors.success), SizedBox(width: 8), Text('NEW PERSONAL BEST!', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success, letterSpacing: 1))]),
                       ),
                     ],
+                    // Adaptive: mastery updated + personalized next (A6)
+                    const SizedBox(height: 14),
+                    _AdaptiveResultInsight(result: r),
                     const SizedBox(height: 22),
                     // What's next — premium actions with contextual navigation (no dead-end)
                     Text("WHAT'S NEXT?", style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
@@ -463,6 +470,74 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
   }
 
   Color _scoreColor(double s) => s >= 80 ? AppColors.success : s >= 50 ? AppColors.warning : AppColors.error;
+}
+
+class _AdaptiveResultInsight extends ConsumerWidget {
+  const _AdaptiveResultInsight({required this.result});
+  final GameResult result;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    Dashboard? dash;
+    try {
+      dash = ref.watch(dashboardProvider).data as Dashboard?;
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (dash == null) return const SizedBox.shrink();
+    final intel = AdaptiveEngine.fromDashboard(dash);
+    // Show mastery updated or next difficulty hint
+    final isWeak = intel.weakTopics.any((w) => w.topicId == result.config.topicId);
+    final isStrong = intel.strongTopics.any((s) => s.topicId == result.config.topicId);
+    String masteryLine = 'Mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
+    String nextLine;
+    if (isWeak && result.accuracy < 60) {
+      nextLine = 'This concept needs a little more practice — try an easier challenge or ask Tutor.';
+    } else if (isStrong && result.accuracy >= 80) {
+      nextLine = 'Challenge increased — you are ready for ${intel.nextDifficulty}.';
+    } else if (result.accuracy >= 85) {
+      nextLine = 'Great work — ready for a harder challenge?';
+    } else if (result.accuracy < 50) {
+      nextLine = 'Review this concept — a quick practice will help.';
+    } else {
+      nextLine = 'Keep practicing to build consistency.';
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [Icon(Icons.psychology_rounded, size: 14, color: AppColors.primary), const SizedBox(width: 6), Text('YOUR PERFORMANCE INSIGHT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.primary))]),
+            const SizedBox(height: 8),
+            Text(masteryLine, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
+            const SizedBox(height: 4),
+            Text(nextLine, style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+            const SizedBox(height: 8),
+            AdaptiveNextActionCard(
+              title: isWeak ? 'Practice ${result.config.topicName ?? 'this topic'}' : (isStrong ? 'Challenge ${result.config.topicName ?? 'next level'}' : 'Continue learning'),
+              reason: isWeak ? 'Based on your recent performance' : (isStrong ? 'Strong mastery — level up your challenge' : 'Recommended next step'),
+              topicName: result.config.topicName,
+              subjectName: result.config.subjectName,
+              gameType: isWeak ? 'quiz_battle' : (isStrong ? 'boss_battle' : null),
+              difficulty: intel.nextDifficulty,
+              actionLabel: isWeak ? 'Practice' : (isStrong ? 'Challenge' : 'Continue'),
+              onAction: () {
+                if (isWeak) {
+                  context.push(Routes.tutor);
+                } else if (result.config.subjectId != null) {
+                  context.go(Routes.gameHub(result.config.topicId, subjectId: result.config.subjectId, subjectName: result.config.subjectName), extra: result.config.topicName);
+                } else {
+                  context.go(Routes.home);
+                }
+              },
+            ),
+          ]),
+        ),
+      ],
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {
