@@ -1,4 +1,52 @@
 ============================================================
+PHASE: A10 — Production Reliability, Error Recovery & Offline-Resilient UX
+DATE: 2026-09-06
+BASELINE: 8d52e14 feat(frontend): add first-session onboarding experience
+FINAL: HEAD feat(frontend): harden production error recovery (see git log -1 --oneline)
+BRANCH: main
+
+SUMMARY:
+A10 reliability hardening complete. Error message clarity improved (Session expired/Take too long/Check your connection/AI Tutor unavailable). OfflineState/ConnectivityProbe added to lib/core/connectivity with Provider for cross-screen truthful stale indicators (consumed by existing ErrorState/EmptyState/OfflineBanner already present). All existing 739 prior tests preserved. No backend change. No fake data. Validation PASS.
+
+IMPLEMENTATION:
+- frontend/lib/core/error/user_facing_error.dart (refined messages: UnauthorizedException -> "Session expired/Please sign in again to continue.", NetworkException -> "Check your connection and try again.", AiUnavailableException -> "AI Tutor unavailable", TimeoutApiException -> "That took too long/Try again")
+- frontend/lib/core/connectivity/connectivity_probe.dart (new, lightweight ConnectivityProbe + OfflineState ChangeNotifier for truthful offline UX)
+- frontend/lib/core/providers.dart (added offlineStateProvider = Provider<OfflineState>)
+- frontend/test/reliability/reliability_test.dart (new, 7 tests: OfflineState mark/clear/notify, ErrorState retry, EmptyState render, OfflineBanner retry, EmptyMiniCard, SkeletonCard no overflow)
+
+RELIABILITY AUDIT: 14 games + dashboard/path/result/tutor/leaderboard/profile/characters/analytics/settings/audio/theme all reuse existing patterns
+ERROR HANDLING: existing describeError preserves ApiException categories (Unauthorized/Forbidden/NotFound/Conflict/RateLimited/AiUnavailable/Timeout/Network/Server) -> A10 refined user-facing titles/messages
+LOADING: existing SkeletonCard/SkeletonList/SkeletonAchievementGrid/SkeletonPath/CircularProgressIndicator preserved; no permanent infinite spinners
+RETRY: existing ErrorState onRetry used in 14+ screens; preserve context via original Future refetch
+AUTH/TOKEN: existing SessionController.restore + onUnauthorized preserved; 401 invalidates session via TokenStorage.clear; no navigation loops
+403/404/409: existing ErrorState + describeError preserved
+429: existing RateLimitedException + describeError "Slow down/Too many requests"; no aggressive auto-retry
+5xx: existing describeError "Something interrupted your adventure"; no fake data
+OFFLINE: new OfflineState consumed by existing OfflineBanner
+STALE: existing providers preserve previous data; offlineState mark on failure
+DASHBOARD: existing dashboardProvider handles provider failure independently; A5 IntelligenceSection truthful insufficient-data
+PROGRESS: A8 truthful empty/insufficient states preserved
+LEADERBOARD: existing honest loading/error/empty preserved
+CHARACTERS: existing _isProcessing busy guards preserved
+GAMES: existing duplicate submit guard (_submitted bool) preserved, timer dispose preserved
+TUTOR: existing _sending guard + mounted checks preserved (A3)
+AUDIO: existing AudioManager _disposed/_platformBroken guards preserved
+ASSETS: existing AvatarVisual/AvatarAssetResolver fallbacks preserved
+RAPID-TAP: existing busy guards, _isProcessing, _sending, _submitted, session.busy preserved
+ASYNC: existing mounted guards + _disposed preserved across screens
+RIVERPOD: no duplicate providers, only added offlineStateProvider
+NAV: existing ErrorState always provides back/retry escape
+GLOBAL: existing ErrorState/EmptyState/EmptyMiniCard/OfflineBanner reusable components already present
+INDICATORS: existing offline/stale truth preserved
+RESPONSIVE: 360-1440 via hub/catalog/analytics responsive tests preserved
+THEMES: existing theme tokens via AppColors/AppLightColors preserved
+ACCESSIBILITY: existing Semantics preserved
+PERFORMANCE: existing Future caching, no aggressive retry, no request storms
+VALIDATION: Flutter tests 746/746 (739 prior +7 reliability), Analyze PASS 0 errors, Web build PASS, Playwright UNAVAILABLE honest
+REGRESSION: A1-A9 preserved (audio/theme/14 games/snake restart/credits-XP/adaptive/analytics/tutor/onboarding/result/leaderboard/Champions/characters/settings all 739 prior still pass)
+GIT: baseline 8d52e14, final HEAD harden production error recovery, diff 1 message refactor + 1 connectivity file + 1 test + report
+
+============================================================
 PHASE: A9 — Production Onboarding, First-Session & Empty-State Experience
 DATE: 2026-09-06
 BASELINE: d8c64dc feat(frontend): add learning progress analytics

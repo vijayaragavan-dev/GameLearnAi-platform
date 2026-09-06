@@ -13,8 +13,8 @@ class UserFacingError {
 UserFacingError describeError(Object error) {
   if (error is UnauthorizedException) {
     return const UserFacingError(
-      'Signal lost',
-      'Your session ended. Sign in again to resume your adventure.',
+      'Session expired',
+      'Please sign in again to continue.',
     );
   }
   if (error is ForbiddenException) {
@@ -51,20 +51,20 @@ UserFacingError describeError(Object error) {
   }
   if (error is AiUnavailableException) {
     return const UserFacingError(
-      'Nova is offline',
+      'AI Tutor unavailable',
       'The AI service could not be reached. Try again soon.',
     );
   }
   if (error is TimeoutApiException) {
     return const UserFacingError(
-      'Signal interrupted',
-      'The server took too long to respond.',
+      'That took too long',
+      'The server took longer than expected. Try again.',
     );
   }
   if (error is NetworkException) {
     return const UserFacingError(
       "You're offline",
-      "We can't reach the adventure servers. Check your connection.",
+      'Check your connection and try again.',
     );
   }
   return const UserFacingError(

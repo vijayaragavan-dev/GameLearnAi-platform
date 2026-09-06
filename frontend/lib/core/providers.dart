@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'audio/audio_manager.dart';
+import 'connectivity/connectivity_probe.dart';
 import 'network/api_client.dart';
+import 'network/api_exception.dart';
 import 'storage/token_storage.dart';
 import 'haptics/haptics.dart';
 import 'config/app_config.dart';
@@ -83,6 +85,11 @@ final audioManagerProvider = Provider<AudioManager>(
 );
 
 final hapticsProvider = Provider<Haptics>((ref) => Haptics());
+
+/// Shared offline state — consulted by screens to render truthful stale/offline
+/// indicators without rebuilding app architecture. The API client flips it
+/// based on request outcomes and consumers listen for context-aware UI.
+final offlineStateProvider = Provider<OfflineState>((ref) => OfflineState());
 
 final appConfigInfoProvider = Provider<AppConfigInfo>(
   (ref) => AppConfigInfo(
