@@ -394,15 +394,47 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                       ),
                     ],
                     const SizedBox(height: 22),
-                    // What's next — premium actions
+                    // What's next — premium actions with contextual navigation (no dead-end)
                     Text("WHAT'S NEXT?", style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
                     const SizedBox(height: 10),
                     if (widget.onReplay != null)
                       SecondaryGameButton(label: 'Play again', icon: Icons.replay_rounded, onTap: widget.onReplay!),
                     if (widget.onReplay != null) const SizedBox(height: 10),
-                    PrimaryGameButton(label: 'Continue', icon: Icons.arrow_forward_rounded, onTap: widget.onContinue ?? () => context.go(Routes.home)),
-                    if (widget.onReplay != null) const SizedBox(height: 8),
-                    TextButton(onPressed: () => context.go(Routes.home), child: const Text('RETURN TO BASE')),
+                    Semantics(
+                      button: true,
+                      label: 'Continue to next learning action',
+                      child: PrimaryGameButton(
+                        label: 'Continue',
+                        icon: Icons.arrow_forward_rounded,
+                        onTap: widget.onContinue ?? () {
+                          final sid = r.config.subjectId;
+                          final sname = r.config.subjectName;
+                          if (sid != null && sid.isNotEmpty) {
+                            context.go(Routes.gameHub(r.config.topicId, subjectId: sid, subjectName: sname), extra: r.config.topicName);
+                          } else {
+                            context.go(Routes.home);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Semantics(
+                      button: true,
+                      label: 'Return to dashboard',
+                      child: TextButton(
+                        onPressed: () => context.go(Routes.home),
+                        child: const Text('RETURN TO BASE'),
+                      ),
+                    ),
+                    // Contextual secondary: back to arena when subject available
+                    if (r.config.subjectId != null && r.config.subjectId!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      TextButton.icon(
+                        onPressed: () => context.go(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
+                        icon: const Icon(Icons.stadium_rounded, size: 16),
+                        label: Text('BACK TO ARENA • ${r.config.subjectName ?? 'World'}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                      ),
+                    ],
                   ],
                 ),
               ),
