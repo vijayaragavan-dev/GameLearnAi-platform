@@ -99,6 +99,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
           .askTutor(
             TutorRequest(question: question, conversation: buildWindow()),
           );
+      if (!mounted) return;
       setState(() {
         _messages.add(
           _Bubble(
@@ -116,9 +117,17 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
       }
       _scrollDown();
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         _sending = false;
         _error = describeError(e).message;
+      });
+      ref.read(audioManagerProvider).play(Sfx.incorrect);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _error = 'Nova is briefly unavailable — please try again.';
       });
       ref.read(audioManagerProvider).play(Sfx.incorrect);
     }
