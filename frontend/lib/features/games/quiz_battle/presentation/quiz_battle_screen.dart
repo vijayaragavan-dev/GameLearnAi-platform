@@ -84,7 +84,7 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
   void _initTimer() {
     final seconds = DifficultyUtils.timeLimitFor(_difficulty, GameType.quizBattle);
     _questionTimer = GameTimer(totalSeconds: seconds);
-    _questionTimer.onTickValue = (_) => setState(() {});
+    _questionTimer.onTickValue = (_) { if (mounted) setState(() {}); };
     _questionTimer.onComplete = () => _onTimeOut();
     _questionTimer.start();
     _questionStartElapsed = 0;

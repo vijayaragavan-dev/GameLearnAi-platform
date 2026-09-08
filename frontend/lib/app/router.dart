@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -172,9 +173,17 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
     initialLocation: Routes.splash,
     debugLogDiagnostics: false,
     refreshListenable: refreshNotifier,
+    // Unknown / deep-link URLs fall back to splash instead of throwing.
+    errorBuilder: (context, state) => const SplashScreen(),
     redirect: (context, state) {
       final session = ref.read(sessionProvider);
       final location = state.uri.path;
+      // Design showcase is debug-only; never serve it in production.
+      if (!kDebugMode && location == Routes.designShowcase) {
+        return session.phase == SessionPhase.authenticated
+            ? Routes.home
+            : Routes.splash;
+      }
       final publicOrAuth =
           Routes._isPublic(location) ||
           location == Routes.login ||
@@ -283,20 +292,32 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/quiz-result',
-        pageBuilder: (_, s) => _page(
-          child: QuizResultScreen(arg: s.extra! as QuizResultArg),
-          state: s,
-          duration: AppMotion.feature,
-          scaleIn: true,
-        ),
+        pageBuilder: (_, s) {
+          final arg = s.extra;
+          if (arg is! QuizResultArg) {
+            return _page(child: const DashboardScreen(), state: s);
+          }
+          return _page(
+            child: QuizResultScreen(arg: arg),
+            state: s,
+            duration: AppMotion.feature,
+            scaleIn: true,
+          );
+        },
       ),
       GoRoute(
         path: '/recommendation',
-        pageBuilder: (_, s) => _page(
-          child: RecommendationScreen(item: s.extra! as RecommendationItem),
-          state: s,
-          begin: const Offset(1, 0),
-        ),
+        pageBuilder: (_, s) {
+          final item = s.extra;
+          if (item is! RecommendationItem) {
+            return _page(child: const DashboardScreen(), state: s);
+          }
+          return _page(
+            child: RecommendationScreen(item: item),
+            state: s,
+            begin: const Offset(1, 0),
+          );
+        },
       ),
       GoRoute(
         path: '/assessment/:subjectId',
@@ -345,11 +366,17 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/achievements/:code',
-        pageBuilder: (_, s) => _page(
-          child: BadgeDetailScreen(achievement: s.extra! as Achievement),
-          state: s,
-          scaleIn: true,
-        ),
+        pageBuilder: (_, s) {
+          final achievement = s.extra;
+          if (achievement is! Achievement) {
+            return _page(child: const AchievementsScreen(), state: s);
+          }
+          return _page(
+            child: BadgeDetailScreen(achievement: achievement),
+            state: s,
+            scaleIn: true,
+          );
+        },
       ),
       GoRoute(
         path: Routes.streak,

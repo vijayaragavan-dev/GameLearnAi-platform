@@ -46,6 +46,7 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
   int _timeLimit = 150;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   Timer? _feedbackTimer;
 
   @override
@@ -56,7 +57,7 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.conceptBuilder);
     _challenges = ConceptChallenges.session(count: 4);
     _timer = GameTimer(totalSeconds: _timeLimit);
-    _timer.onTickValue = (_) => setState(() {});
+    _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = () => _finishGame(timedOut: true);
     _timer.start();
     _start = DateTime.now();
@@ -140,6 +141,8 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _challenges.length;
@@ -157,7 +160,7 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
       completedAt: DateTime.now(),
     );
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ConceptBuilderScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))))));
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ConceptBuilderScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))))));
   }
 
   String _fmt(int s) => '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';

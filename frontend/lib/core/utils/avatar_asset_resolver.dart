@@ -54,7 +54,14 @@ String resolveAvatarAsset(String? assetKey) {
 }
 
 bool isKnownAvatarAsset(String assetKey) {
-  return _kAssetMap.containsKey(assetKey.trim());
+  final normalized = assetKey.trim();
+  if (_kAssetMap.containsKey(normalized)) return true;
+  final withoutSuffix = normalized.replaceAll(RegExp(r'\.svg$'), '');
+  if (_kAssetMap.containsKey(withoutSuffix)) return true;
+  final segment = normalized.split('/').last;
+  return _kAssetMap.keys.any(
+    (key) => key.endsWith('/$segment') || key == 'characters/$segment',
+  );
 }
 
 List<String> get allKnownAvatarAssets => _kAssetMap.values.toSet().toList();

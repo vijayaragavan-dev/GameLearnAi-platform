@@ -43,6 +43,7 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
   int _timeLimit = 150;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   bool _hintVisible = false;
   bool _showResult = false;
   bool _wasCorrect = false;
@@ -273,6 +274,8 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _missions.length;
@@ -293,7 +296,7 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => GameResultScreen(
               result: result,
-              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ConnectivityLabScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))),
+              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ConnectivityLabScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
             )));
   }
 

@@ -47,6 +47,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
   DateTime? _start;
   int _timeLimit = 120;
   bool _paused = false;
+  bool _finished = false;
   Timer? _feedbackTimer;
 
   @override
@@ -62,7 +63,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
     // If challenges empty (should not), fallback
     if (_challenges.isEmpty) _challenges = DebugChallenges.all.take(6).toList();
     _timer = GameTimer(totalSeconds: _timeLimit);
-    _timer.onTickValue = (_) => setState(() {});
+    _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
     _timer.start();
     _start = DateTime.now();
@@ -102,6 +103,8 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final correctCount = _correctCount;
@@ -124,7 +127,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
     Navigator.of(context).pushReplacement(MaterialPageRoute(
       builder: (_) => GameResultScreen(
         result: result,
-        onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => DebugArenaScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))),
+        onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => DebugArenaScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
       ),
     ));
   }

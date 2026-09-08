@@ -61,6 +61,7 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
   String? _error;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   bool _soundEnabled = true;
   int _timeLimit = 90;
 
@@ -106,7 +107,7 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
       }
       cards.shuffle(math.Random(42)); // deterministic shuffle for testability
       _timer = GameTimer(totalSeconds: _timeLimit);
-      _timer.onTickValue = (_) => setState(() {});
+      _timer.onTickValue = (_) { if (mounted) setState(() {}); };
       _timer.onComplete = _onTimeUp;
       _timer.start();
       _start = DateTime.now();
@@ -181,6 +182,8 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
   }
 
   void _finishGame({bool timedOut = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? _timeLimit : DateTime.now().difference(_start!).inSeconds;
     final totalPairs = _cards.length ~/ 2;

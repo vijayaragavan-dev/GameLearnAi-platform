@@ -65,7 +65,7 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
     _difficulty = DifficultyUtils.resolve(topicDifficulty: q.difficulty);
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.speedRun);
     _timer = GameTimer(totalSeconds: _timeLimit);
-    _timer.onTickValue = (_) => setState(() {});
+    _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeout;
     _timer.start();
     _questionStart = DateTime.now();

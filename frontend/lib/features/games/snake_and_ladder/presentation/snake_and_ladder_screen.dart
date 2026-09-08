@@ -42,6 +42,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
   int _timeLimit = 240;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   int _score = 0;
   int _correct = 0;
   int _failed = 0;
@@ -231,6 +232,8 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _board.size;
@@ -253,7 +256,7 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => GameResultScreen(
               result: result,
-              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SnakeAndLadderScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))),
+              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SnakeAndLadderScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
             )));
   }
 

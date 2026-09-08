@@ -47,6 +47,7 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
   int _timeLimit = 150;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   bool _briefingDone = false;
   bool _showPhaseResult = false;
   bool _wasCorrect = false;
@@ -297,6 +298,8 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _bosses.length;
@@ -318,7 +321,7 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => GameResultScreen(
               result: result,
-              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => BossBattleScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))),
+              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => BossBattleScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
             )));
   }
 

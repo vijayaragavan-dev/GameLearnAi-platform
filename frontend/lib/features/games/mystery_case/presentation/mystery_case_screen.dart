@@ -50,6 +50,7 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
   int _timeLimit = 150;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   Timer? _feedbackTimer;
   String? _feedbackMessage;
 
@@ -165,6 +166,8 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _cases.length;
@@ -185,7 +188,7 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => GameResultScreen(
               result: result,
-              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => MysteryCaseScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))),
+              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => MysteryCaseScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
             )));
   }
 

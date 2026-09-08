@@ -270,7 +270,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                           begin: 0,
                                           end: profile.overallMastery / 100,
                                         ),
-                                        duration: AppMotion.celebration,
+                                        duration: AppMotion.durFor(
+                                          context,
+                                          AppMotion.celebration,
+                                        ),
                                         curve: AppMotion.easeOut,
                                         builder: (context, v, _) =>
                                             CircularProgressIndicator(

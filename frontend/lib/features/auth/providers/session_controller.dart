@@ -8,6 +8,7 @@ import '../../../core/providers.dart';
 import '../../avatar/providers/avatar_providers.dart';
 import '../../challenge/assessment/providers/assessment_provider.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
+import '../../gamification/providers/game_results_provider.dart';
 import '../../leaderboard/providers/leaderboard_providers.dart';
 import '../../learning/path/providers/path_provider.dart';
 
@@ -195,6 +196,9 @@ class SessionController extends Notifier<SessionState> {
     ref.invalidate(overallLeaderboardProvider);
     ref.invalidate(subjectLeaderboardProvider);
     ref.invalidate(myPositionProvider);
+    ref.invalidate(dashboardLeaderboardProvider);
+    ref.invalidate(gameResultsProvider);
+    ref.read(selectedSubjectIdProvider.notifier).state = null;
   }
 
   void _celebrateEnter() {

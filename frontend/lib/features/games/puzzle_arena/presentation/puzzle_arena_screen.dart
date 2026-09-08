@@ -43,6 +43,7 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
   int _timeLimit = 150;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   bool _hintVisible = false;
   bool _showResult = false;
   bool _wasCorrect = false;
@@ -211,6 +212,8 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _puzzles.length;
@@ -231,7 +234,7 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
     Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => GameResultScreen(
               result: result,
-              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => PuzzleArenaScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))),
+              onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => PuzzleArenaScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))),
             )));
   }
 

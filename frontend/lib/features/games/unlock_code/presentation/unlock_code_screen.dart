@@ -47,6 +47,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
   int _timeLimit = 150;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   Timer? _feedbackTimer;
   List<String?> _revealed = [];
 
@@ -60,7 +61,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
     _vault = UnlockChallenges.vaultForSession(_challenges);
     _revealed = List.filled(_vault.length, null);
     _timer = GameTimer(totalSeconds: _timeLimit);
-    _timer.onTickValue = (_) => setState(() {});
+    _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
     _timer.start();
     _start = DateTime.now();
@@ -120,6 +121,8 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
   }
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final total = _challenges.length;
@@ -141,7 +144,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
     if (_vault.isUnlocked(_correctCount) && !timedOut && !outOfLives) {
       _showUnlockSequence(result);
     } else {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => UnlockCodeScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))))));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => UnlockCodeScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))))));
     }
   }
 
@@ -153,7 +156,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
       builder: (_) => _UnlockDialog(vault: _vault, onContinue: () {
         Navigator.of(context).pop();
         if (!mounted) return;
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => UnlockCodeScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId))))));
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => GameResultScreen(result: result, onReplay: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => UnlockCodeScreen(topicId: widget.topicId, topicName: widget.topicName, subjectId: widget.subjectId, subjectName: widget.subjectName))))));
       }),
     );
   }

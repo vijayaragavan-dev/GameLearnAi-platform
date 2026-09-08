@@ -47,6 +47,7 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
   String? _error;
   DateTime? _start;
   bool _paused = false;
+  bool _finished = false;
   bool _soundEnabled = true;
   int _timeLimit = 120;
 
@@ -84,7 +85,7 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
         _placements[it.id] = null;
       }
       _timer = GameTimer(totalSeconds: _timeLimit);
-      _timer.onTickValue = (_) => setState(() {});
+      _timer.onTickValue = (_) { if (mounted) setState(() {}); };
       _timer.onComplete = _onTimeUp;
       _timer.start();
       _start = DateTime.now();
@@ -140,6 +141,8 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
   }
 
   void _finish() {
+    if (_finished) return;
+    _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
     final accuracy = _items.isEmpty ? 0.0 : _correctCount / _items.length * 100;
