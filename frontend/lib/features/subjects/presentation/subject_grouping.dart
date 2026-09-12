@@ -104,7 +104,16 @@ abstract final class SubjectGrouping {
     if (_containsAny(haystack, ['compiler', 'theory', 'computation', 'toc'])) {
       return 'Theory';
     }
-    if (_containsAny(haystack, ['software', 'system design', 'sdlc'])) {
+    if (_containsAny(haystack, [
+      'software',
+      'system design',
+      'sdlc',
+      'object-oriented',
+      'object oriented',
+      ' oop',
+      '_oop',
+      'oose',
+    ])) {
       return 'Software Engineering';
     }
     if (_containsAny(haystack, [

@@ -118,6 +118,69 @@ abstract final class SubjectVisualRegistry {
     motif: 'tree_graph',
   );
 
+  // ── 11-world expansion identities (canonical catalogue mirrors) ───────────
+  // These extend — never replace — the 5 legacy identities above.
+
+  static const SubjectVisualIdentity _algorithms = SubjectVisualIdentity(
+    iconKey: 'algorithms',
+    displayName: 'Algorithms',
+    accent: Color(0xFFA78BFA), // violet-400
+    atmosphereColor: Color(0xFF7C3AED),
+    gradient: AppGradients.worldAlgorithms,
+    icon: Icons.functions_rounded,
+    motif: 'flow_chart',
+  );
+
+  static const SubjectVisualIdentity _oop = SubjectVisualIdentity(
+    iconKey: 'oop',
+    displayName: 'Object-Oriented Programming',
+    accent: AppColors.secondary,
+    atmosphereColor: AppColors.secondaryDeep,
+    gradient: AppGradients.worldOOP,
+    icon: Icons.class_rounded,
+    motif: 'object_graph',
+  );
+
+  static const SubjectVisualIdentity _aiMl = SubjectVisualIdentity(
+    iconKey: 'ai_ml',
+    displayName: 'Artificial Intelligence & Machine Learning',
+    accent: Color(0xFFF472B6), // pink-400
+    atmosphereColor: Color(0xFFBE185D),
+    gradient: AppGradients.worldAIML,
+    icon: Icons.psychology_rounded,
+    motif: 'neural_net',
+  );
+
+  static const SubjectVisualIdentity _dataScience = SubjectVisualIdentity(
+    iconKey: 'data_science',
+    displayName: 'Data Science',
+    accent: Color(0xFF2DD4BF), // teal-400
+    atmosphereColor: Color(0xFF0F766E),
+    gradient: AppGradients.worldDataScience,
+    icon: Icons.analytics_rounded,
+    motif: 'data_canvas',
+  );
+
+  static const SubjectVisualIdentity _web = SubjectVisualIdentity(
+    iconKey: 'web_technologies',
+    displayName: 'Web Technologies',
+    accent: Color(0xFF60A5FA), // blue-400
+    atmosphereColor: Color(0xFF1D4ED8),
+    gradient: AppGradients.worldWeb,
+    icon: Icons.language_rounded,
+    motif: 'browser_grid',
+  );
+
+  static const SubjectVisualIdentity _oose = SubjectVisualIdentity(
+    iconKey: 'oose',
+    displayName: 'Object-Oriented Software Engineering',
+    accent: AppColors.warning,
+    atmosphereColor: Color(0xFF92400E),
+    gradient: AppGradients.worldOOSE,
+    icon: Icons.architecture_rounded,
+    motif: 'blueprint_stack',
+  );
+
   // Alternate iconKey spellings (backend may vary)
   static const SubjectVisualIdentity _programmingAlt = SubjectVisualIdentity(
     iconKey: 'programming',
@@ -169,6 +232,76 @@ abstract final class SubjectVisualRegistry {
     motif: 'tree_graph',
   );
 
+  // Alternate spellings for 11-world backend variance (exact-match first).
+  static const SubjectVisualIdentity _dsShort = SubjectVisualIdentity(
+    iconKey: 'ds',
+    displayName: 'Data Structures',
+    accent: Color(0xFF34D399),
+    atmosphereColor: Color(0xFF059669),
+    gradient: AppGradients.worldDataStructures,
+    icon: Icons.account_tree_rounded,
+    motif: 'tree_graph',
+  );
+
+  static const SubjectVisualIdentity _dsSubject = SubjectVisualIdentity(
+    iconKey: 'subject_ds',
+    displayName: 'Data Structures',
+    accent: Color(0xFF34D399),
+    atmosphereColor: Color(0xFF059669),
+    gradient: AppGradients.worldDataStructures,
+    icon: Icons.account_tree_rounded,
+    motif: 'tree_graph',
+  );
+
+  static const SubjectVisualIdentity _sqlAlt = SubjectVisualIdentity(
+    iconKey: 'sql',
+    displayName: 'Database Systems',
+    accent: Color(0xFFFB923C),
+    atmosphereColor: Color(0xFFEA580C),
+    gradient: AppGradients.worldDatabase,
+    icon: Icons.storage_rounded,
+    motif: 'data_vault',
+  );
+
+  static const SubjectVisualIdentity _dataScienceAlt = SubjectVisualIdentity(
+    iconKey: 'datascience',
+    displayName: 'Data Science',
+    accent: Color(0xFF2DD4BF),
+    atmosphereColor: Color(0xFF0F766E),
+    gradient: AppGradients.worldDataScience,
+    icon: Icons.analytics_rounded,
+    motif: 'data_canvas',
+  );
+
+  static const SubjectVisualIdentity _webAlt = SubjectVisualIdentity(
+    iconKey: 'subject_web',
+    displayName: 'Web Technologies',
+    accent: Color(0xFF60A5FA),
+    atmosphereColor: Color(0xFF1D4ED8),
+    gradient: AppGradients.worldWeb,
+    icon: Icons.language_rounded,
+    motif: 'browser_grid',
+  );
+
+  static const SubjectVisualIdentity _javaAlt = SubjectVisualIdentity(
+    iconKey: 'java',
+    displayName: 'Object-Oriented Programming',
+    accent: AppColors.secondary,
+    atmosphereColor: AppColors.secondaryDeep,
+    gradient: AppGradients.worldOOP,
+    icon: Icons.class_rounded,
+    motif: 'object_graph',
+  );
+
+  static const SubjectVisualIdentity _ooseAlt = SubjectVisualIdentity(    iconKey: 'software_engineering',
+    displayName: 'Object-Oriented Software Engineering',
+    accent: AppColors.warning,
+    atmosphereColor: Color(0xFF92400E),
+    gradient: AppGradients.worldOOSE,
+    icon: Icons.architecture_rounded,
+    motif: 'blueprint_stack',
+  );
+
   /// Fallback — neutral premium style for unmapped subjects.
   static const SubjectVisualIdentity fallback = SubjectVisualIdentity(
     iconKey: 'default',
@@ -187,10 +320,23 @@ abstract final class SubjectVisualRegistry {
     _networksAlt,
     _dbms,
     _dbmsAlt,
+    _sqlAlt,
     _os,
     _osAlt,
     _dataStructures,
     _dsaAlt,
+    _dsShort,
+    _dsSubject,
+    _algorithms,
+    _oop,
+    _javaAlt,
+    _aiMl,
+    _dataScience,
+    _dataScienceAlt,
+    _web,
+    _webAlt,
+    _oose,
+    _ooseAlt,
   ];
 
   /// Resolve visual identity from backend [Subject.iconKey].
@@ -215,8 +361,34 @@ abstract final class SubjectVisualRegistry {
   }
 
   /// Resolve visual identity from subject name string.
+  /// Covers all 11 canonical worlds; unknown names yield [fallback].
   static SubjectVisualIdentity fromName(String name) {
     final lower = name.toLowerCase();
+    // Specific multi-word worlds first (order matters).
+    if (lower.contains('software engineering') ||
+        (lower.contains('object') && lower.contains('software'))) {
+      return _oose;
+    }
+    if (lower.contains('web technolog') ||
+        (lower.contains('web') &&
+            (lower.contains('technolog') ||
+                lower.contains('develop') ||
+                lower.contains('html')))) {
+      return _web;
+    }
+    if (lower.contains('data science')) return _dataScience;
+    if (lower.contains('artificial intelligence') ||
+        lower.contains('machine learning') ||
+        lower.contains('ai & ml') ||
+        lower.contains('ai/ml')) {
+      return _aiMl;
+    }
+    if (lower.contains('object-oriented') ||
+        lower.contains('object oriented') ||
+        (lower.contains(' oop'))) {
+      return _oop;
+    }
+    if (lower.contains('algorithm')) return _algorithms;
     if (lower.contains('program') || lower.contains('code')) {
       return _programming;
     }
@@ -229,13 +401,19 @@ abstract final class SubjectVisualRegistry {
     return fallback;
   }
 
-  /// All known subject identities (primary variants only).
+  /// All known subject identities (primary variants only — 11 worlds).
   static List<SubjectVisualIdentity> get known => [
     _programming,
-    _networks,
-    _dbms,
-    _os,
     _dataStructures,
+    _algorithms,
+    _dbms,
+    _networks,
+    _os,
+    _oop,
+    _aiMl,
+    _dataScience,
+    _web,
+    _oose,
   ];
 }
 

@@ -508,6 +508,48 @@ abstract final class AppGradients {
     colors: [Color(0xFF064E3B), Color(0xFF10B981)],
   );
 
+  /// Algorithms world — violet analysis.
+  static const LinearGradient worldAlgorithms = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF2E1065), Color(0xFF8B5CF6)],
+  );
+
+  /// OOP world — cyan objects.
+  static const LinearGradient worldOOP = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF164E63), Color(0xFF22D3EE)],
+  );
+
+  /// AI/ML world — rose intelligence.
+  static const LinearGradient worldAIML = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF500724), Color(0xFFF472B6)],
+  );
+
+  /// Data Science world — teal insight.
+  static const LinearGradient worldDataScience = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF134E4A), Color(0xFF2DD4BF)],
+  );
+
+  /// Web world — blue browser.
+  static const LinearGradient worldWeb = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1E3A8A), Color(0xFF60A5FA)],
+  );
+
+  /// OOSE world — amber architecture.
+  static const LinearGradient worldOOSE = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF451A03), Color(0xFFFBBF24)],
+  );
+
   /// Fallback world gradient for unmapped subjects.
   static const LinearGradient worldDefault = LinearGradient(
     begin: Alignment.topLeft,
