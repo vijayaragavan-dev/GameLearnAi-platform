@@ -19,6 +19,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/snake_and_ladder_data.dart';
 import '../models/snake_and_ladder.dart';
 
@@ -56,6 +58,22 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
   bool _showLadder = false;
   bool _showFell = false;
   String? _feedback;
+  late final GameContentRequest _request;
+  late final Set<String> _worldChallengeIds;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
+
+  /// True when the board challenge [id] may be presented in this scope.
+  /// World scope admits only challenges attributed to the requested world;
+  /// others are skipped (the cell behaves as a normal cell) — never
+  /// substituted, never fabricated.
+  bool _challengeAllowed(String id) {
+    if (!_request.isWorld) return true;
+    return _worldChallengeIds.contains(id);
+  }
   // Challenge-specific selections
   List<String> _arrangeSelected = [];
   Map<String, String> _matchSelected = {};
@@ -73,6 +91,20 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.snakeAndLadder);
     // Fallback if not defined (should be added)
     if (_timeLimit == 0) _timeLimit = 240;
+    // World-scoped challenge attribution (board cells stay fixed; only
+    // world-attributed challenges open — failure/restart behavior unchanged).
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _worldChallengeIds = WorldContentGate.selectStatic(
+      items: SnakeAndLadderChallenges.all,
+      topicLabelOf: (c) => c.topic,
+      request: _request,
+      gameType: GameType.snakeAndLadder,
+    ).map((c) => c.id).toSet();
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
@@ -118,6 +150,8 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
           });
         } else if (_board.isChallengeCell(newPos)) {
           final cid = _board.challengeCells[newPos]!;
+          // World scope: foreign-world cells behave as normal cells.
+          if (!_challengeAllowed(cid)) return;
           final ch = SnakeAndLadderChallenges.byId(cid);
           setState(() {
             _currentChallenge = ch;
@@ -277,6 +311,14 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // A world with zero attributed challenges honestly shows an empty
+    // state instead of cross-world content.
+    if (_request.isWorld && _worldChallengeIds.isEmpty) {
+      return WorldScopeEmpty(
+        worldName: _scopeWorldName,
+        gameName: 'Snake & Ladder',
+      );
+    }
     final progress = _board.size == 0 ? 0.0 : _state.currentPosition / _board.size;
     final identity = GameVisualRegistry.of(GameType.snakeAndLadder);
     return Scaffold(

@@ -17,6 +17,8 @@ import '../../../shared/widgets/adaptive_next_action.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
+import '../../subjects/domain/canonical_worlds.dart' show WorldCatalog;
+import '../../subjects/domain/world_context.dart' show subjectByIdProvider;
 
 /// NOVA TUTOR - conversational AI learning companion backed by AI-001.
 /// Stateless v1: the client holds a bounded window (<=8 messages, <=1000
@@ -626,12 +628,37 @@ class _TutorContextPanel extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Prefer query context, fallback to intelligence
     if (initialTopicName != null && initialTopicName!.isNotEmpty) {
+      // World chip: resolve the backend subject to its canonical world so
+      // the tutor's scope is visible (never color-only, never fabricated —
+      // absent when the subject is unknown).
+      final subject = ref.watch(subjectByIdProvider(initialSubjectId));
+      final world = subject == null
+          ? null
+          : WorldCatalog.resolveSubject(subject);
       return Container(
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [Container(width: 28, height: 28, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.secondary.withValues(alpha: 0.14)), child: const Icon(Icons.psychology_rounded, size: 16, color: AppColors.secondary)), const SizedBox(width: 8), Text('LEARNING FOCUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.secondary)), const Spacer(), if (initialFocus != null) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)), child: Text(initialFocus!.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.warning)))]),
+          if (world != null) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              label: 'Tutor scope: ${world.displayName} world',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: world.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: world.accent.withValues(alpha: 0.35)),
+                ),
+                child: Text(
+                  '${world.displayName.toUpperCase()} • WORLD',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: world.accent),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Text(initialTopicName!, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
           if (initialSubjectId != null) Text('Topic • Tap a quick prompt below to start', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),

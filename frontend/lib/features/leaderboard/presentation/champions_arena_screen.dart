@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/models/leaderboard_models.dart';
-import '../../../core/providers.dart';
+import '../../subjects/domain/world_context.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
@@ -370,24 +370,20 @@ class _SubjectChips extends ConsumerWidget {
   final ValueChanged<String> onSelect;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use contentRepo subjects; while loading, show placeholder
-    final subjectsAsync = ref.watch(contentRepoProvider);
-    // contentRepoProvider is a Provider<ContentRepository>, not async; we need to fetch
-    // Do a FutureBuilder for subjects
-    return FutureBuilder(
-      future: ref.read(contentRepoProvider).subjects(),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const SizedBox(height: 36, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))));
-        }
-        final subjects = (snap.data as List).take(6).toList();
+    // Shared cached catalog (subjectsProvider): one fetch shared with
+    // dashboard/worlds/tutor. No display cap — every world is filterable.
+    final async = ref.watch(subjectsProvider);
+    return async.when(
+      loading: () => const SizedBox(height: 36, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (subjects) {
         if (subjects.isEmpty) return const SizedBox.shrink();
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: subjects.map((s) {
-              final id = (s as dynamic).id as String;
-              final name = (s as dynamic).name as String;
+              final id = s.id;
+              final name = s.name;
               final isSel = id == selectedId;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),

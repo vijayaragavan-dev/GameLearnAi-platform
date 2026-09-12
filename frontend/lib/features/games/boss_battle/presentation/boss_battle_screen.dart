@@ -18,6 +18,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/boss_battles.dart';
 import '../models/boss_battle.dart';
 
@@ -59,6 +61,12 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
   List<int> _toggleState = [];
   bool _hintVisible = false;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
   String? _phaseFeedback;
   late AnimationController _shakeController;
 
@@ -71,8 +79,20 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.bossBattle);
-    _bosses = BossBattles.session(count: 4);
-    _initBoss();
+    // World-scoped selection (see concept_builder_screen for the contract).
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _bosses = WorldContentGate.selectStatic(
+      items: BossBattles.session(count: 4),
+      topicLabelOf: (b) => b.topic,
+      request: _request,
+      gameType: GameType.bossBattle,
+    );
+    if (_bosses.isNotEmpty) _initBoss();
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
@@ -299,6 +319,7 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_bosses.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -345,6 +366,12 @@ class _BossBattleScreenState extends ConsumerState<BossBattleScreen> with Single
   @override
   Widget build(BuildContext context) {
     if (_bosses.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Boss Battle',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('BOSS BATTLE')), body: const EmptyState(icon: Icons.videogame_asset_off_rounded, title: 'No bosses', message: 'No bosses available.'));
     }
     final boss = _currentBoss;

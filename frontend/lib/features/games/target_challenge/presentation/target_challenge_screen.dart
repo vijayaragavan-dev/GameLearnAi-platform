@@ -18,6 +18,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/target_challenges.dart';
 import '../models/target_challenge.dart';
 
@@ -50,6 +52,12 @@ class _TargetChallengeScreenState extends ConsumerState<TargetChallengeScreen> {
   bool _paused = false;
   bool _finished = false;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
   String? _lastActionError;
 
   @override
@@ -58,7 +66,19 @@ class _TargetChallengeScreenState extends ConsumerState<TargetChallengeScreen> {
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.targetChallenge);
-    _challenges = TargetChallenges.session(count: 4);
+    // World-scoped selection (see concept_builder_screen for the contract).
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _challenges = WorldContentGate.selectStatic(
+      items: TargetChallenges.session(count: 4),
+      topicLabelOf: (c) => c.topic,
+      request: _request,
+      gameType: GameType.targetChallenge,
+    );
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = () => _finishGame(timedOut: true);
@@ -236,6 +256,7 @@ class _TargetChallengeScreenState extends ConsumerState<TargetChallengeScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_challenges.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -299,6 +320,12 @@ class _TargetChallengeScreenState extends ConsumerState<TargetChallengeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_challenges.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Target Challenge',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('TARGET CHALLENGE')), body: const EmptyState(icon: Icons.adjust_rounded, title: 'No challenges', message: 'No target challenges available.'));
     }
     final ch = _current;

@@ -18,6 +18,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/concept_challenges.dart';
 import '../models/concept_challenge.dart';
 
@@ -48,6 +50,13 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
   bool _paused = false;
   bool _finished = false;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  /// Display world for honest empty states (backend name, never an id).
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
 
   @override
   void initState() {
@@ -55,7 +64,21 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.conceptBuilder);
-    _challenges = ConceptChallenges.session(count: 4);
+    // World-scoped selection: in a WORLD arena only challenges attributed
+    // to this world are kept; anything else is rejected (never substituted).
+    // Global arena (no subject context) keeps the full bank.
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _challenges = WorldContentGate.selectStatic(
+      items: ConceptChallenges.session(count: 4),
+      topicLabelOf: (c) => c.topic,
+      request: _request,
+      gameType: GameType.conceptBuilder,
+    );
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = () => _finishGame(timedOut: true);
@@ -142,6 +165,7 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_challenges.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -182,6 +206,13 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
   @override
   Widget build(BuildContext context) {
     if (_challenges.isEmpty) {
+      // Honest world scope: no cross-world substitution, no fabrication.
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Concept Builder',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('CONCEPT BUILDER')), body: const EmptyState(icon: Icons.view_module_outlined, title: 'No challenges', message: 'No concept challenges available.'));
     }
     final ch = _current;

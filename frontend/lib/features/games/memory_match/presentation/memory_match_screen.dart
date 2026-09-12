@@ -22,6 +22,7 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/utils/game_content_mapper.dart';
+import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
 
@@ -90,6 +91,21 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
       final Lesson? typedLesson = lesson is Lesson ? lesson : null;
       final Quiz? typedQuiz = quiz is Quiz ? quiz : null;
       final Topic? typedTopic = topic is Topic ? topic : null;
+
+      // World-scope validation: backend content must belong to the
+      // requested world/topic. Rejection renders the honest error state.
+      final request = GameContentRequest.fromRoute(
+        subjectId: widget.subjectId,
+        subjectName: widget.subjectName,
+        topicId: widget.topicId,
+        topicName: widget.topicName,
+      );
+      final rejection = WorldContentGate.rejectionMessage(
+        topic: typedTopic,
+        quiz: typedQuiz,
+        request: request,
+      );
+      if (rejection != null) throw Exception(rejection);
 
       // Resolve difficulty from topic/lesson
       _difficulty = DifficultyUtils.resolve(topicDifficulty: typedTopic?.difficulty, masteryLevel: null);

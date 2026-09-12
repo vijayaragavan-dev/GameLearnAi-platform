@@ -18,6 +18,8 @@ import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/mystery_cases.dart';
 import '../models/mystery_case.dart';
 
@@ -52,6 +54,12 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
   bool _paused = false;
   bool _finished = false;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
   String? _feedbackMessage;
 
   MysteryCase get _current => _cases[_index];
@@ -63,7 +71,19 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.mysteryCase);
     // Use mysteryCase fallback: if not in utils, default 150/180 etc handled via default. Ensure we have mapping.
-    _cases = MysteryCases.session(count: 4);
+    // World-scoped selection (see concept_builder_screen for the contract).
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _cases = WorldContentGate.selectStatic(
+      items: MysteryCases.session(count: 4),
+      topicLabelOf: (c) => c.topic,
+      request: _request,
+      gameType: GameType.mysteryCase,
+    );
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) {
       if (mounted) setState(() {});
@@ -167,6 +187,7 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_cases.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -211,6 +232,12 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
   @override
   Widget build(BuildContext context) {
     if (_cases.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Mystery Case',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('MYSTERY CASE')), body: const EmptyState(icon: Icons.search_off_rounded, title: 'No cases', message: 'No mystery cases available.'));
     }
     final c = _current;

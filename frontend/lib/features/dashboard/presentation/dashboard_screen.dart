@@ -8,6 +8,7 @@ import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/content_models.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
+import '../../subjects/domain/world_context.dart';
 import '../widgets/intelligence_section.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
@@ -885,39 +886,28 @@ class _JourneySection extends StatelessWidget {
   }
 }
 
-// 4. SUBJECTS — real catalog, adaptive grid 1→2→3 — cached future to avoid duplicate requests
-class _SubjectsSection extends ConsumerStatefulWidget {
+// 4. SUBJECTS — real catalog, adaptive grid 1→2→3 — shared cached provider
+// (subjectsProvider) so dashboard/worlds/arena/tutor resolve the same
+// backend catalog without duplicate requests. No display cap: the grid
+// scales to all 11 canonical worlds and beyond.
+class _SubjectsSection extends ConsumerWidget {
   const _SubjectsSection({required this.dashboard});
   final Dashboard dashboard;
 
   @override
-  ConsumerState<_SubjectsSection> createState() => _SubjectsSectionState();
-}
-
-class _SubjectsSectionState extends ConsumerState<_SubjectsSection> {
-  late final Future<List<Subject>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = ref.read(contentRepoProvider).subjects();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Subject>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 4),
-            child: LinearProgressIndicator(minHeight: 3),
-          );
-        }
-        if (snap.hasError) {
-          return const EmptyMiniCard(text: 'Cannot load worlds right now.');
-        }
-        final subjects = (snap.data ?? const <Subject>[]).take(6).toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(subjectsProvider);
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 4),
+        child: LinearProgressIndicator(minHeight: 3),
+      ),
+      error: (_, _) =>
+          const EmptyMiniCard(text: 'Cannot load worlds right now.'),
+      data: (all) {
+        // Preserve backend displayOrder; show every world (no cap).
+        final subjects = [...all]
+          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
         if (subjects.isEmpty) return const EmptyMiniCard(text: 'No worlds available yet.');
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return AdaptiveGrid(
@@ -926,13 +916,14 @@ class _SubjectsSectionState extends ConsumerState<_SubjectsSection> {
           expanded: 2,
           wide: 3,
           children: subjects.map((s) {
-            final assessed = widget.dashboard.assessment.assessedSubjects.any((a) => a.subjectId == s.id);
+            final assessed = dashboard.assessment.assessedSubjects.any((a) => a.subjectId == s.id);
             final identity = SubjectVisualRegistry.fromIconKey(s.iconKey);
             final accent = identity.accent;
             return GestureDetector(
               onTap: () {
+                // World landing preserves backend subjectId (Phase 6).
                 final name = Uri.encodeComponent(s.name);
-                context.go('/${Routes.path(s.id).substring(1)}?name=$name');
+                context.go('${Routes.world(s.id)}?name=$name');
               },
               child: GameIdentitySurface(
                 accent: accent,

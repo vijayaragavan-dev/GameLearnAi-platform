@@ -13,6 +13,8 @@ import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../game_engine/models/game_models.dart';
+import '../../../subjects/domain/canonical_worlds.dart'
+    show WorldCatalog;
 
 /// Premium Game Hub — arcade discovery world.
 /// Subject-aware, category-filtered, visually distinct per game.
@@ -220,7 +222,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.grid_view_rounded, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), Text('${cards.length} GAMES', style: const TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
-                          Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textTertiary)), const SizedBox(width: 8), const Icon(Icons.category_outlined, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), const Text('8 TOPICS', style: TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
+                          Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textTertiary)), const SizedBox(width: 8), const Icon(Icons.category_outlined, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), Text('${GameVisualRegistry.categories.length} CATEGORIES', style: const TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
                           Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textTertiary)), const SizedBox(width: 8), const Icon(Icons.speed_rounded, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), const Text('VARIABLE DIFFICULTY', style: TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
                         ],
                       ),
@@ -252,6 +254,15 @@ class _GameHubScreenState extends State<GameHubScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
+                    // ── WORLD SCOPE — explicit WORLD vs GLOBAL arena ──
+                    // Placed below the filters so category chips keep their
+                    // position. Accessible text (never color-only): world
+                    // arenas name their world; the global arena says so.
+                    if (_hasSubject && effectiveSubject != null)
+                      _WorldScopeBanner(subjectName: effectiveSubject)
+                    else
+                      const _GlobalScopeNote(),
+                    const SizedBox(height: 12),
                     // Filter result info (honest, not fabricated stats)
                     Row(
                       children: [
@@ -1013,6 +1024,132 @@ class _MiniPill extends StatelessWidget {
           const SizedBox(width: 4),
           Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: effectiveColor))),
         ],
+      ),
+    );
+  }
+}
+ 
+/// World-scope banner: explicit, accessible WORLD ARENA identity.
+///
+/// Rendered only when the hub carries a backend subject context. The world
+/// accent is decorative; scope is always real text (never color-only).
+class _WorldScopeBanner extends StatelessWidget {
+  const _WorldScopeBanner({required this.subjectName});
+  final String subjectName;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final world = WorldCatalog.resolveDisplayName(subjectName);
+    final accent = world?.accent ?? AppColors.primary;
+    return Semantics(
+      header: true,
+      label: '${subjectName} World Arena, world-scoped play',
+      child: Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: isDark ? 0.12 : 0.07),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: accent.withValues(alpha: 0.40)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.shield_outlined, size: 16, color: accent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${subjectName.toUpperCase()} // WORLD ARENA',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                      color: accent,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'World-scoped play. Only $subjectName content here.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Global-arena note: honest mixed-content identity for the dashboard arena.
+class _GlobalScopeNote extends StatelessWidget {
+  const _GlobalScopeNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      header: true,
+      label: 'Global Game Arena, mixed worlds',
+      child: Container(
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: isDark ? AppColors.border : AppLightColors.border,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.public_rounded,
+              size: 16,
+              color: AppColors.secondary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'GLOBAL ARENA',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Mixed worlds: practice across subjects.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

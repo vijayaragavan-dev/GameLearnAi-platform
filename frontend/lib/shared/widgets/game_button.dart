@@ -125,16 +125,21 @@ class PrimaryGameButton extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            Text(
-              label.toUpperCase(),
-              style: TextStyle(
-                fontFamily: AppTypography.bodyFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
-                color: isDisabled
-                    ? AppColors.textDisabled
-                    : AppColors.textOnColor,
+            Flexible(
+              child: Text(
+                label.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: AppTypography.bodyFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                  color: isDisabled
+                      ? AppColors.textDisabled
+                      : AppColors.textOnColor,
+                ),
               ),
             ),
           ],
@@ -204,14 +209,19 @@ class SecondaryGameButton extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  fontFamily: AppTypography.bodyFamily,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  color: isDisabled ? AppColors.textDisabled : color,
+              Flexible(
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: isDisabled ? AppColors.textDisabled : color,
+                  ),
                 ),
               ),
             ],

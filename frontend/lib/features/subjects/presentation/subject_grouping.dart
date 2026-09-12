@@ -18,6 +18,8 @@ abstract final class SubjectGrouping {
   static const String allLabel = 'All';
 
   /// Conceptual Core CS groups per blueprint §42. Display labels are user-facing.
+  /// 'Other' is the honest bucket for subjects no heuristic recognizes —
+  /// never misfiled under Programming.
   static const List<String> coreLabels = [
     'Programming',
     'Data Structures & Algorithms',
@@ -30,6 +32,7 @@ abstract final class SubjectGrouping {
     'Theory',
     'Software Engineering',
     'Aptitude',
+    'Other',
   ];
 
   /// Decorative heuristic: maps a Subject's name/description/iconKey to a core label.
@@ -137,11 +140,12 @@ abstract final class SubjectGrouping {
     ])) {
       return 'Programming';
     }
-    // Final fallback: bucket as Programming if name hints at code, else Systems for unknown.
+    // Final fallback: unknown subjects get the honest 'Other' bucket so a
+    // future backend world is never misfiled under Programming.
     if (haystack.contains('program') || haystack.contains('code')) {
       return 'Programming';
     }
-    return 'Programming';
+    return 'Other';
   }
 
   static bool _containsAny(String haystack, List<String> needles) {

@@ -21,6 +21,7 @@ import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
+import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
@@ -74,6 +75,15 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
 
   Future<Quiz> _load() async {
     final quiz = await ref.read(quizRepoProvider).quizForTopic(widget.topicId);
+    // World-scope validation (see speed_run_screen for the contract).
+    final request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    final rejection = WorldContentGate.rejectionMessage(quiz: quiz, request: request);
+    if (rejection != null) throw Exception(rejection);
     _quiz = quiz;
     _difficulty = DifficultyUtils.resolve(topicDifficulty: quiz.difficulty);
     _initTimer();

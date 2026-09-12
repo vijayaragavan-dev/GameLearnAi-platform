@@ -29,7 +29,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: GameHubScreen(topicId: 'topic-1', topicName: 'Variables')));
       expect(find.text('GAME ARENA'), findsOneWidget);
       expect(find.text('14 GAMES'), findsWidgets);
-      expect(find.text('8 TOPICS'), findsWidgets);
+      expect(find.text('9 CATEGORIES'), findsWidgets);
       expect(find.text('VARIABLE DIFFICULTY'), findsWidgets);
       // All 14 cards
       expect(find.text('QUIZ BATTLE'), findsOneWidget);

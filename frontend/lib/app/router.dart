@@ -31,6 +31,7 @@ import '../features/progress/presentation/progress_screen.dart';
 import '../features/progress/presentation/topic_performance_screen.dart';
 import '../features/shell/shell_screen.dart';
 import '../features/subjects/presentation/subjects_screen.dart';
+import '../features/subjects/presentation/world_screen.dart';
 import '../features/tutor/presentation/tutor_screen.dart';
 import '../features/games/hub/presentation/game_hub_screen.dart';
 import '../features/games/quiz_battle/presentation/quiz_battle_screen.dart';
@@ -80,6 +81,7 @@ abstract final class Routes {
   static const designShowcase = '/design-showcase';
 
   static String path(String subjectId) => '/path/$subjectId';
+  static String world(String subjectId) => '/world/$subjectId';
   static String topic(String topicId) => '/topic/$topicId';
   static String lesson(String topicId) => '/lesson/$topicId';
   static String quiz(String topicId) => '/quiz/$topicId';
@@ -254,6 +256,17 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ---- Full-screen feature flows --------------------------------------
+      GoRoute(
+        path: '/world/:subjectId',
+        pageBuilder: (_, s) => _page(
+          child: WorldScreen(
+            subjectId: s.pathParameters['subjectId']!,
+            subjectName: s.uri.queryParameters['name'] ?? '',
+          ),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
       GoRoute(
         path: '/path/:subjectId',
         pageBuilder: (_, s) => _page(

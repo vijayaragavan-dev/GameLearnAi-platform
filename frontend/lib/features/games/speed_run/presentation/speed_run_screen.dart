@@ -16,6 +16,7 @@ import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
+import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
@@ -61,6 +62,16 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
 
   Future<Quiz> _load() async {
     final q = await ref.read(quizRepoProvider).quizForTopic(widget.topicId);
+    // World-scope validation: the backend quiz must belong to the
+    // requested topic. Rejection surfaces via the existing error state.
+    final request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    final rejection = WorldContentGate.rejectionMessage(quiz: q, request: request);
+    if (rejection != null) throw Exception(rejection);
     _quiz = q;
     _difficulty = DifficultyUtils.resolve(topicDifficulty: q.difficulty);
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.speedRun);

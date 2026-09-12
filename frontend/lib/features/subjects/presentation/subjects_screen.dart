@@ -21,6 +21,8 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
+import '../domain/canonical_worlds.dart' show WorldCatalog;
+import '../domain/world_context.dart' show subjectsProvider;
 import 'subject_grouping.dart';
 
 /// SUBJ-001 world selection — premium catalog.
@@ -34,19 +36,17 @@ class SubjectsScreen extends ConsumerStatefulWidget {
 }
 
 class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
-  Future<List<Subject>>? _future;
   String _selectedCategory = SubjectGrouping.allLabel;
 
   @override
   void initState() {
     super.initState();
     ref.read(audioManagerProvider).playContext(MusicContext.adventure);
-    _future = ref.read(contentRepoProvider).subjects();
   }
 
   void _reload() {
+    ref.invalidate(subjectsProvider);
     setState(() {
-      _future = ref.read(contentRepoProvider).subjects();
       _selectedCategory = SubjectGrouping.allLabel;
     });
   }
@@ -60,8 +60,10 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
   void _enter(Subject subject) {
     ref.read(audioManagerProvider).play(Sfx.nodeUnlock);
     ref.read(hapticsProvider).select();
+    // World landing preserves backend subjectId; the world page resolves
+    // the canonical WorldId via WorldCatalog (generic fallback when unmapped).
     final name = Uri.encodeComponent(subject.name);
-    context.go('/${Routes.path(subject.id).substring(1)}?name=$name');
+    context.go('${Routes.world(subject.id)}?name=$name');
   }
 
   void _scan(Subject subject) {
@@ -106,7 +108,10 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
         backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
         onRefresh: () async => _reload(),
         child: FutureBuilder<List<Subject>>(
-          future: _future,
+          // Shared cached catalog (subjectsProvider): dashboard, world
+          // landing, arena and tutor resolve the same fetch — no duplicates.
+          // Sorted by backend displayOrder; every world shown (no cap).
+          future: ref.watch(subjectsProvider.future),
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done && !snap.hasData) {
               return ListView(
@@ -123,7 +128,8 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                 onRetry: _reload,
               );
             }
-            final subjects = snap.data ?? const <Subject>[];
+            final subjects = [...(snap.data ?? const <Subject>[])]
+              ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
             if (subjects.isEmpty) {
               return EmptyState(
                 icon: Icons.public_off_rounded,
@@ -663,16 +669,14 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
   bool _down = false;
 
   Color get _tint {
-    // Prefer world identity accent (distinct per world), fallback to order-based tint
+    // Canonical world accent first (stable per WorldId, scales to 11+
+    // worlds), then visual-registry accent, then neutral brand for unknown
+    // worlds — never index-cycled, never display-name based.
+    final world = WorldCatalog.resolveSubject(widget.subject);
+    if (world != null) return world.accent;
     final identity = SubjectVisualRegistry.fromIconKey(widget.subject.iconKey);
     if (identity != SubjectVisualRegistry.fallback) return identity.accent;
-    return switch (widget.subject.displayOrder % 5) {
-      0 => AppColors.primary,
-      1 => AppColors.secondary,
-      2 => AppColors.success,
-      3 => AppColors.warning,
-      _ => AppColors.streak,
-    };
+    return AppColors.primary;
   }
 
   @override

@@ -18,6 +18,8 @@ import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/connectivity_missions.dart';
 import '../models/connectivity_lab.dart';
 
@@ -49,6 +51,12 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
   bool _wasCorrect = false;
   String? _feedback;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
 
   // Per-mission state
   Set<NetworkConnection> _userConns = {};
@@ -65,8 +73,21 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.connectivityLab);
-    _missions = ConnectivityMissions.session(count: 4);
-    _initMission();
+    // World-scoped selection: lab missions are network-domain content
+    // (bank default). Other worlds honestly show an empty state.
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _missions = WorldContentGate.selectStatic(
+      items: ConnectivityMissions.session(count: 4),
+      topicLabelOf: (m) => m.topic,
+      request: _request,
+      gameType: GameType.connectivityLab,
+    );
+    if (_missions.isNotEmpty) _initMission();
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
@@ -275,6 +296,7 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_missions.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -318,6 +340,12 @@ class _ConnectivityLabScreenState extends ConsumerState<ConnectivityLabScreen> {
   @override
   Widget build(BuildContext context) {
     if (_missions.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Connectivity Lab',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('CONNECTIVITY LAB')), body: const EmptyState(icon: Icons.wifi_off_rounded, title: 'No missions', message: 'No missions available.'));
     }
     final m = _current;

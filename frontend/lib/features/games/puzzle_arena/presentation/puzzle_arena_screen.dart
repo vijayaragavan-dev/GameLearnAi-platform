@@ -18,6 +18,8 @@ import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/puzzle_puzzles.dart';
 import '../models/puzzle_arena.dart';
 
@@ -56,6 +58,12 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
   String? _connectFirst;
   String? _feedback;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
 
   PuzzleArenaPuzzle get _current => _puzzles[_index];
 
@@ -65,7 +73,19 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.puzzleArena);
-    _puzzles = PuzzleArenaPuzzles.session(count: 4);
+    // World-scoped selection (see concept_builder_screen for the contract).
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _puzzles = WorldContentGate.selectStatic(
+      items: PuzzleArenaPuzzles.session(count: 4),
+      topicLabelOf: (p) => p.topic,
+      request: _request,
+      gameType: GameType.puzzleArena,
+    );
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
@@ -213,6 +233,7 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_puzzles.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -331,6 +352,12 @@ class _PuzzleArenaScreenState extends ConsumerState<PuzzleArenaScreen> {
   @override
   Widget build(BuildContext context) {
     if (_puzzles.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Puzzle Arena',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('PUZZLE ARENA')), body: const EmptyState(icon: Icons.extension_off_rounded, title: 'No puzzles', message: 'No puzzles available.'));
     }
     final p = _current;

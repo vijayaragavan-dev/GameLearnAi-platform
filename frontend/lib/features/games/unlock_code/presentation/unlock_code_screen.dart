@@ -18,6 +18,8 @@ import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/unlock_challenges.dart';
 import '../models/unlock_challenge.dart';
 
@@ -50,6 +52,12 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
   bool _finished = false;
   Timer? _feedbackTimer;
   List<String?> _revealed = [];
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
 
   @override
   void initState() {
@@ -57,7 +65,19 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.unlockCode);
-    _challenges = UnlockChallenges.session(count: 4);
+    // World-scoped selection (see concept_builder_screen for the contract).
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _challenges = WorldContentGate.selectStatic(
+      items: UnlockChallenges.session(count: 4),
+      topicLabelOf: (c) => c.topic,
+      request: _request,
+      gameType: GameType.unlockCode,
+    );
     _vault = UnlockChallenges.vaultForSession(_challenges);
     _revealed = List.filled(_vault.length, null);
     _timer = GameTimer(totalSeconds: _timeLimit);
@@ -122,6 +142,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_challenges.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -180,6 +201,12 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_challenges.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Unlock the Code',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('UNLOCK THE CODE')), body: const EmptyState(icon: Icons.lock_outline_rounded, title: 'No challenges', message: 'No unlock challenges available.'));
     }
     final ch = _challenges[_index];

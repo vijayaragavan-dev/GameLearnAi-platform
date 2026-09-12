@@ -20,6 +20,7 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/utils/game_content_mapper.dart';
+import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
 
@@ -75,6 +76,19 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
       final Lesson? lesson = lessonRaw is Lesson ? lessonRaw : null;
       final Quiz? quiz = quizRaw is Quiz ? quizRaw : null;
       final Topic? topic = topicRaw is Topic ? topicRaw : null;
+      // World-scope validation (see memory_match_screen for the contract).
+      final request = GameContentRequest.fromRoute(
+        subjectId: widget.subjectId,
+        subjectName: widget.subjectName,
+        topicId: widget.topicId,
+        topicName: widget.topicName,
+      );
+      final rejection = WorldContentGate.rejectionMessage(
+        topic: topic,
+        quiz: quiz,
+        request: request,
+      );
+      if (rejection != null) throw Exception(rejection);
       _difficulty = DifficultyUtils.resolve(topicDifficulty: topic?.difficulty);
       final payload = GameContentMapper.dragDropPayload(quiz: quiz, lesson: lesson, topic: topic);
       _zones = payload.zones;

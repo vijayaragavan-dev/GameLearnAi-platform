@@ -18,6 +18,8 @@ import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_hud.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/debug_challenges.dart';
 import '../models/debug_challenge.dart';
 
@@ -49,6 +51,12 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
   bool _paused = false;
   bool _finished = false;
   Timer? _feedbackTimer;
+  late final GameContentRequest _request;
+
+  String get _scopeWorldName {
+    final name = _request.subjectName;
+    return name != null && name.trim().isNotEmpty ? name : 'this world';
+  }
 
   @override
   void initState() {
@@ -59,9 +67,22 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
     _difficulty = GameDifficulty.medium;
     // Allow caller to hint difficulty via topicName? Not needed.
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.debugArena);
-    _challenges = DebugChallenges.session(count: 8, difficulty: null); // 8 challenges mix difficulties
-    // If challenges empty (should not), fallback
-    if (_challenges.isEmpty) _challenges = DebugChallenges.all.take(6).toList();
+    // World-scoped selection: debug challenges are programming-domain
+    // content (bank default). Other worlds honestly show an empty state —
+    // the old unfiltered take(6) fallback is removed because it would
+    // substitute cross-world content.
+    _request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
+    _challenges = WorldContentGate.selectStatic(
+      items: DebugChallenges.session(count: 8, difficulty: null),
+      topicLabelOf: (c) => c.topic,
+      request: _request,
+      gameType: GameType.debugArena,
+    );
     _timer = GameTimer(totalSeconds: _timeLimit);
     _timer.onTickValue = (_) { if (mounted) setState(() {}); };
     _timer.onComplete = _onTimeUp;
@@ -104,6 +125,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
 
   void _finishGame({bool timedOut = false, bool outOfLives = false}) {
     if (_finished) return;
+    if (_challenges.isEmpty) return;
     _finished = true;
     _timer.stop();
     final elapsed = _start == null ? 0 : DateTime.now().difference(_start!).inSeconds;
@@ -177,6 +199,12 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
   @override
   Widget build(BuildContext context) {
     if (_challenges.isEmpty) {
+      if (_request.isWorld) {
+        return WorldScopeEmpty(
+          worldName: _scopeWorldName,
+          gameName: 'Debug Arena',
+        );
+      }
       return Scaffold(appBar: AppBar(title: const Text('DEBUG ARENA')), body: const EmptyState(icon: Icons.bug_report_outlined, title: 'No challenges', message: 'No debug challenges available for this topic.'));
     }
     final ch = _challenges[_index];
