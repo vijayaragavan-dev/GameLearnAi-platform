@@ -13,6 +13,9 @@ import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../game_engine/models/game_models.dart';
+import '../../../game_engine/models/game_content_models.dart' show SubjectGames;
+import '../../../game_engine/content/static_bank_availability.dart'
+    show StaticBankAvailability;
 import '../../../subjects/domain/canonical_worlds.dart'
     show WorldCatalog;
 
@@ -39,8 +42,62 @@ class GameHubScreen extends StatefulWidget {
 class _GameHubScreenState extends State<GameHubScreen> {
   String _selectedCategory = 'All';
 
+  /// Backend compat for this world's subject (null until loaded, or when
+  /// the endpoint is unreachable/unknown — then the hub keeps its
+  /// long-standing status-quo behavior instead of claiming unavailability).
+  SubjectGames? _compat;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompat();
+  }
+
+  Future<void> _loadCompat() async {
+    final sid = widget.subjectId;
+    if (sid == null || sid.isEmpty) return;
+    try {
+      final repo = ProviderScope.containerOf(context, listen: false)
+          .read(gameContentRepoProvider);
+      final compat = await repo.subjectGames(sid);
+      if (!mounted || widget.subjectId != sid) return;
+      setState(() => _compat = compat);
+    } catch (_) {
+      // Silent fallback: availability unknown, never claim unavailable.
+    }
+  }
+
   bool get _hasSubject => widget.subjectId != null && widget.subjectId!.isNotEmpty;
   String _shortId(String id) => id.length > 8 ? id.substring(0, 8) : id;
+
+  /// Backend-authoritative support: hidden only when compat positively
+  /// lists this subject AND omits the game (unsupported → never exposed).
+  /// Unknown compat (offline/older backend) keeps every game.
+  bool _isSupported(GameType type) {
+    final compat = _compat;
+    if (compat == null) return true;
+    if (compat.subjectId.isNotEmpty &&
+        widget.subjectId != null &&
+        compat.subjectId != widget.subjectId) {
+      return true;
+    }
+    return compat.entryFor(type.id) != null;
+  }
+
+  /// Honest SOON state: statically proven empty for this world AND backend
+  /// confirms no backing content. Never disables a playable game:
+  /// static>0 (proven) or backend-driven (-1) or compat-unknown → enabled.
+  bool _isSoon(GameType type) {
+    if (!_hasSubject) return false;
+    final name = widget.subjectName;
+    final world = (name != null && name.trim().isNotEmpty)
+        ? WorldCatalog.resolveDisplayName(name)?.id
+        : null;
+    if (world == null) return false;
+    if (StaticBankAvailability.countFor(type, world) != 0) return false;
+    final entry = _compat?.entryFor(type.id);
+    return entry != null && !entry.hasContent;
+  }
 
   static const List<String> _categories = [
     'All',
@@ -59,6 +116,20 @@ class _GameHubScreenState extends State<GameHubScreen> {
     if (_selectedCategory == 'All') return true;
     final cat = GameVisualRegistry.of(type).category;
     return cat.toLowerCase() == _selectedCategory.toLowerCase();
+  }
+
+  /// Featured game: Quiz Battle unless this world hides it or marks it
+  /// SOON — then the first playable world game. Global mode always
+  /// features Quiz Battle (unchanged legacy behavior).
+  GameDefinition _featuredDef(List<GameDefinition> subjectVisible) {
+    if (!_hasSubject) return GameDefinition.of(GameType.quizBattle);
+    for (final d in subjectVisible) {
+      if (d.type == GameType.quizBattle && !_isSoon(d.type)) return d;
+    }
+    for (final d in subjectVisible) {
+      if (!_isSoon(d.type)) return d;
+    }
+    return GameDefinition.of(GameType.quizBattle);
   }
 
   void _open(BuildContext context, GameType type) {
@@ -120,9 +191,14 @@ class _GameHubScreenState extends State<GameHubScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cards = GameDefinition.all;
     final filtered = cards.where((d) => _matchesCategory(d.type)).toList();
+    // World section: only backend-supported games (compat-driven). Unknown
+    // compat keeps the full roster (graceful, never claims unavailability).
+    final subjectVisible = !_hasSubject
+        ? filtered
+        : filtered.where((d) => _isSupported(d.type)).toList();
     final effectiveSubject = widget.subjectName?.isNotEmpty == true ? widget.subjectName! : (_hasSubject ? 'World' : null);
     final effectiveTopic = widget.topicName?.isNotEmpty == true ? widget.topicName! : null;
-    final featured = GameDefinition.of(GameType.quizBattle);
+    final featured = _featuredDef(subjectVisible);
     final featuredIdentity = GameVisualRegistry.of(featured.type);
     final reduceMotion = AppMotion.reducedMotion(context);
 
@@ -229,19 +305,25 @@ class _GameHubScreenState extends State<GameHubScreen> {
                     ),
                     const SizedBox(height: 18),
                     // ── FEATURED GAME — dominant, richer than cards ──
-                    AnimatedOpacity(
-                      duration: reduceMotion ? Duration.zero : AppMotion.normal,
-                      opacity: 1,
-                      child: _FeaturedArcadeCard(
-                        def: featured,
-                        identity: featuredIdentity,
-                        onTap: () => _open(context, featured.type),
-                        subjectName: effectiveSubject,
-                        topicName: effectiveTopic,
-                        isSubjectContext: _hasSubject,
+                    // Hidden only when compat positively excludes it from
+                    // this world (unsupported → never exposed). The
+                    // provider-free fallback keeps legacy behavior.
+                    if (!_hasSubject || _isSupported(featured.type))
+                      AnimatedOpacity(
+                        duration: reduceMotion ? Duration.zero : AppMotion.normal,
+                        opacity: 1,
+                        child: _FeaturedArcadeCard(
+                          def: featured,
+                          identity: featuredIdentity,
+                          onTap: () => _open(context, featured.type),
+                          subjectName: effectiveSubject,
+                          topicName: effectiveTopic,
+                          isSubjectContext: _hasSubject,
+                          available: !_isSoon(featured.type),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                    if (!_hasSubject || _isSupported(featured.type))
+                      const SizedBox(height: 20),
                     // ── CATEGORY FILTERS — horizontal scroll, no overflow at 360 ──
                     _ArcadeFilters(
                       categories: _categories,
@@ -311,31 +393,50 @@ class _GameHubScreenState extends State<GameHubScreen> {
                     else ...[
                       // ── SUBJECT / GENERAL split when subject present, else single grid ──
                       if (_hasSubject) ...[
-                        SectionHeaderWithCount(title: 'SUBJECT GAMES', count: '${filtered.length}', subtitle: '${effectiveSubject} • topic-bound play'),
-                        const SizedBox(height: 10),
-                        AdaptiveGrid(
-                          compact: 1,
-                          medium: 2,
-                          expanded: 2,
-                          wide: 3,
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            for (var i = 0; i < filtered.length; i++)
-                              _Staggered(
-                                index: i,
-                                reduceMotion: reduceMotion,
-                                child: _ArcadeGameCard(
-                                  def: filtered[i],
-                                  onTap: () => _open(context, filtered[i].type),
-                                  subjectName: effectiveSubject,
-                                  topicName: effectiveTopic,
-                                  isSubjectContext: true,
+                        if (subjectVisible.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                              border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.hourglass_empty_rounded, size: 20, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                                const SizedBox(width: 10),
+                                Expanded(child: Text('No games mapped for ${effectiveSubject ?? 'this world'} yet. Backend game mapping is still being prepared.', style: TextStyle(fontSize: 13, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))),
+                              ],
+                            ),
+                          )
+                        else ...[
+                          SectionHeaderWithCount(title: 'SUBJECT GAMES', count: '${subjectVisible.length}', subtitle: '${effectiveSubject} • topic-bound play'),
+                          const SizedBox(height: 10),
+                          AdaptiveGrid(
+                            compact: 1,
+                            medium: 2,
+                            expanded: 2,
+                            wide: 3,
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              for (var i = 0; i < subjectVisible.length; i++)
+                                _Staggered(
+                                  index: i,
+                                  reduceMotion: reduceMotion,
+                                  child: _ArcadeGameCard(
+                                    def: subjectVisible[i],
+                                    onTap: () => _open(context, subjectVisible[i].type),
+                                    subjectName: effectiveSubject,
+                                    topicName: effectiveTopic,
+                                    isSubjectContext: true,
+                                    available: !_isSoon(subjectVisible[i].type),
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                       ],
                       // Legacy header (backward compat)
                       const Text('CHOOSE YOUR GAME', style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
@@ -653,13 +754,14 @@ IconData _categoryIconFor(GameType type) {
 }
 
 class _FeaturedArcadeCard extends StatefulWidget {
-  const _FeaturedArcadeCard({required this.def, required this.identity, required this.onTap, this.subjectName, this.topicName, required this.isSubjectContext});
+  const _FeaturedArcadeCard({required this.def, required this.identity, required this.onTap, this.subjectName, this.topicName, required this.isSubjectContext, this.available = true});
   final GameDefinition def;
   final GameVisualIdentity identity;
   final VoidCallback onTap;
   final String? subjectName;
   final String? topicName;
   final bool isSubjectContext;
+  final bool available;
 
   @override
   State<_FeaturedArcadeCard> createState() => _FeaturedArcadeCardState();
@@ -673,17 +775,18 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final semanticsLabel = widget.isSubjectContext && widget.subjectName != null
-        ? '${widget.def.displayName} featured, subject ${widget.subjectName}'
+        ? '${widget.def.displayName} featured, subject ${widget.subjectName}${widget.available ? '' : ', not yet available in this world'}'
         : '${widget.def.displayName} featured';
     return Semantics(
       button: true,
+      enabled: widget.available,
       label: semanticsLabel,
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
-        cursor: SystemMouseCursors.click,
+        cursor: widget.available ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: GestureDetector(
-          onTap: widget.onTap,
+          onTap: widget.available ? widget.onTap : null,
           onTapDown: (_) => setState(() => _pressed = true),
           onTapUp: (_) => setState(() => _pressed = false),
           onTapCancel: () => setState(() => _pressed = false),
@@ -790,12 +893,12 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton.icon(
-                            onPressed: widget.onTap,
-                            icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                            label: const Text('PLAY FEATURED', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                            onPressed: widget.available ? widget.onTap : null,
+                            icon: Icon(widget.available ? Icons.play_arrow_rounded : Icons.hourglass_empty_rounded, size: 18),
+                            label: Text(widget.available ? 'PLAY FEATURED' : 'COMING SOON', style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.8)),
                             style: FilledButton.styleFrom(
-                              backgroundColor: widget.identity.accent,
-                              foregroundColor: Colors.white,
+                              backgroundColor: widget.available ? widget.identity.accent : AppColors.lockedSurface,
+                              foregroundColor: widget.available ? Colors.white : AppColors.textTertiary,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
@@ -815,12 +918,16 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
 }
 
 class _ArcadeGameCard extends StatefulWidget {
-  const _ArcadeGameCard({required this.def, required this.onTap, this.subjectName, this.topicName, required this.isSubjectContext});
+  const _ArcadeGameCard({required this.def, required this.onTap, this.subjectName, this.topicName, required this.isSubjectContext, this.available = true});
   final GameDefinition def;
   final VoidCallback onTap;
   final String? subjectName;
   final String? topicName;
   final bool isSubjectContext;
+  /// False when the world has no content for this game (statically proven
+  /// empty + backend confirms no backing items). The card stays visible
+  /// with an honest SOON state instead of launching into an empty game.
+  final bool available;
 
   @override
   State<_ArcadeGameCard> createState() => _ArcadeGameCardState();
@@ -835,17 +942,18 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final identity = GameVisualRegistry.of(widget.def.type);
     final semanticsLabel = widget.isSubjectContext && widget.subjectName != null
-        ? '${widget.def.displayName}, subject ${widget.subjectName}${widget.topicName != null ? ', topic ${widget.topicName}' : ''}, category ${identity.category}'
+        ? '${widget.def.displayName}, subject ${widget.subjectName}${widget.topicName != null ? ', topic ${widget.topicName}' : ''}, category ${identity.category}${widget.available ? '' : ', not yet available in this world'}'
         : '${widget.def.displayName}, general game, category ${identity.category}';
     return Semantics(
       button: true,
+      enabled: widget.available,
       label: semanticsLabel,
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
-        cursor: SystemMouseCursors.click,
+        cursor: widget.available ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: GestureDetector(
-          onTap: widget.onTap,
+          onTap: widget.available ? widget.onTap : null,
           onTapDown: (_) => setState(() => _pressed = true),
           onTapUp: (_) => setState(() => _pressed = false),
           onTapCancel: () => setState(() => _pressed = false),
@@ -913,8 +1021,8 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                             right: 10,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(6)),
-                              child: const Text('AVAILABLE', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: Colors.white)),
+                              decoration: BoxDecoration(color: (widget.available ? AppColors.success : AppColors.textTertiary).withValues(alpha: 0.92), borderRadius: BorderRadius.circular(6)),
+                              child: Text(widget.available ? 'AVAILABLE' : 'SOON', style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: Colors.white)),
                             ),
                           ),
                         ],
@@ -958,16 +1066,16 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 9),
                                   decoration: BoxDecoration(
-                                    color: identity.accent,
+                                    color: widget.available ? identity.accent : AppColors.lockedSurface,
                                     borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [BoxShadow(color: identity.accent.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 4))],
+                                    boxShadow: widget.available ? [BoxShadow(color: identity.accent.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 4))] : null,
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
-                                      Icon(Icons.play_arrow_rounded, size: 16, color: Colors.white),
-                                      SizedBox(width: 4),
-                                      Text('PLAY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.9, color: Colors.white)),
+                                    children: [
+                                      Icon(widget.available ? Icons.play_arrow_rounded : Icons.hourglass_empty_rounded, size: 16, color: widget.available ? Colors.white : AppColors.textTertiary),
+                                      const SizedBox(width: 4),
+                                      Text(widget.available ? 'PLAY' : 'SOON', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.9, color: widget.available ? Colors.white : AppColors.textTertiary)),
                                     ],
                                   ),
                                 ),

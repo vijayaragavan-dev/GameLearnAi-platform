@@ -1,6 +1,7 @@
 import '../../subjects/domain/canonical_worlds.dart';
 import '../../../core/models/content_models.dart';
 import '../../../core/models/quiz_models.dart';
+import '../models/game_content_models.dart';
 import '../models/game_models.dart';
 
 /// Game content scope — the data/selection-layer distinction between the
@@ -228,5 +229,85 @@ abstract final class WorldContentGate {
           'Nothing from another topic is substituted.';
     }
     return null;
+  }
+
+  /// Full ownership validation for a backend game-content payload against
+  /// a world-scoped request (Phase 7.2 pipeline):
+  /// - every item's subjectId must equal the requested subjectId;
+  /// - when a topic is requested, topic-bound items must match it;
+  /// - the payload mode must be SUBJECT (GLOBAL payloads never satisfy a
+  ///   world request);
+  /// - when the backend supplies a world-agreeing identity (subjectName
+  ///   resolving to a canonical world), it must equal the requested world.
+  ///
+  /// Global requests accept any payload whose items carry subject identity.
+  /// Violations throw [GameContentScopeMismatch] — rejected, never repaired.
+  static void validateGameContentPayload({
+    required GameContentPayload payload,
+    required GameContentRequest request,
+  }) {
+    if (!request.isWorld) {
+      for (final item in payload.items) {
+        if (item.subjectId.isEmpty) {
+          throw GameContentScopeMismatch(
+            'Global item ${item.id} carries no subject identity; rejected.',
+          );
+        }
+      }
+      return;
+    }
+    final wantSubject = request.subjectId;
+    if (wantSubject == null || wantSubject.isEmpty) {
+      throw const GameContentScopeMismatch(
+        'World request carries no backend subjectId; rejected.',
+      );
+    }
+    if (!payload.isSubjectMode) {
+      throw GameContentScopeMismatch(
+        'World request requires a SUBJECT payload but received '
+        "'${payload.mode}'; rejected.",
+      );
+    }
+    if (payload.subjectId != null &&
+        payload.subjectId!.isNotEmpty &&
+        payload.subjectId != wantSubject) {
+      throw GameContentScopeMismatch(
+        'Payload subject ${payload.subjectId} does not match requested '
+        'subject $wantSubject; rejected.',
+      );
+    }
+    for (final item in payload.items) {
+      if (item.subjectId.isEmpty || item.subjectId != wantSubject) {
+        throw GameContentScopeMismatch(
+          'Content item ${item.id} does not belong to subject '
+          '$wantSubject; rejected.',
+        );
+      }
+      final wantTopic = request.topicId;
+      if (wantTopic != null &&
+          wantTopic.isNotEmpty &&
+          item.topicId != null &&
+          item.topicId!.isNotEmpty &&
+          item.topicId != wantTopic) {
+        throw GameContentScopeMismatch(
+          'Content item ${item.id} does not belong to topic '
+          '$wantTopic; rejected.',
+        );
+      }
+    }
+    final wantWorld = request.worldId;
+    if (wantWorld != null) {
+      for (final item in payload.items) {
+        final itemWorld = item.subjectName.isNotEmpty
+            ? WorldCatalog.resolveDisplayName(item.subjectName)?.id
+            : null;
+        if (itemWorld != null && itemWorld != wantWorld) {
+          throw GameContentScopeMismatch(
+            'Content item ${item.id} maps to $itemWorld, not the requested '
+            '$wantWorld; rejected.',
+          );
+        }
+      }
+    }
   }
 }

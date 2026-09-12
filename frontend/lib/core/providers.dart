@@ -16,6 +16,7 @@ import '../features/gamification/data/gamification_repository.dart';
 import '../features/tutor/data/intelligence_repository.dart';
 import '../features/leaderboard/data/leaderboard_repository.dart';
 import '../features/avatar/data/avatar_repository.dart';
+import '../features/game_engine/data/game_content_repository.dart';
 
 /// Overridden in main() once SharedPreferences loads.
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -76,6 +77,10 @@ final leaderboardRepoProvider = Provider<LeaderboardRepository>(
 
 final avatarRepoProvider = Provider<AvatarRepository>(
   (ref) => AvatarRepository(ref.watch(apiClientProvider)),
+);
+
+final gameContentRepoProvider = Provider<GameContentRepository>(
+  (ref) => GameContentRepository(ref.watch(apiClientProvider)),
 );
 
 // ---- System services ----------------------------------------------------

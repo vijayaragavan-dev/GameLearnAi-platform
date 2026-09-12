@@ -1114,14 +1114,6 @@ class _GameZoneSection extends StatelessWidget {
     return recent;
   }
 
-  String? _subjectIdForGames() {
-    final sid = dashboard.currentSubject?.id;
-    if (sid != null && sid.isNotEmpty) return sid;
-    final lpSid = dashboard.learningPath?.subjectId;
-    if (lpSid != null && lpSid.isNotEmpty) return lpSid;
-    return dashboard.learner.currentSubjectId;
-  }
-
   String? _subjectNameForGames() => dashboard.currentSubject?.name ?? dashboard.learningPath?.subjectName;
 
   @override
@@ -1188,9 +1180,12 @@ class _GameZoneSection extends StatelessWidget {
                     context.go(Routes.subjects);
                     return;
                   }
+                  // Dashboard entry is ALWAYS the Global Arena: no subject
+                  // scope is passed, so no previous world can leak in or
+                  // restrict mixed content. World-specific play lives in
+                  // each world's own arena (world landing → Enter game arena).
                   final name = _subjectNameForGames();
-                  final sid = _subjectIdForGames();
-                  context.push(Routes.gameHub(topicId, subjectId: sid, subjectName: name), extra: name);
+                  context.push(Routes.gameHub(topicId), extra: name);
                 },
                 child: GameIdentitySurface(
                   accent: identity.accent,
@@ -1237,9 +1232,9 @@ class _GameZoneSection extends StatelessWidget {
                   context.go(Routes.subjects);
                   return;
                 }
+                // Global Arena (see featured-cards tap above for the rule).
                 final name = _subjectNameForGames();
-                final sid = _subjectIdForGames();
-                context.push(Routes.gameHub(topicId, subjectId: sid, subjectName: name), extra: name);
+                context.push(Routes.gameHub(topicId), extra: name);
               },
             ),
           ),

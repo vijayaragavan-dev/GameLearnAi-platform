@@ -270,5 +270,196 @@ void main() {
       expect(find.text('Normalization'), findsWidgets);
       expect(find.textContaining('DATABASE MANAGEMENT SYSTEMS'), findsOneWidget);
     });
+
+    testWidgets('global tutor inherits no stale world scope', (tester) async {
+      final client = _client(subjects: [_dbmsSubject()]);
+      await tester.pumpWidget(_scope(
+        client: client,
+        child: const TutorScreen(),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      // No world chip without an explicit world launch.
+      expect(find.textContaining('WORLD', findRichText: true), findsNothing);
+    });
+  });
+
+  group('World arena compat list + SOON states (Phase 7)', () {
+    MockClient compatClient(List<Map<String, dynamic>> games) {
+      return MockClient((request) async {
+        if (request.url.path.contains('/api/v1/subjects/') &&
+            request.url.path.endsWith('/games')) {
+          return http.Response(
+            jsonEncode({
+              'subjectId': '11111111-1111-1111-1111-111111111101',
+              'subjectName': 'Database Management Systems',
+              'games': games,
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{"errorCode":"NOT_FOUND"}', 404,
+            headers: {'content-type': 'application/json'});
+      });
+    }
+
+    Map<String, dynamic> entry(String gameType, bool hasContent) => {
+          'gameType': gameType,
+          'rationale': hasContent ? 'backed' : 'no rows yet',
+          'hasContent': hasContent,
+          'contentCount': hasContent ? 7 : 0,
+        };
+
+    Widget hubScope(MockClient client) {
+      return ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWith((ref) => ApiClient(client: client)),
+        ],
+        child: const MaterialApp(
+          home: GameHubScreen(
+            topicId: 't-1',
+            topicName: 'SQL',
+            subjectId: '11111111-1111-1111-1111-111111111101',
+            subjectName: 'Database Management Systems',
+          ),
+        ),
+      );
+    }
+
+    int cardCount(WidgetTester tester) => tester
+        .widgetList(find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_ArcadeGameCard',
+        ))
+        .length;
+
+    testWidgets('unsupported games hidden from world list, general intact',
+        (tester) async {
+      await tester.pumpWidget(hubScope(compatClient([
+        entry('quiz_battle', true),
+      ])));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      // Subject section: 1 supported; general section: all 14.
+      expect(cardCount(tester), 15);
+      expect(find.text('SNAKE & LADDER'), findsOneWidget);
+      expect(find.text('DATABASE MANAGEMENT SYSTEMS // WORLD ARENA'),
+          findsOneWidget);
+    });
+
+    testWidgets('statically-empty + backend-empty game shows SOON',
+        (tester) async {
+      // Debug Arena has no DBMS static items; backend confirms none.
+      await tester.pumpWidget(hubScope(compatClient([
+        entry('quiz_battle', true),
+        entry('debug_arena', false),
+        entry('mystery_case', false),
+      ])));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      expect(
+        find.bySemanticsLabel(RegExp('not yet available in this world')),
+        findsWidgets,
+      );
+      // Mystery Case has DBMS static items → stays playable despite false.
+      expect(
+        find.bySemanticsLabel(
+          RegExp('Mystery Case.*subject Database Management Systems'),
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('compat failure keeps status-quo roster (never claims empty)',
+        (tester) async {
+      await tester.pumpWidget(hubScope(compatClient(const [])));
+      await tester.pump();
+      // Empty compat list is truthful only when the endpoint answers with
+      // zero games; the 404 path below covers the silent fallback.
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('compat 404 keeps every card playable', (tester) async {
+      final failing = MockClient((request) async {
+        return http.Response('{"errorCode":"NOT_FOUND"}', 404,
+            headers: {'content-type': 'application/json'});
+      });
+      await tester.pumpWidget(hubScope(failing));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      expect(cardCount(tester), 28);
+      expect(
+        find.bySemanticsLabel(RegExp('not yet available in this world')),
+        findsNothing,
+      );
+    });
+  });
+
+  group('Programming world uses backend syllabus (Phase 8)', () {
+    testWidgets('backend-driven syllabus lists path topics', (tester) async {
+      final client = _client(
+        subjects: [
+          {
+            'id': '11111111-1111-1111-1111-111111111101',
+            'name': 'Programming',
+            'description': 'Write code.',
+            'iconKey': 'code',
+            'isActive': true,
+            'displayOrder': 1,
+          },
+        ],
+        paths: [
+          _pathFor('11111111-1111-1111-1111-111111111101'),
+        ],
+      );
+      await tester.pumpWidget(_scope(
+        client: client,
+        child: const WorldScreen(
+          subjectId: '11111111-1111-1111-1111-111111111101',
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      expect(find.text('Programming'), findsWidgets);
+      // Backend syllabus branch: no static UNIT headers.
+      expect(find.textContaining('UNIT 1'), findsNothing);
+      expect(find.text('SQL'), findsWidgets);
+    });
+  });
+
+  group('WorldScreen responsive sweep (Phase 8.12)', () {
+    for (final width in [390.0, 768.0, 1024.0, 1280.0]) {
+      testWidgets('DBMS world renders without overflow at $width',
+          (tester) async {
+        tester.view.physicalSize = Size(width, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+        final client = _client(
+          subjects: [_dbmsSubject()],
+          paths: [_pathFor('11111111-1111-1111-1111-111111111101')],
+        );
+        await tester.pumpWidget(_scope(
+          client: client,
+          child: const WorldScreen(
+            subjectId: '11111111-1111-1111-1111-111111111101',
+          ),
+        ));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+        expect(
+          find.text('Database Management Systems // WORLD ARENA'),
+          findsOneWidget,
+        );
+      });
+    }
   });
 }

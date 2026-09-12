@@ -11,6 +11,13 @@ import '../../dashboard/providers/dashboard_provider.dart';
 import '../../gamification/providers/game_results_provider.dart';
 import '../../leaderboard/providers/leaderboard_providers.dart';
 import '../../learning/path/providers/path_provider.dart';
+import '../../subjects/domain/world_context.dart'
+    show subjectsProvider, subjectByIdProvider, worldForSubjectIdProvider;
+import '../../game_engine/providers/game_content_providers.dart'
+    show
+        subjectGamesProvider,
+        validatedSubjectContentProvider,
+        globalGameContentProvider;
 
 enum SessionPhase { restoring, authenticated, unauthenticated }
 
@@ -198,6 +205,12 @@ class SessionController extends Notifier<SessionState> {
     ref.invalidate(myPositionProvider);
     ref.invalidate(dashboardLeaderboardProvider);
     ref.invalidate(gameResultsProvider);
+    ref.invalidate(subjectsProvider);
+    ref.invalidate(subjectByIdProvider);
+    ref.invalidate(worldForSubjectIdProvider);
+    ref.invalidate(subjectGamesProvider);
+    ref.invalidate(validatedSubjectContentProvider);
+    ref.invalidate(globalGameContentProvider);
     ref.read(selectedSubjectIdProvider.notifier).state = null;
   }
 
