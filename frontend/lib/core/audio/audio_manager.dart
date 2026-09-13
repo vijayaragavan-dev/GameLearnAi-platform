@@ -40,11 +40,18 @@ enum MusicContext {
   final String asset;
 }
 
+/// Factory for the underlying platform players. Production uses real
+/// [AudioPlayer] instances; tests inject fakes to observe volume/play calls
+/// without touching platform channels. Single seam for music + SFX players.
+typedef AudioPlayerFactory = AudioPlayer Function();
+
 /// Centralized audio state. Music and SFX toggle independently; preferences
 /// persist locally. All playback is fail-safe: a missing asset, unsupported
 /// host or missing platform channel never crashes the app.
 class AudioManager {
-  AudioManager({SharedPreferences? prefs}) : _prefs = prefs {
+  AudioManager({SharedPreferences? prefs, AudioPlayerFactory? playerFactory})
+      : _prefs = prefs,
+        _playerFactory = playerFactory ?? AudioPlayer.new {
     musicEnabled = _prefs?.getBool(_kMusic) ?? true;
     sfxEnabled = _prefs?.getBool(_kSfx) ?? true;
     hapticsEnabled = _prefs?.getBool(_kHaptics) ?? true;
@@ -59,6 +66,7 @@ class AudioManager {
   static const String _kSfxVolume = 'pref_sfx_volume';
 
   final SharedPreferences? _prefs;
+  final AudioPlayerFactory _playerFactory;
 
   bool musicEnabled = true;
   bool sfxEnabled = true;
@@ -69,12 +77,16 @@ class AudioManager {
   bool _platformBroken = false;
   bool _disposed = false;
   int _contextSeq = 0;
-  bool _stoppingMusic = false;
 
   final Map<String, AudioPlayer> _musicPlayers = {};
   AudioPlayer? _sfxPlayer;
   AudioPlayer? _typingPlayer;
   MusicContext? _currentContext;
+
+  /// Last explicitly requested music context, tracked even while muted.
+  /// Lets a volume increase from 0 (or a music re-enable) resume the
+  /// correct screen's track instead of reaching no player at all.
+  MusicContext? _desiredContext;
 
   // ---- Settings -----------------------------------------------------------
 
@@ -84,8 +96,10 @@ class AudioManager {
     if (!value) {
       await stopMusic();
     } else if (musicVolume > 0) {
-      // Resume current context if any, otherwise play menu
-      final ctx = _currentContext ?? MusicContext.menu;
+      // Resume the last requested context if any, otherwise play menu.
+      // _currentContext is null here (stopMusic clears it), so fall back
+      // to the desired context tracked across mute/disable transitions.
+      final ctx = _currentContext ?? _desiredContext ?? MusicContext.menu;
       // Clear current so playContext will replay
       _currentContext = null;
       await playContext(ctx);
@@ -111,20 +125,25 @@ class AudioManager {
     final v = value.clamp(0.0, 1.0);
     musicVolume = v;
     await _prefs?.setDouble(_kMusicVolume, v);
-    // Apply to currently playing music immediately
-    if (_currentContext != null && musicEnabled) {
-      final player = _musicPlayers[_currentContext!.asset];
-      if (player != null) {
-        try {
-          await player.setVolume(_musicEffectiveVolume());
-        } catch (e) {
-          if (!_isBenignAudioError(e)) debugPrint('AudioManager setMusicVolume: $e');
+    if (_disposed) return;
+    // Push the new effective volume to every live music player immediately.
+    // Normally there is at most one; iterating covers an in-flight startup
+    // too, so a slider move during track preparation is never lost.
+    // Track position is untouched: no player is recreated or restarted here.
+    for (final player in List<AudioPlayer>.of(_musicPlayers.values)) {
+      try {
+        await player.setVolume(_musicEffectiveVolume());
+      } catch (e) {
+        if (!_isBenignAudioError(e)) {
+          debugPrint('AudioManager setMusicVolume: $e');
         }
       }
-      // If volume is 0, keep player but silent; if was 0 and now >0, ensure playing
-      if (v == 0) {
-        // Keep music paused conceptually but not stopped; just silent
-      }
+    }
+    // Nothing active (e.g. volume was 0 so no player was started, or music
+    // was re-enabled while muted): raising the volume above 0 must resume
+    // playback of the last requested context instead of staying silent.
+    if (musicEnabled && v > 0 && _currentContext == null && _musicPlayers.isEmpty) {
+      await playContext(_desiredContext ?? MusicContext.menu);
     }
   }
 
@@ -163,7 +182,7 @@ class AudioManager {
     _lastSfx = sfx;
     try {
       if (_disposed) return;
-      _sfxPlayer ??= AudioPlayer();
+      _sfxPlayer ??= _playerFactory();
       try {
         await _sfxPlayer!.setVolume(_sfxEffectiveVolume());
       } catch (e) {
@@ -212,7 +231,7 @@ class AudioManager {
       _typingActive = false;
     });
     try {
-      _typingPlayer ??= AudioPlayer();
+      _typingPlayer ??= _playerFactory();
       await _typingPlayer!.setVolume(_sfxEffectiveVolume() * 0.85);
       await _typingPlayer!.play(AssetSource('audio/${Sfx.typingFast.asset}'));
     } catch (e) {
@@ -233,7 +252,17 @@ class AudioManager {
   // ---- Music --------------------------------------------------------------
 
   Future<void> playContext(MusicContext context) async {
-    if (!musicEnabled || musicVolume == 0 || _platformBroken || _disposed) return;
+    // Always remember the requested context, even while muted/disabled, so
+    // a later volume increase or re-enable resumes the correct screen's
+    // track instead of reaching no player (or a stale previous track).
+    _desiredContext = context;
+    if (!musicEnabled || _platformBroken || _disposed) return;
+    if (musicVolume == 0) {
+      // Muted: stop any stale/silent playback so raising the volume later
+      // starts THIS context instead of reviving a previous screen's track.
+      await stopMusic();
+      return;
+    }
     if (_currentContext == context) {
       // If same context but volume changed, update volume
       final player = _musicPlayers[context.asset];
@@ -241,8 +270,10 @@ class AudioManager {
         try {
           await player.setVolume(_musicEffectiveVolume());
         } catch (_) {}
+        return;
       }
-      return;
+      // Player missing (e.g. disposed underneath us): fall through and restart.
+      _currentContext = null;
     }
     final int seq = ++_contextSeq;
     try {
@@ -253,16 +284,19 @@ class AudioManager {
     AudioPlayer? player;
     try {
       if (_disposed || seq != _contextSeq) return;
-      player = AudioPlayer();
+      player = _playerFactory();
       try {
         await player.setReleaseMode(ReleaseMode.loop);
       } catch (e) {
-        if (_isBenignAudioError(e)) {
-          _silentDegrade();
-          await _safeDisposePlayer(player);
-          return;
+        // A stale (superseded) request must never kill session audio: only
+        // the latest request may degrade the platform state.
+        if (seq == _contextSeq) {
+          if (_isBenignAudioError(e)) {
+            _silentDegrade();
+          } else {
+            _degrade(e);
+          }
         }
-        _degrade(e);
         await _safeDisposePlayer(player);
         return;
       }
@@ -274,61 +308,71 @@ class AudioManager {
       try {
         await player.setVolume(_musicEffectiveVolume());
       } catch (e) {
-        if (_isBenignAudioError(e)) {
-          _silentDegrade();
-        } else {
-          _degrade(e);
-          return;
+        if (seq == _contextSeq) {
+          if (_isBenignAudioError(e)) {
+            _silentDegrade();
+          } else {
+            _degrade(e);
+            return;
+          }
         }
       }
       if (_disposed || seq != _contextSeq) {
-        _musicPlayers.remove(context.asset);
+        // Stale request: clean up ONLY our own player. A newer request may
+        // have registered a different player under the same asset (contexts
+        // can share assets); never remove what we don't own.
+        if (_musicPlayers[context.asset] == player) {
+          _musicPlayers.remove(context.asset);
+        }
         await _safeDisposePlayer(player);
         return;
       }
       await player.play(AssetSource('audio/${context.asset}'));
       if (_disposed || seq != _contextSeq) {
-        _musicPlayers.remove(context.asset);
+        if (_musicPlayers[context.asset] == player) {
+          _musicPlayers.remove(context.asset);
+        }
         await _safeDisposePlayer(player);
         return;
       }
       _currentContext = context;
     } catch (e) {
       if (player != null) {
-        _musicPlayers.remove(context.asset);
+        if (_musicPlayers[context.asset] == player) {
+          _musicPlayers.remove(context.asset);
+        }
         await _safeDisposePlayer(player);
       }
-      if (_isBenignAudioError(e)) {
-        _silentDegrade();
-      } else {
-        _degrade(e);
+      // Same rule: a superseded request's failure is a race artifact, not a
+      // broken platform. Only the latest request may degrade session audio.
+      if (seq == _contextSeq) {
+        if (_isBenignAudioError(e)) {
+          _silentDegrade();
+        } else {
+          _degrade(e);
+        }
       }
     }
   }
 
   Future<void> stopMusic() async {
-    if (_stoppingMusic) return;
-    _stoppingMusic = true;
-    try {
-      final players = Map<String, AudioPlayer>.from(_musicPlayers);
-      _musicPlayers.clear();
-      _currentContext = null;
-      for (final p in players.values) {
-        try {
-          await p.stop();
-        } catch (e) {
-          if (!_isBenignAudioError(e)) {
-            debugPrint('AudioManager.stopMusic stop degraded: $e');
-          }
+    // Capture and clear synchronously: concurrent stopMusic callers each own
+    // a disjoint set of players, so nobody double-disposes and a player
+    // registered after the capture belongs to its creator. No drop-guard is
+    // needed (and a drop-guard would risk leaking players under overlapping
+    // playContext calls).
+    final players = Map<String, AudioPlayer>.from(_musicPlayers);
+    _musicPlayers.clear();
+    _currentContext = null;
+    for (final p in players.values) {
+      try {
+        await p.stop();
+      } catch (e) {
+        if (!_isBenignAudioError(e)) {
+          debugPrint('AudioManager.stopMusic stop degraded: $e');
         }
-        await _safeDisposePlayer(p);
       }
-    } catch (e) {
-      if (!_isBenignAudioError(e)) {
-        debugPrint('AudioManager.stopMusic degraded: $e');
-      }
-    } finally {
-      _stoppingMusic = false;
+      await _safeDisposePlayer(p);
     }
   }
 

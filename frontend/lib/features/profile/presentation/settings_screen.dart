@@ -134,10 +134,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Ambient adventure soundtrack',
                 value: audio.musicEnabled,
                 onChanged: (v) async {
+                  // setMusicEnabled already resumes the last requested
+                  // context; do not force MusicContext.menu here (that would
+                  // restart/switch the track unnecessarily).
                   await audio.setMusicEnabled(v);
-                  if (v) {
-                    audio.playContext(MusicContext.menu);
-                  }
                   setState(() {});
                 },
               ),
