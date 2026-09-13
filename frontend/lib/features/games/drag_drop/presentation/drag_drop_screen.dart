@@ -6,6 +6,7 @@ import '../../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/content_models.dart';
 import '../../../../core/models/quiz_models.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
@@ -20,6 +21,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/utils/game_content_mapper.dart';
+import '../../../game_engine/content/game_content_adapters.dart';
+import '../../../game_engine/models/game_content_models.dart';
 import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
@@ -63,36 +66,49 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
+    // World-scope request shared by the backend-first path and validation.
+    final request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
     try {
-      final contentRepo = ref.read(contentRepoProvider);
-      final quizRepo = ref.read(quizRepoProvider);
-      Future<dynamic> safeLesson() async { try { return await contentRepo.lesson(widget.topicId); } catch (_) { return null; } }
-      Future<dynamic> safeQuiz() async { try { return await quizRepo.quizForTopic(widget.topicId); } catch (_) { return null; } }
-      Future<dynamic> safeTopic() async { try { return await contentRepo.topic(widget.topicId); } catch (_) { return null; } }
-      final results = await Future.wait([safeLesson(), safeQuiz(), safeTopic()]);
-      final lessonRaw = results[0] as dynamic;
-      final quizRaw = results[1] as dynamic;
-      final topicRaw = results[2] as dynamic;
-      final Lesson? lesson = lessonRaw is Lesson ? lessonRaw : null;
-      final Quiz? quiz = quizRaw is Quiz ? quizRaw : null;
-      final Topic? topic = topicRaw is Topic ? topicRaw : null;
-      // World-scope validation (see memory_match_screen for the contract).
-      final request = GameContentRequest.fromRoute(
-        subjectId: widget.subjectId,
-        subjectName: widget.subjectName,
-        topicId: widget.topicId,
-        topicName: widget.topicName,
-      );
-      final rejection = WorldContentGate.rejectionMessage(
-        topic: topic,
-        quiz: quiz,
-        request: request,
-      );
-      if (rejection != null) throw Exception(rejection);
-      _difficulty = DifficultyUtils.resolve(topicDifficulty: topic?.difficulty);
-      final payload = GameContentMapper.dragDropPayload(quiz: quiz, lesson: lesson, topic: topic);
-      _zones = payload.zones;
-      _items = payload.items;
+      // PRIMARY (Phase 11): backend game-content STRUCTURE items.
+      final backendAdapted = await _tryBackendPayload(request);
+      List<String> zones;
+      List<DragItem> items;
+      if (backendAdapted != null) {
+        zones = backendAdapted.zones;
+        items = backendAdapted.items;
+        // Difficulty still resolves from the authoritative topic.
+        try {
+          final topic = await ref.read(contentRepoProvider).topic(widget.topicId);
+          final rejection = WorldContentGate.rejectionMessage(
+            topic: topic,
+            request: request,
+          );
+          if (rejection != null) throw GameContentScopeMismatch(rejection);
+          // Gate 5 strict difficulty: unknown topic difficulty must NOT
+          // silently become EASY (presentation-only default MEDIUM).
+          _difficulty = DifficultyUtils.resolveStrict(
+                topicDifficulty: topic.difficulty,
+              ) ??
+              GameDifficulty.medium;
+        } catch (e) {
+          if (e is GameContentScopeMismatch) rethrow;
+          // Topic fetch failure is non-fatal here: zones/items already carry
+          // authoritative per-item difficulty; keep resolved default.
+        }
+      } else {
+        // EXPLICIT FALLBACK (Rule 6): the pre-Phase-11 lesson/quiz/topic
+        // mapper path. Same topic fetch, same validation, same mechanics.
+        final payload = await _fallbackPayload(request);
+        zones = payload.zones;
+        items = payload.items;
+      }
+      _zones = zones;
+      _items = items;
       // Shuffle items
       _items.shuffle();
       for (final it in _items) {
@@ -104,9 +120,89 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
       _timer.start();
       _start = DateTime.now();
       setState(() => _loading = false);
+    } on GameContentScopeMismatch {
+      // Hard failure (Rules 3/4): scope violation. Never play, never repair.
+      if (!mounted) return;
+      setState(() {
+        _error = 'That learning content is not available for this topic.';
+        _loading = false;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() { _error = describeError(e).message; _loading = false; });
     }
+  }
+
+  /// Backend-first fetch + adapt for the drag payload. Returns null ONLY as
+  /// the explicit-fallback signal (transport failures or item-level
+  /// insufficiency). Payload-level scope violations propagate as
+  /// [GameContentScopeMismatch] and must fail hard upstream.
+  Future<({List<String> zones, List<DragItem> items})?> _tryBackendPayload(
+    GameContentRequest request,
+  ) async {
+    final repo = ref.read(gameContentRepoProvider);
+    final sid = request.subjectId;
+    final GameContentPayload payload;
+    try {
+      if (request.isWorld && sid != null && sid.isNotEmpty) {
+        payload = await repo.subjectContent(
+          subjectId: sid,
+          topicId: request.topicId,
+          gameType: GameType.dragDrop.id,
+          limit: 12,
+        );
+      } else {
+        payload = await repo.globalContent(
+          gameType: GameType.dragDrop.id,
+          limit: 12,
+        );
+      }
+    } on ApiException {
+      return null;
+    }
+    WorldContentGate.validateGameContentPayload(
+      payload: payload,
+      request: request,
+    );
+    try {
+      return GameContentAdapters.dragPayloadFromItems(
+        items: payload.items,
+        request: request,
+        gameType: GameType.dragDrop.id,
+      );
+    } on GameContentScopeMismatch {
+      return null;
+    }
+  }
+
+  /// Pre-Phase-11 mapper path, preserved as the explicit fallback.
+  Future<({List<String> zones, List<DragItem> items})> _fallbackPayload(
+    GameContentRequest request,
+  ) async {
+    final contentRepo = ref.read(contentRepoProvider);
+    final quizRepo = ref.read(quizRepoProvider);
+    Future<dynamic> safeLesson() async { try { return await contentRepo.lesson(widget.topicId); } catch (_) { return null; } }
+    Future<dynamic> safeQuiz() async { try { return await quizRepo.quizForTopic(widget.topicId); } catch (_) { return null; } }
+    Future<dynamic> safeTopic() async { try { return await contentRepo.topic(widget.topicId); } catch (_) { return null; } }
+    final results = await Future.wait([safeLesson(), safeQuiz(), safeTopic()]);
+    final lessonRaw = results[0] as dynamic;
+    final quizRaw = results[1] as dynamic;
+    final topicRaw = results[2] as dynamic;
+    final Lesson? lesson = lessonRaw is Lesson ? lessonRaw : null;
+    final Quiz? quiz = quizRaw is Quiz ? quizRaw : null;
+    final Topic? topic = topicRaw is Topic ? topicRaw : null;
+    // World-scope validation (see memory_match_screen for the contract).
+    final rejection = WorldContentGate.rejectionMessage(
+      topic: topic,
+      quiz: quiz,
+      request: request,
+    );
+    if (rejection != null) throw GameContentScopeMismatch(rejection);
+    // Gate 5 strict difficulty (fallback path too): never default to EASY.
+    _difficulty =
+        DifficultyUtils.resolveStrict(topicDifficulty: topic?.difficulty) ??
+            GameDifficulty.medium;
+    return GameContentMapper.dragDropPayload(quiz: quiz, lesson: lesson, topic: topic);
   }
 
   void _onTimeUp() => _finish();

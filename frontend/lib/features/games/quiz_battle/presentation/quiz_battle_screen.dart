@@ -22,6 +22,8 @@ import '../../../game_engine/engine/game_scoring.dart';
 import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/content/game_content_scope.dart';
+import '../../../game_engine/content/game_content_validation.dart';
+import '../../../game_engine/models/game_content_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
@@ -74,6 +76,10 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
   }
 
   Future<Quiz> _load() async {
+    // Backend-authoritative QUIZ-001 (no correct answers; grading is
+    // server-side via QUIZ-002). No static fallback exists on this screen:
+    // valid backend content plays, empty renders the empty state, and any
+    // failure renders the error state — never unrelated substituted content.
     final quiz = await ref.read(quizRepoProvider).quizForTopic(widget.topicId);
     // World-scope validation (see speed_run_screen for the contract).
     final request = GameContentRequest.fromRoute(
@@ -84,8 +90,19 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
     );
     final rejection = WorldContentGate.rejectionMessage(quiz: quiz, request: request);
     if (rejection != null) throw Exception(rejection);
+    // Gate 2 fail-closed structure gate: every QUIZ-001 question must carry
+    // id + text + >=2 options + strict difficulty. Answer absence is expected
+    // (server-graded). Malformed questions reject the load; backend ordering
+    // is preserved verbatim (no shuffle, no repair, no substitution).
+    for (final q in quiz.questions) {
+      final reason = GameContentValidation.validateQuizQuestion(question: q);
+      if (reason != null) throw GameContentScopeMismatch(reason);
+    }
     _quiz = quiz;
-    _difficulty = DifficultyUtils.resolve(topicDifficulty: quiz.difficulty);
+    // Gate 2 strict difficulty: unknown quiz difficulty must NOT silently
+    // become EASY. MEDIUM is the explicit presentation-only default (timer +
+    // local preview); authoritative difficulty stays backend-side (QUIZ-002).
+    _difficulty = DifficultyUtils.resolveStrict(topicDifficulty: quiz.difficulty) ?? GameDifficulty.medium;
     _initTimer();
     _gameStart = DateTime.now();
     return quiz;

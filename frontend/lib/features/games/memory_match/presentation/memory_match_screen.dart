@@ -8,6 +8,7 @@ import '../../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/content_models.dart';
 import '../../../../core/models/quiz_models.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
@@ -22,6 +23,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/utils/game_content_mapper.dart';
+import '../../../game_engine/content/game_content_adapters.dart';
+import '../../../game_engine/models/game_content_models.dart';
 import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
@@ -76,42 +79,55 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    // World-scope request shared by the backend-first path and validation.
+    final request = GameContentRequest.fromRoute(
+      subjectId: widget.subjectId,
+      subjectName: widget.subjectName,
+      topicId: widget.topicId,
+      topicName: widget.topicName,
+    );
     try {
-      // Fetch lesson + quiz + topic in parallel for content mapping.
-      final contentRepo = ref.read(contentRepoProvider);
-      final quizRepo = ref.read(quizRepoProvider);
-      Future<dynamic> safeLesson() async { try { return await contentRepo.lesson(widget.topicId); } catch (_) { return null; } }
-      Future<dynamic> safeQuiz() async { try { return await quizRepo.quizForTopic(widget.topicId); } catch (_) { return null; } }
-      Future<dynamic> safeTopic() async { try { return await contentRepo.topic(widget.topicId); } catch (_) { return null; } }
-      final results = await Future.wait([safeLesson(), safeQuiz(), safeTopic()]);
-      final lesson = results[0] as dynamic;
-      final quiz = results[1] as dynamic;
-      final topic = results[2] as dynamic;
-      final Lesson? typedLesson = lesson is Lesson ? lesson : null;
-      final Quiz? typedQuiz = quiz is Quiz ? quiz : null;
-      final Topic? typedTopic = topic is Topic ? topic : null;
-
-      // World-scope validation: backend content must belong to the
-      // requested world/topic. Rejection renders the honest error state.
-      final request = GameContentRequest.fromRoute(
-        subjectId: widget.subjectId,
-        subjectName: widget.subjectName,
-        topicId: widget.topicId,
-        topicName: widget.topicName,
-      );
-      final rejection = WorldContentGate.rejectionMessage(
-        topic: typedTopic,
-        quiz: typedQuiz,
-        request: request,
-      );
-      if (rejection != null) throw Exception(rejection);
-
-      // Resolve difficulty from topic/lesson
-      _difficulty = DifficultyUtils.resolve(topicDifficulty: typedTopic?.difficulty, masteryLevel: null);
-      final pairs = GameContentMapper.memoryPairs(quiz: typedQuiz, lesson: typedLesson, topic: typedTopic, maxPairs: _pairsForDifficulty(_difficulty));
-      if (pairs.length < 2) {
-        throw Exception('Not enough learning content to build memory pairs for this topic.');
+      // PRIMARY (Phase 11): backend game-content CONCEPT items.
+      final backendPairs = await _tryBackendPairs(request);
+      List<({String term, String definition})> pairs;
+      if (backendPairs != null) {
+        // Difficulty still resolves from the authoritative topic.
+        Topic? typedTopic;
+        try {
+          typedTopic = await ref.read(contentRepoProvider).topic(widget.topicId);
+        } catch (_) {
+          typedTopic = null;
+        }
+        if (typedTopic != null) {
+          final rejection = WorldContentGate.rejectionMessage(
+            topic: typedTopic,
+            request: request,
+          );
+          if (rejection != null) {
+            throw GameContentScopeMismatch(rejection);
+          }
+        }
+        // Gate 4 strict difficulty (Gates 2/3 pattern): unknown topic
+        // difficulty must NOT silently become EASY. MEDIUM is the explicit
+        // presentation-only default (board size + preview scoring).
+        _difficulty = DifficultyUtils.resolveStrict(
+              topicDifficulty: typedTopic?.difficulty,
+            ) ??
+            GameDifficulty.medium;
+        pairs = backendPairs.take(_pairsForDifficulty(_difficulty)).toList();
+        if (pairs.length < 2) {
+          throw GameContentScopeMismatch(
+            'Not enough valid backend pairs for this topic; rejected.',
+          );
+        }
+      } else {
+        // EXPLICIT FALLBACK (Rule 6): the pre-Phase-11 lesson/quiz/topic
+        // mapper path. Same topic fetch, same validation, same mechanics.
+        pairs = await _fallbackPairs(request);
       }
       // Build cards: each pair yields two cards (term & definition) sharing pairId
       final cards = <MemoryCard>[];
@@ -131,12 +147,99 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
         _cards = cards;
         _loading = false;
       });
+    } on GameContentScopeMismatch {
+      // Hard failure (Rules 3/4): scope violation or unusable backend
+      // content after the fallback was exhausted. Never play, never repair.
+      if (!mounted) return;
+      setState(() {
+        _error = 'That learning content is not available for this topic.';
+        _loading = false;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = describeError(e).message;
         _loading = false;
       });
     }
+  }
+
+  /// Backend-first fetch for memory pairs. Returns null ONLY as the
+  /// explicit-fallback signal (transport/empty failures). Scope violations
+  /// propagate as [GameContentScopeMismatch] and must fail hard upstream.
+  Future<List<({String term, String definition})>?> _tryBackendPairs(
+    GameContentRequest request,
+  ) async {
+    final repo = ref.read(gameContentRepoProvider);
+    final sid = request.subjectId;
+    final GameContentPayload payload;
+    try {
+      if (request.isWorld && sid != null && sid.isNotEmpty) {
+        payload = await repo.subjectContent(
+          subjectId: sid,
+          topicId: request.topicId,
+          gameType: GameType.memoryMatch.id,
+          limit: 8,
+        );
+      } else {
+        payload = await repo.globalContent(
+          gameType: GameType.memoryMatch.id,
+          limit: 8,
+        );
+      }
+    } on ApiException {
+      return null;
+    }
+    WorldContentGate.validateGameContentPayload(
+      payload: payload,
+      request: request,
+    );
+    try {
+      return GameContentAdapters.memoryPairsFromItems(
+        items: payload.items,
+        request: request,
+        gameType: GameType.memoryMatch.id,
+        maxPairs: 8,
+      );
+    } on GameContentScopeMismatch {
+      return null;
+    }
+  }
+
+  /// Pre-Phase-11 mapper path, preserved as the explicit fallback.
+  Future<List<({String term, String definition})>> _fallbackPairs(
+    GameContentRequest request,
+  ) async {
+    // Fetch lesson + quiz + topic in parallel for content mapping.
+    final contentRepo = ref.read(contentRepoProvider);
+    final quizRepo = ref.read(quizRepoProvider);
+    Future<dynamic> safeLesson() async { try { return await contentRepo.lesson(widget.topicId); } catch (_) { return null; } }
+    Future<dynamic> safeQuiz() async { try { return await quizRepo.quizForTopic(widget.topicId); } catch (_) { return null; } }
+    Future<dynamic> safeTopic() async { try { return await contentRepo.topic(widget.topicId); } catch (_) { return null; } }
+    final results = await Future.wait([safeLesson(), safeQuiz(), safeTopic()]);
+    final lesson = results[0] as dynamic;
+    final quiz = results[1] as dynamic;
+    final topic = results[2] as dynamic;
+    final Lesson? typedLesson = lesson is Lesson ? lesson : null;
+    final Quiz? typedQuiz = quiz is Quiz ? quiz : null;
+    final Topic? typedTopic = topic is Topic ? topic : null;
+
+    // World-scope validation: backend content must belong to the
+    // requested world/topic. Rejection renders the honest error state.
+    final rejection = WorldContentGate.rejectionMessage(
+      topic: typedTopic,
+      quiz: typedQuiz,
+      request: request,
+    );
+    if (rejection != null) throw GameContentScopeMismatch(rejection);
+
+    // Resolve difficulty from topic/lesson (Gate 4 strict: never default to EASY).
+    _difficulty = DifficultyUtils.resolveStrict(topicDifficulty: typedTopic?.difficulty) ?? GameDifficulty.medium;
+    final pairs = GameContentMapper.memoryPairs(quiz: typedQuiz, lesson: typedLesson, topic: typedTopic, maxPairs: _pairsForDifficulty(_difficulty));
+    if (pairs.length < 2) {
+      throw Exception('Not enough learning content to build memory pairs for this topic.');
+    }
+    return pairs;
   }
 
   int _pairsForDifficulty(GameDifficulty d) => switch (d) { GameDifficulty.easy => 4, GameDifficulty.medium => 6, GameDifficulty.hard => 8 };

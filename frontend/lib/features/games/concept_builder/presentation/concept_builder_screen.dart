@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/providers.dart';
+import '../../../../core/error/user_facing_error.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
@@ -18,6 +20,8 @@ import '../../../game_engine/engine/game_timer.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/content/game_content_adapters.dart';
+import '../../../game_engine/models/game_content_models.dart';
 import '../../../game_engine/content/game_content_scope.dart';
 import '../../../game_engine/widgets/world_scope_empty.dart';
 import '../data/concept_challenges.dart';
@@ -34,7 +38,9 @@ class ConceptBuilderScreen extends ConsumerStatefulWidget {
 }
 
 class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
-  late List<ConceptChallenge> _challenges;
+  List<ConceptChallenge> _challenges = [];
+  bool _loading = true;
+  String? _error;
   int _index = 0;
   List<String> _selectedIds = [];
   bool _showResult = false;
@@ -64,26 +70,101 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
     _combo = GameCombo();
     _difficulty = GameDifficulty.medium;
     _timeLimit = DifficultyUtils.timeLimitFor(_difficulty, GameType.conceptBuilder);
-    // World-scoped selection: in a WORLD arena only challenges attributed
-    // to this world are kept; anything else is rejected (never substituted).
-    // Global arena (no subject context) keeps the full bank.
     _request = GameContentRequest.fromRoute(
       subjectId: widget.subjectId,
       subjectName: widget.subjectName,
       topicId: widget.topicId,
       topicName: widget.topicName,
     );
-    _challenges = WorldContentGate.selectStatic(
-      items: ConceptChallenges.session(count: 4),
-      topicLabelOf: (c) => c.topic,
-      request: _request,
-      gameType: GameType.conceptBuilder,
+    _load();
+  }
+
+  /// Backend-first load (Phase 11): CONCEPT items adapted to challenges,
+  /// with the pre-Phase-11 static bank as the explicit fallback (Rule 6).
+  /// Payload-level scope violations fail hard; item-level insufficiency
+  /// falls back; an empty static bank keeps the existing honest empty UI.
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final backend = await _tryBackendChallenges(_request);
+      if (backend != null) {
+        _challenges = backend;
+      } else {
+        // EXPLICIT FALLBACK: world-scoped static bank (existing behavior).
+        _challenges = WorldContentGate.selectStatic(
+          items: ConceptChallenges.session(count: 4),
+          topicLabelOf: (c) => c.topic,
+          request: _request,
+          gameType: GameType.conceptBuilder,
+        );
+      }
+      _timer = GameTimer(totalSeconds: _timeLimit);
+      _timer.onTickValue = (_) { if (mounted) setState(() {}); };
+      _timer.onComplete = () => _finishGame(timedOut: true);
+      _timer.start();
+      _start = DateTime.now();
+      if (!mounted) return;
+      setState(() => _loading = false);
+    } on GameContentScopeMismatch {
+      // Hard failure (Rules 3/4). Never play, never repair.
+      if (!mounted) return;
+      setState(() {
+        _error = 'That learning content is not available for this topic.';
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = describeError(e).message;
+        _loading = false;
+      });
+    }
+  }
+
+  /// Backend-first fetch + adapt. Returns null ONLY as the
+  /// explicit-fallback signal. Payload-level scope violations propagate and
+  /// must fail hard upstream.
+  Future<List<ConceptChallenge>?> _tryBackendChallenges(
+    GameContentRequest request,
+  ) async {
+    final repo = ref.read(gameContentRepoProvider);
+    final sid = request.subjectId;
+    final GameContentPayload payload;
+    try {
+      if (request.isWorld && sid != null && sid.isNotEmpty) {
+        payload = await repo.subjectContent(
+          subjectId: sid,
+          topicId: request.topicId,
+          gameType: GameType.conceptBuilder.id,
+          limit: 4,
+        );
+      } else {
+        payload = await repo.globalContent(
+          gameType: GameType.conceptBuilder.id,
+          limit: 4,
+        );
+      }
+    } on ApiException {
+      return null;
+    }
+    WorldContentGate.validateGameContentPayload(
+      payload: payload,
+      request: request,
     );
-    _timer = GameTimer(totalSeconds: _timeLimit);
-    _timer.onTickValue = (_) { if (mounted) setState(() {}); };
-    _timer.onComplete = () => _finishGame(timedOut: true);
-    _timer.start();
-    _start = DateTime.now();
+    try {
+      return GameContentAdapters.conceptChallengesFromItems(
+        items: payload.items,
+        request: request,
+        gameType: GameType.conceptBuilder.id,
+        minChallenges: 1,
+        maxChallenges: 4,
+      );
+    } on GameContentScopeMismatch {
+      return null;
+    }
   }
 
   ConceptChallenge get _current => _challenges[_index];
@@ -205,6 +286,12 @@ class _ConceptBuilderScreenState extends ConsumerState<ConceptBuilderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(appBar: AppBar(title: const Text('CONCEPT BUILDER')), body: const Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null) {
+      return Scaffold(appBar: AppBar(title: const Text('CONCEPT BUILDER')), body: ErrorState(title: 'Unable to start', message: _error!, onRetry: _load));
+    }
     if (_challenges.isEmpty) {
       // Honest world scope: no cross-world substitution, no fabrication.
       if (_request.isWorld) {

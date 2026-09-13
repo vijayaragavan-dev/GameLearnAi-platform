@@ -60,4 +60,33 @@ abstract final class DifficultyUtils {
     if (topicDifficulty != null) return fromTopicDifficulty(topicDifficulty);
     return GameDifficulty.medium;
   }
+
+  /// Strict backend-difficulty parse (Phase 11 — Gate 2).
+  ///
+  /// Returns the matching [GameDifficulty] for `EASY`/`MEDIUM`/`HARD`
+  /// (case-insensitive, trimmed) and `null` for anything else — including
+  /// `null`, empty, and unknown values. Unlike [GameDifficulty.fromString]
+  /// (which defaults unknown values to EASY and is locked by existing
+  /// regression tests), this path never invents a difficulty: callers handle
+  /// the `null` explicitly (Quiz Battle falls back to MEDIUM for its
+  /// presentation-only timer/preview while authoritative grading stays
+  /// backend-side via QUIZ-002).
+  static GameDifficulty? tryParseBackend(String? value) {
+    if (value == null) return null;
+    switch (value.trim().toUpperCase()) {
+      case 'EASY':
+        return GameDifficulty.easy;
+      case 'MEDIUM':
+        return GameDifficulty.medium;
+      case 'HARD':
+        return GameDifficulty.hard;
+      default:
+        return null;
+    }
+  }
+
+  /// Strict variant of [resolve] for backend quiz payloads: unknown quiz
+  /// difficulty yields `null` instead of silently becoming EASY.
+  static GameDifficulty? resolveStrict({String? topicDifficulty}) =>
+      tryParseBackend(topicDifficulty);
 }
