@@ -11,12 +11,14 @@ import com.gamelearn.entity.LearnerProfile;
 import com.gamelearn.entity.Subject;
 import com.gamelearn.entity.Topic;
 import com.gamelearn.entity.TopicMastery;
+import com.gamelearn.entity.Unit;
 import com.gamelearn.exception.ApiException;
 import com.gamelearn.exception.ErrorCode;
 import com.gamelearn.repository.LearnerProfileRepository;
 import com.gamelearn.repository.SubjectRepository;
 import com.gamelearn.repository.TopicMasteryRepository;
 import com.gamelearn.repository.TopicRepository;
+import com.gamelearn.repository.UnitRepository;
 
 /**
  * Builds the AI-TUTOR context slice from verified persisted state
@@ -42,6 +44,8 @@ public class TutorContextBuilder {
             UUID topicId,
             String topicName,
             String topicDifficulty,
+            UUID unitId,
+            String unitName,
             BigDecimal overallMastery,
             int currentLevel,
             TopicMasteryView mastery) {
@@ -61,32 +65,44 @@ public class TutorContextBuilder {
         public UUID topicIdOrNull() {
             return topicId;
         }
+
+        public UUID unitIdOrNull() {
+            return unitId;
+        }
     }
 
     private final LearnerProfileRepository learnerProfileRepository;
     private final SubjectRepository subjectRepository;
     private final TopicRepository topicRepository;
     private final TopicMasteryRepository topicMasteryRepository;
+    private final UnitRepository unitRepository;
 
     public TutorContextBuilder(LearnerProfileRepository learnerProfileRepository,
                                SubjectRepository subjectRepository,
                                TopicRepository topicRepository,
-                               TopicMasteryRepository topicMasteryRepository) {
+                               TopicMasteryRepository topicMasteryRepository,
+                               UnitRepository unitRepository) {
         this.learnerProfileRepository = learnerProfileRepository;
         this.subjectRepository = subjectRepository;
         this.topicRepository = topicRepository;
         this.topicMasteryRepository = topicMasteryRepository;
+        this.unitRepository = unitRepository;
     }
 
     /**
      * Deterministic focus resolution (spec section 6.2): explicit topicId >
      * explicit subjectId > current-topic pointer > current-subject pointer >
-     * GENERIC. Unknown/inactive/cross-subject explicit references are
-     * rejected with 400 VALIDATION_FAILED + fieldErrors BEFORE any quota or
-     * Gemini contact; inactive POINTERS fall through silently instead.
+     * GENERIC, with optional explicit unitId narrowing any level.
+     * Unknown/inactive/cross-subject explicit references are rejected with
+     * 400 VALIDATION_FAILED + fieldErrors BEFORE any quota or Gemini
+     * contact; inactive POINTERS fall through silently instead. A topic that
+     * carries no unit (legacy syllabus rows) never silently matches an
+     * explicit unitId: the combination is rejected instead. Whenever the
+     * resolved topic carries a unit, its identity is populated
+     * authoritatively even when the caller did not supply unitId.
      */
     @Transactional(readOnly = true)
-    public TutorContext resolve(UUID userId, UUID subjectId, UUID topicId) {
+    public TutorContext resolve(UUID userId, UUID subjectId, UUID topicId, UUID unitId) {
         LearnerProfile profile = learnerProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.INTERNAL_ERROR.getHttpStatus(),
@@ -104,8 +120,11 @@ public class TutorContextBuilder {
             if (subjectId != null && !subject.getId().equals(subjectId)) {
                 throw referentialError("topicId", "topicId does not belong to subjectId");
             }
+            Unit unit = resolveTopicUnit(topic, unitId);
             return new TutorContext(subject.getId(), subject.getName(),
                     topic.getId(), topic.getName(), topic.getDifficulty().name(),
+                    unit == null ? null : unit.getId(),
+                    unit == null ? null : unit.getName(),
                     overallMastery, currentLevel, masteryView(userId, topic.getId()));
         }
         if (subjectId != null) {
@@ -113,24 +132,75 @@ public class TutorContextBuilder {
                     .filter(Subject::isActive)
                     .orElseThrow(() -> referentialError("subjectId",
                             "Unknown or inactive subjectId"));
+            Unit unit = resolveSubjectUnit(subject.getId(), unitId);
             return new TutorContext(subject.getId(), subject.getName(),
-                    null, null, null, overallMastery, currentLevel, null);
+                    null, null, null,
+                    unit == null ? null : unit.getId(),
+                    unit == null ? null : unit.getName(),
+                    overallMastery, currentLevel, null);
+        }
+        if (unitId != null) {
+            Unit unit = unitRepository.findById(unitId)
+                    .filter(Unit::isActive)
+                    .orElseThrow(() -> referentialError("unitId",
+                            "Unknown or inactive unitId"));
+            Subject subject = unit.getSubject();
+            return new TutorContext(subject.getId(), subject.getName(),
+                    null, null, null, unit.getId(), unit.getName(),
+                    overallMastery, currentLevel, null);
         }
         // Pointer fallthrough - deactivated referenced rows are skipped, not errors.
         Topic pointedTopic = activeTopic(profile);
         if (pointedTopic != null) {
             Subject subject = pointedTopic.getSubject();
+            Unit unit = pointedTopic.getUnit();
             return new TutorContext(subject.getId(), subject.getName(),
                     pointedTopic.getId(), pointedTopic.getName(),
-                    pointedTopic.getDifficulty().name(), overallMastery, currentLevel,
+                    pointedTopic.getDifficulty().name(),
+                    unit == null ? null : unit.getId(),
+                    unit == null ? null : unit.getName(),
+                    overallMastery, currentLevel,
                     masteryView(userId, pointedTopic.getId()));
         }
         Subject pointedSubject = activeSubject(profile);
         if (pointedSubject != null) {
             return new TutorContext(pointedSubject.getId(), pointedSubject.getName(),
-                    null, null, null, overallMastery, currentLevel, null);
+                    null, null, null, null, null, overallMastery, currentLevel, null);
         }
-        return new TutorContext(null, null, null, null, null, overallMastery, currentLevel, null);
+        return new TutorContext(null, null, null, null, null, null, null,
+                overallMastery, currentLevel, null);
+    }
+
+    /**
+     * Explicit unit narrowing for a topic focus. A legacy topic without a
+     * unit reference never matches: fail explicitly instead of guessing.
+     */
+    private Unit resolveTopicUnit(Topic topic, UUID unitId) {
+        if (unitId == null) {
+            return topic.getUnit();
+        }
+        Unit unit = unitRepository.findById(unitId)
+                .filter(Unit::isActive)
+                .orElseThrow(() -> referentialError("unitId",
+                        "Unknown or inactive unitId"));
+        if (topic.getUnit() == null || !topic.getUnit().getId().equals(unit.getId())) {
+            throw referentialError("topicId", "topicId does not belong to unitId");
+        }
+        return unit;
+    }
+
+    private Unit resolveSubjectUnit(UUID subjectId, UUID unitId) {
+        if (unitId == null) {
+            return null;
+        }
+        Unit unit = unitRepository.findById(unitId)
+                .filter(Unit::isActive)
+                .orElseThrow(() -> referentialError("unitId",
+                        "Unknown or inactive unitId"));
+        if (!unit.getSubject().getId().equals(subjectId)) {
+            throw referentialError("unitId", "unitId does not belong to subjectId");
+        }
+        return unit;
     }
 
     /** Plain read - NO lock; the tutor never mutates adaptive state. */

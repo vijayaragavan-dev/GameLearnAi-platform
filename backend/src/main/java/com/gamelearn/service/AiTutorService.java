@@ -113,7 +113,7 @@ public class AiTutorService {
 
         // Focus resolution (server-authoritative referential checks).
         TutorContext context = contextBuilder.resolve(user.getId(),
-                request.subjectId(), request.topicId());
+                request.subjectId(), request.topicId(), request.unitId());
 
         // Input sanitization then post-strip caps (spec section 8.1 ordering).
         String question = TutorPromptBuilder.sanitizeUntrusted(request.question());
@@ -247,6 +247,9 @@ public class AiTutorService {
         if (context.subjectName() != null) {
             root.put("subjectName", context.subjectName());
         }
+        if (context.unitName() != null) {
+            root.put("unitName", context.unitName());
+        }
         if (context.topicName() != null) {
             root.put("topicName", context.topicName());
             if (context.topicDifficulty() != null) {
@@ -276,7 +279,9 @@ public class AiTutorService {
                         context.subjectIdOrNull(),
                         context.topicIdOrNull(),
                         context.subjectName(),
-                        context.topicName()));
+                        context.topicName(),
+                        context.unitIdOrNull(),
+                        context.unitName()));
     }
 
     private void requireCap(boolean violated, String field, String message) {
@@ -336,6 +341,9 @@ public class AiTutorService {
         }
         if (context.topicIdOrNull() != null) {
             root.put("topicId", context.topicIdOrNull().toString());
+        }
+        if (context.unitIdOrNull() != null) {
+            root.put("unitId", context.unitIdOrNull().toString());
         }
         root.put("questionChars", questionChars);
         root.put("historyMessages", historyMessages);
@@ -417,6 +425,6 @@ public class AiTutorService {
      */
     private TutorContext withIds(TutorContext context) {
         return context != null ? context
-                : new TutorContext(null, null, null, null, null, null, 1, null);
+                : new TutorContext(null, null, null, null, null, null, null, null, 1, null);
     }
 }

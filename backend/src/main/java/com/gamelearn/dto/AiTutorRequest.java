@@ -21,6 +21,7 @@ public record AiTutorRequest(
         String question,
         UUID subjectId,
         UUID topicId,
+        UUID unitId,
         @Valid
         @Size(max = 8, message = "conversation must contain at most 8 messages")
         List<ConversationMessage> conversation) {

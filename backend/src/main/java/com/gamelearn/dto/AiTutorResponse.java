@@ -25,6 +25,8 @@ public record AiTutorResponse(
             UUID subjectId,
             UUID topicId,
             String subjectName,
-            String topicName) {
+            String topicName,
+            UUID unitId,
+            String unitName) {
     }
 }
