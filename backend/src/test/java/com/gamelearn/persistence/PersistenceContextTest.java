@@ -127,13 +127,13 @@ class PersistenceContextTest {
         Integer appliedMigrations = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND installed_rank > 0",
                 Integer.class);
-        assertThat(appliedMigrations).isEqualTo(21);
+        assertThat(appliedMigrations).isEqualTo(28);
     }
 
     @Test
     void seedSubjectsArePresent() {
         Long seededSubjects = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM subjects WHERE id LIKE '11111111-%'", Long.class);
-        assertThat(seededSubjects).isEqualTo(5);
+        assertThat(seededSubjects).isEqualTo(11);
     }
 }

@@ -1,37 +1,31 @@
 package com.gamelearn.entity;
 
-import com.gamelearn.entity.enums.Difficulty;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+/**
+ * Syllabus unit: the intermediate level of the Subject -&gt; Unit -&gt; Topic
+ * chain used by the Batch 1 subject-world expansion. Every unit belongs to
+ * exactly one subject; topics reference their unit via the nullable
+ * {@code topics.unit_id} FK (null for pre-Batch-1 topics).
+ */
 @Entity
-@Table(name = "topics")
-public class Topic extends BaseEntity {
+@Table(name = "units")
+public class Unit extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id")
-    private Unit unit;
 
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "difficulty", nullable = false, length = 20)
-    private Difficulty difficulty;
 
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
@@ -45,14 +39,6 @@ public class Topic extends BaseEntity {
 
     public void setSubject(Subject subject) {
         this.subject = subject;
-    }
-
-    public Unit getUnit() {
-        return unit;
-    }
-
-    public void setUnit(Unit unit) {
-        this.unit = unit;
     }
 
     public String getName() {
@@ -69,14 +55,6 @@ public class Topic extends BaseEntity {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Difficulty getDifficulty() {
-        return difficulty;
-    }
-
-    public void setDifficulty(Difficulty difficulty) {
-        this.difficulty = difficulty;
     }
 
     public int getDisplayOrder() {
