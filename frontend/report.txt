@@ -1,5 +1,534 @@
 ============================================================
-PHASE: A12 — Production UX, Performance & Visual Polish
+PHASE 11 — GATES 5-15 + FINAL INTEGRATION GATE
+DATE: 2026-09-13
+BASELINE: ef602d9 feat(frontend): complete multi-world production experience
+FINAL: HEAD (uncommitted working tree; NO commit per phase rules)
+BRANCH: main
+
+STATUS: PASS (all applicable gates; STOP — Phase 11 frontend complete)
+
+GATES:
+Gate 5 (drag_drop) — PASS (backend-integrated, adapter verified + hardened)
+Gate 6 (concept_builder) — PASS (backend-integrated, adapter verified)
+Gate 7 (target_challenge) — PASS — STATIC-ONLY BY CONTRACT
+Gate 8 (debug_arena) — PASS — STATIC-ONLY BY CONTRACT
+Gate 9 (unlock_code) — PASS — STATIC-ONLY BY CONTRACT
+Gate 10 (sequence_master) — PASS — STATIC-ONLY BY CONTRACT
+Gate 11 (mystery_case) — PASS — STATIC-ONLY BY CONTRACT
+Gate 12 (boss_battle) — PASS — STATIC-ONLY BY CONTRACT
+Gate 13 (puzzle_arena) — PASS — STATIC-ONLY BY CONTRACT
+Gate 14 (connectivity_lab) — PASS — STATIC-ONLY BY CONTRACT
+Gate 15 (snake_and_ladder) — PASS — STATIC-ONLY BY CONTRACT
+Final Integration Gate — PASS (matrix + regression + security + browser)
+
+GATE 5 — DRAG & DROP (objective: audit + integrate adapter; semantic relationships must be real):
+- Existing implementation discovered: backend-first _tryBackendPayload (subjectContent/globalContent gameType drag_drop) -> payload gate -> GameContentAdapters.dragPayloadFromItems (STRUCTURE-only; zones = item difficulties in canonical EASY/MEDIUM/HARD order; items = topicNames in own difficulty zone; >=2 zones + >=3 items; exact gameType; strict difficulty; order preserved; presentation _items.shuffle() is pre-existing mechanic, kept) -> topic fetch + scope check -> explicit mapper fallback (quiz/lesson/topic) -> cards/zones -> _onDrop (case-insensitive zone equality) -> GameResult -> GameResultScreen -> PROG-101. No static bank; fallback = mapper path (production quiz/lesson content; topic Concept/Definition/Example tail is demo-grade last resort).
+- Changes made: 2 legacy DifficultyUtils.resolve calls (backend + fallback paths) -> resolveStrict ?? MEDIUM explicit presentation default; added GameContentValidation.validateDragDropItem (STRUCTURE + exactly drag_drop). No mechanics/UI/result/audio change.
+- Backend contract relied upon: GameContentItem{STRUCTURE, topicName, difficulty} + game-content endpoints. QUESTION items (answers withheld) can never enter — proven by TCP adversarial (questionText 'What is TCP?' + options ['HTTP',...] contributes no label/zone).
+- Validation/fallback: ID isolation (wrong subject/topic/gameType rejected; same-name cross-subject rejected; unknown difficulty never EASY); valid backend wins; transport/insufficiency -> explicit fallback; scope violation -> hard error; malformed -> error, never substitution.
+- Tests added: test/games/drag_drop_backend_test.dart (18: board render, REAL drag onto EASY zone via gesture -> PLACED 1/4 + CORRECT 1, scope hard-fail, 500-fallback, canonical zone order, ID traceability, MCQ adversarial, same-name, difficulty, malformed/insufficient/empty, duplicates, result contract, audio).
+- Focused/full/analyzer/build/browser: 18/18; full 1043 (see final); analyzer 0 errors baseline-exact; build PASS; browser widget-level + production boot (see Playwright).
+
+GATE 6 — CONCEPT BUILDER (objective: verify concept assembly semantics; no MCQ->concept invention):
+- Existing implementation discovered: backend-first _tryBackendChallenges (gameType concept_builder, limit 4) -> payload gate -> conceptChallengesFromItems (CONCEPT-only; blocks = definition sentences >12 chars, max 6; correctOrder = definition order = backend content order; strict per-item difficulty; min 1 challenge) -> explicit STATIC-bank fallback (ConceptChallenges.session world-filtered; deterministic id-sorted) -> tap-to-assemble + reorder + lives(3) + timer(150s) -> GameResult -> GameResultScreen -> PROG-101. Screen-level difficulty stays MEDIUM default with per-challenge authoritative difficulty for scoring (no legacy resolve in screen; adapter already strict) — NO screen change required.
+- Changes made: additive GameContentValidation.validateConceptBuilderItem (CONCEPT + exactly concept_builder) only.
+- Semantic proof: blocks == definition sentences verbatim in definition order; isCorrect == exact order equality (unit-tested true/reversed/partial); MCQ options/questionText can never become blocks/titles (adversarial tests); batch preserves backend order up to cap.
+- Tests added: test/games/concept_builder_backend_test.dart (19: backend challenge render, full tap-in-order solve -> BUILD COMPLETE, scope hard-fail, insufficient-backend -> deterministic static fallback 'Build a FOR loop', adapter order/assembly/difficulty/malformed/batch, result/timer/audio contracts, MCQ adversarial).
+- Verification: 19/19; analyzer/build/browser as above.
+
+GATES 7-15 — STATIC-ONLY VERIFICATION (objective: prove no forced integration; truthful architecture):
+- Contract audit: all 9 features contain ZERO game-content imports (grep-verified: no repository/adapter/subjectContent/globalContent references). Backend QUESTION items expose no answers and no game mechanics (targets/actions, diagnoses, code rewards, orders, solutions, phases, puzzles, topology, board events) — forcing integration would require fabrication or a backend contract change (forbidden). Compat catalog (hasContent) distinguishes compatibility from payload support and was NOT treated as payload support.
+- Verified per game: world-scoped static selection (WorldContentGate.selectStatic) + existing GameResultScreen + existing mechanics/audio/navigation intact; bankDefaultWorld attribution where applicable (debug_arena->programming, connectivity_lab->computerNetworks).
+- Tests added: test/games/static_games_contract_test.dart (18: per-game bank integrity — non-empty, unique IDs, non-empty topics, answer-binding [debug diagnosis in choices, unlock answer in choices + code reward, mystery correctSolution resolvable, boss phases valid, puzzle isValid, connectivity topology references valid + no duplicate IDs, snake isValid, target actions/solutions, sequence authored order]; world isolation + determinism + order preservation + no cross-world leakage for all 9).
+- Existing per-game widget suites (target/debug/unlock/sequence/mystery/boss/puzzle/connectivity/snake) all still green in full regression.
+
+CROSS-GAME SECURITY / ISOLATION AUDIT:
+- Tests added: test/game_engine/phase11_cross_game_isolation_test.dart (16): same topic/concept name across subjects rejected in all 5 backend validators; wrong gameType matrix (each validator rejects the others, incl. quiz_battle<->speed_run at item layer with the documented QUIZ-001 shared-by-contract distinction); wrong topic/subject; unknown difficulty; duplicate IDs; empty text; missing fields; malformed JSON (parse throws) vs malformed structure (safe empty); empty payload safe; backend-wins precedence; transport-vs-content error separation (ApiException vs GameContentScopeMismatch never confused); result idempotency (replay serializes equal); cross-user scope.
+- Result: 16/16 PASS. No cross-subject/topic/game leakage; no MCQ fabrication in any adapter game; no malformed acceptance.
+
+QUIZ GAMES REGRESSION (Gates 2-4 revalidated, unmodified):
+- quiz_battle/speed_run/memory_match guarantees intact via their gate test files + wiring tests, all green in the 1043 run. No changes made to these games in this task.
+
+GAME RESULT / GAMIFICATION REGRESSION:
+- Every touched/verified game routes completion -> GameResult -> GameResultScreen (_submitted guard) -> POST /api/v1/me/game-results with gameType/difficulty/clientRequestId and NO xpEarned key (unit-asserted per new game). XP/level/streak/achievements/mastery remain backend-computed; no frontend authority introduced; no second submission system; existing gamification suites green.
+
+AUDIO / HAPTICS REGRESSION:
+- No audio architecture change (only pre-existing SilentAudioManager test doubles). All new widget tests run under the silent double with takeException null; audio contract (sfxEnabled bool) asserted per game file; existing audio suites green. Reduced-motion paths untouched.
+
+RESPONSIVE UI / ACCESSIBILITY:
+- No redesign. Widget tests cover standard + long-content layouts with takeException null (no overflow). Honest findings preserved: drag wide layout overflows below ~700px height (pre-existing, source-independent; widget tests use 1280x900 desktop viewport); speed_run fixed Column overflows on pathological lengths (Gate 3). Browser verified mobile 390 + desktop 1280 login with no overflow (screenshots).
+
+PLAYWRIGHT VERIFICATION (real Chromium, production build served locally):
+- App boot PASS (title GameLearn AI, route /#/onboarding, onboarding renders 'Welcome to GameLearnAI' + NEXT/SKIP).
+- Onboarding flow PASS (NEXT x3 -> 'Level Up with Nova' -> ENTER THE ADVENTURE -> /#/login 'Welcome back, Player' + SIGN IN), driven via DOM after enabling Flutter semantics.
+- Auth guards PASS (unauthenticated /#/games/t2/quiz-battle and /#/games/t1/memory both redirect to /#/login, no crash).
+- Responsive PASS (390x844 + 1280x800 screenshots, no overflow).
+- Console: 0 errors, 0 warnings across the session.
+- LIMITATION (honest): authenticated gameplay (backend content loading in live games) requires a running backend (MySQL/Spring) which is out of scope and was not booted; live game-content rendering is therefore covered by widget tests with contract-faithful fake backends, not by live browser flows. No fake browser mocks were used to claim E2E.
+
+PERFORMANCE / QUALITY AUDIT:
+- No new packages, no new state management (existing Riverpod families reused), no fetch-on-rebuild introduced (loads in initState/_load with cached futures), no duplicated networking/validation (all gates reuse GameContentRepository + GameContentValidation + GameContentAdapters + WorldContentGate), timers/disposables untouched, no global mutable state, ID-driven subjects (no hard-coded subject count/names; 11-subject safe).
+
+FINAL 14-GAME MATRIX:
+quiz_battle | QUIZ-001/002 | BACKEND | validation: topic-ID gate + QUIZ-001 structure gate + strict difficulty | fallback: none (empty/error states) | isolation: topic-UUID/gameType-route | difficulty: strict, MEDIUM presentation default | result: PROG-101 | audio: intact | browser: widget + guards | STATUS: PASS
+speed_run | QUIZ-001/002 | BACKEND | same as quiz_battle + global timer | fallback: none | isolation: same | difficulty: strict | result: PROG-101 | audio: intact | browser: widget + guards | STATUS: PASS
+memory_match | game-content CONCEPT | BACKEND ADAPTER | item validator + adapter + payload gate | explicit mapper fallback, backend wins | ID isolation | strict | PROG-101 | intact | browser: widget | STATUS: PASS
+drag_drop | game-content STRUCTURE | BACKEND ADAPTER | item validator + adapter + payload gate | explicit mapper fallback, backend wins | ID isolation | strict (Gate 5 hardened) | PROG-101 | intact | browser: widget (real drag) | STATUS: PASS
+concept_builder | game-content CONCEPT | BACKEND ADAPTER | item validator + adapter + payload gate | explicit STATIC-bank fallback, backend wins | ID isolation | strict (adapter) | PROG-101 | intact | browser: widget (full solve) | STATUS: PASS
+target_challenge | static bank | STATIC-ONLY | world selectStatic | n/a (static) | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+debug_arena | static bank | STATIC-ONLY | world selectStatic (programming default) + diagnosis-in-choices | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+unlock_code | static bank | STATIC-ONLY | world selectStatic + answer-in-choices | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+sequence_master | static bank | STATIC-ONLY | world selectStatic + authored order | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+mystery_case | static bank | STATIC-ONLY | world selectStatic + resolvable solution | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+boss_battle | static bank | STATIC-ONLY | world selectStatic + valid phases | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+puzzle_arena | static bank | STATIC-ONLY | world selectStatic + isValid per type | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+connectivity_lab | static bank | STATIC-ONLY | world selectStatic (networks default) + topology refs | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+snake_and_ladder | static bank | STATIC-ONLY | world selectStatic (byId, foreign inert) + isValid | n/a | world attribution | authored enum | PROG-101 | intact | existing suites | STATUS: PASS — STATIC-ONLY BY CONTRACT
+
+TESTS: flutter test --no-pub => 1043/1043 PASS (972 pre-task baseline + 71 new: 18 drag_drop + 19 concept_builder + 18 static_games_contract + 16 cross_game_isolation). No test weakened/removed.
+ANALYZER: flutter analyze --no-pub => 0 errors (457 infos/warnings = pre-task baseline exactly; task delta contributes zero new lints).
+WEB BUILD: flutter build web --no-pub => PASS (Built build/web, fresh build used for Playwright).
+PLAYWRIGHT: PASS within scope (boot, onboarding, login, guards, responsive, zero console errors); live authenticated gameplay not reachable without backend (documented limitation).
+FILES CHANGED (this task, frontend only):
+- lib/features/game_engine/content/game_content_validation.dart (additive validateDragDropItem/validateConceptBuilderItem; validateMemoryPairItem/validateQuizBattleItem/validateSpeedRunItem from prior gates untouched)
+- lib/features/games/drag_drop/presentation/drag_drop_screen.dart (2 difficulty lines -> resolveStrict ?? medium)
+- test/games/drag_drop_backend_test.dart (new, 18)
+- test/games/concept_builder_backend_test.dart (new, 19)
+- test/games/static_games_contract_test.dart (new, 18)
+- test/game_engine/phase11_cross_game_isolation_test.dart (new, 16)
+- report.txt (this section)
+No game mechanics/engines rewritten; no result/audio/navigation/gamification changes.
+KNOWN LIMITATIONS: (1) 9 mechanic games static-only by contract (needs backend answer/mechanic exposure; compat != payload support). (2) Adapter outputs carry mapped shapes only (no per-item backend IDs); traceability via order + route IDs on GameResult. (3) Board/payload caps play order-preserved subsets (drag limit 12, concept limit 4, memory 8). (4) Drag presentation shuffle is pre-existing non-seeded mechanic (kept). (5) Drag wide layout <~700px height + speed_run pathological lengths can overflow (pre-existing, documented, not redesigned). (6) Unknown quiz/topic difficulty uses explicit presentation-only MEDIUM default; authoritative difficulty stays backend-side. (7) One malformed pool -> explicit fallback or honest error, never cross-topic fill. (8) Live authenticated browser gameplay unverified (no backend running; out of scope). (9) QUIZ-001 carries no subjectId; subject isolation rides on globally-unique topicIds.
+ANYTHING NOT VERIFIED: live backend gameplay E2E; backend-driven content with real Phase 10 data beyond contract-faithful fakes; performance profiling beyond static audit.
+BACKEND: "No backend files modified." (Backend working-tree modifications pre-date this task — Phase 10 state — and were preserved untouched; git status inspected before/after.)
+GIT: "No commit/push performed." (branch main; no reset/clean/restore/rebase; unrelated working-tree changes preserved; HEAD still ef602d9.)
+
+============================================================
+PHASE 11 — GATE 4 — MEMORY MATCH
+DATE: 2026-09-13
+BASELINE: ef602d9 feat(frontend): complete multi-world production experience
+FINAL: HEAD (uncommitted working tree; NO commit per phase rules)
+BRANCH: main
+
+STATUS: PASS (adapter verification + hardening; STOP before Drag & Drop / Gate 5)
+
+RUNTIME PATH (exact verified path, code-traced):
+USER SELECTS subject/topic
+  -> Routes.memoryMatch(topicId, subjectId/subjectName query) [router.dart]
+  -> GoRoute /games/:topicId/memory -> MemoryMatchScreen(topicId, subjectId, subjectName)
+  -> _load(): GameContentRequest.fromRoute(...) (world vs global)
+  -> PRIMARY _tryBackendPairs: GameContentRepository.subjectContent(subjectId, topicId, gameType memory_match, limit 8)
+     [GET /api/v1/game-content] or globalContent [GET /api/v1/game-content/global]
+  -> WorldContentGate.validateGameContentPayload (subject/topic/mode/world agreement)
+  -> GameContentAdapters.memoryPairsFromItems (CONCEPT-only; scope/kind/gameType/difficulty per item)
+  -> topic fetch [GET /api/v1/topics/{id}] + scope check -> strict difficulty -> pairs.take(board size)
+  -> cards built (term_i/def_i sharing pairId pair_i; deterministic shuffle seed 42) -> GameTimer
+  -> flip/match mechanics (_onTapCard pairId equality) -> _finishGame
+  -> GameResult -> GameResultScreen -> POST /api/v1/me/game-results (PROG-101, idempotent)
+  -> backend progression (XP/mastery/streak/achievements backend-authoritative).
+
+ADAPTER (exact input -> output mapping, verified from game_content_adapters.dart):
+- Input: List<GameContentItem> + GameContentRequest + gameType + min/maxPairs.
+- Per item: _acceptItem requires non-empty id, EXACT gameType match, kind == CONCEPT, non-empty subjectId; world scope requires subjectId/topic/world agreement by ID (topic check only rejects topic-bound disagreements; world check only rejects resolving disagreements).
+- Mapping: term = item.topicName verbatim; definition = item.definition verbatim; empty sides skipped; duplicate topicNames deduped first-wins; backend order preserved; capped at maxPairs (default 8); fewer than minPairs (default 2) throws GameContentScopeMismatch.
+- Output: List<({String term, String definition})> shaped exactly like GameContentMapper.memoryPairs so the screen/engine needed no changes. No MCQ field is read: options/questionText never enter (kind filter rejects QUESTION first).
+
+SEMANTIC PAIRING (how pairs are actually constructed):
+- Pairs are term<->definition (topicName<->definition): the backend's own term defined by its own server-resolved definition — a legitimate educational relationship, never question<->options[0].
+- QUESTION items (which withhold correct answers by contract) can NEVER enter: kind filter + NEW validateMemoryPairItem reject them, so "What is TCP?"<->options[0] ("Transmission Control Protocol") is impossible here — proven by adversarial tests S1/S2 (incl. identical display text with different IDs).
+- Legacy GameContentMapper quiz/topic placeholder pairs ('Review focus', 'Key concept of X') survive ONLY as the explicit fallback's last resort (never fabricated from options[0]; documented demo-grade chrome, backend-first since pre-existing working-tree state).
+
+CONTENT PRECEDENCE (backend vs fallback):
+- Valid backend (>=2 valid CONCEPT pairs) -> backend plays; fallback never consulted (test asserts backend term visible + placeholder absent).
+- Transport/empty/insufficient backend -> explicit mapper fallback (same topic fetch + scope validation + >=2 rule); 500-failure fallback play proven by widget test.
+- Scope violation -> HARD error ('Unable to start'), never fallback, never repair (proven).
+- Malformed-everywhere (bad backend + failing fallback) -> honest error state.
+
+VALIDATION (subject/topic/gameType/difficulty):
+- Subject/topic by UUID, never display names: wrong subject, wrong topic, same topic name under another subject all rejected (unit + widget). New validateMemoryPairItem (CONCEPT + exactly memory_match) mirrors the Gate 2/3 wrappers.
+- GameType: quiz_battle/speed_run/drag_drop/unknown kinds rejected at item layer; adapter skips non-matching items.
+- Difficulty: EASY/MEDIUM/HARD pass through; unknown never EASY — screen's two legacy DifficultyUtils.resolve calls (backend + fallback paths) switched to resolveStrict ?? MEDIUM explicit presentation default (board size 4/6/8 + preview scoring). Legacy fromString untouched.
+
+FALLBACK (exact behavior + classification):
+- _fallbackPairs = pre-Phase-11 lesson/quiz/topic mapper path. Classification: A (production fallback) — authoritative lesson sentences + topic descriptions, scope-validated, same mechanics; its quiz/topic placeholder tails are documented demo-grade last-resort chrome (unchanged, never preferred over backend).
+- Isolation: fallback runs the same WorldContentGate topic/quiz rejection; cross-world fallback impossible (scope violation throws before fallback returns).
+- Nothing deleted; fallback never masquerades as backend content (backend-first branch returns before fallback runs).
+
+RESULT (existing flow preserved):
+- Memory Match -> GameResult (pairs/moves/accuracy/combo) -> GameResultScreen._submitResultPersistent (_submitted guard) -> GameResultSubmission{gameType memory_match, ...} -> POST /api/v1/me/game-results. No second system, no local XP/mastery (toJson asserts no xpEarned key), no PROG-101 change.
+
+TESTS: 972/972 PASS (947 pre-gate baseline + 25 new in test/games/memory_match_backend_test.dart covering all 27 required 1-27 plus 7 adversarial S1-S7 incl. the TCP options[0] case, identical-text different-ID questions, same-name different-subject topics, malformed/duplicate/missing/empty sides, legacy-parser danger). No test weakened or removed. Pre-existing memory wiring tests (backend play, 404-fallback, wrong-subject hard fail) still green.
+
+ANALYZER: flutter analyze --no-pub => 0 errors (457 infos/warnings = pre-gate baseline exactly; Gate 4 delta contributes zero new lints; memory_match_screen notes are pre-existing).
+
+WEB BUILD: flutter build web --no-pub => PASS (Built build/web).
+
+UI (no redesign):
+- Board, flip/match, timer, scoring, pause/resume, sounds, haptics, animations, reduced-motion, responsive grid untouched (only difficulty-resolution lines hardened). Widget tests: backend board, full flip-until-match completion, scope-error, transport-fallback, long-definition layout (no overflow, takeException null). Browser/Playwright: NOT claimed (unavailable; verification is flutter test + analyze + web build only).
+
+FILES CHANGED (frontend only):
+- lib/features/games/memory_match/presentation/memory_match_screen.dart (2 difficulty-resolution lines -> resolveStrict ?? medium; nothing else)
+- lib/features/game_engine/content/game_content_validation.dart (additive validateMemoryPairItem; existing behavior untouched)
+- test/games/memory_match_backend_test.dart (new, 25 tests)
+- report.txt (this section)
+
+KNOWN LIMITATIONS (honest):
+- Adapter output carries term/definition only (no per-item backend IDs/difficulty passthrough); traceability = backend order + topicName + route-level subject/topic IDs on GameResult. Difficulty gates acceptance and sizes the board via the strict topic difficulty.
+- pairs.take(board size) plays an order-preserved subset (4/6/8 by difficulty), never reordered/substituted.
+- One malformed question pool (<2 valid pairs) routes to explicit fallback or honest error — never silent cross-topic fill.
+- No live-backend gameplay validation (needs running backend); no browser screenshots claimed.
+
+BACKEND: "No backend files modified."
+GIT: "No commit/push performed." (no reset/clean/history rewrite; unrelated working-tree changes preserved.)
+
+STOP: Gate 4 complete. Drag & Drop / Concept Builder / others NOT implemented (later gates).
+
+============================================================
+PHASE 11 — GATE 3 — SPEED RUN
+DATE: 2026-09-13
+BASELINE: ef602d9 feat(frontend): complete multi-world production experience
+FINAL: HEAD (uncommitted working tree; NO commit per phase rules)
+BRANCH: main
+
+STATUS: PASS (verification + hardening; STOP before Memory Match / Gate 4)
+
+RUNTIME PATH (exact verified content flow, code-traced):
+USER SELECTS subject/topic
+  -> Routes.speedRun(topicId, subjectId/subjectName query) [router.dart]
+  -> GoRoute /games/:topicId/speed-run -> SpeedRunScreen(topicId, subjectId, subjectName)
+  -> _load(): QuizRepository.quizForTopic(topicId) = GET /api/v1/quiz/{topicId} (QUIZ-001; no answers)
+  -> WorldContentGate.rejectionMessage topic-scope check (quiz.topicId == requested topicId)
+  -> NEW fail-closed QUIZ-001 structure gate (every question: id + text + >=2 options + strict difficulty; answer absence expected)
+  -> strict quiz-difficulty resolution (presentation-only) -> global GameTimer(speed_run limit) + per-question start stamp
+  -> gameplay: _onSelect stores UI selection only (optimistic local preview) -> backend order verbatim -> timeout auto-submits
+  -> _submit(): POST /api/v1/quiz/{quizId}/submit answers (QUIZ-002; server grades -> isCorrect post-submission only; local score reconciled from server correctness, presentation-only)
+  -> GameResult (server correctCount/accuracy) -> GameResultScreen
+  -> POST /api/v1/me/game-results via GameResultSubmission (PROG-101, idempotent clientRequestId)
+  -> backend progression (XP/mastery/streak/achievements/leaderboard all backend-authoritative).
+
+CONTENT SOURCE (backend vs fallback):
+- Backend ONLY. Speed Run has NO static fallback (verified: no static bank import, no mapper call — same posture as Quiz Battle). Valid backend -> plays backend (precedence total). Malformed -> ErrorState (TRY AGAIN), never unrelated content (malformed text asserted not rendered). Empty -> EmptyState ('No questions'). Network failure (500) -> ErrorState. Retry re-runs _load preserving context. No fake questions/answers/substitutions anywhere.
+
+VALIDATION (subject/topic/gameType/difficulty):
+- Subject/topic isolation by ID, never display names: existing topic gate (quiz.topicId == request.topicId) + unit/widget tests for wrong subject, wrong topic, same topic name under another subject (IDs decide) — all reject safely. QUIZ-001 carries no subjectId field, so topic-UUID match is the isolation anchor (topics globally unique).
+- GameType: QUIZ-001 is game-agnostic BY CONTRACT (no gameType field) — Quiz Battle and Speed Run share it by design; the route determines the game. Determined from implementation (both screens call quizForTopic; gameType recorded only at PROG-101 submission: speed_run). Therefore quiz_battle-labeled GameContentItems are still rejected at the item layer via NEW validateSpeedRunItem (exactly QUESTION/speed_run; quiz_battle items, non-QUESTION kinds, unknown kinds, empty IDs rejected, never converted). No guessing: item-layer strict, quiz-layer shared-by-contract, both tested.
+- Difficulty: EASY/MEDIUM/HARD pass through (quiz-level and per-question) via the Gate 2 strict pattern (tryParseBackend/resolveStrict reused, not duplicated). Unknown quiz difficulty -> explicit presentation-only MEDIUM default (speed_run timer 45s + local preview only); never EASY. Per-question malformed difficulty rejects the load. Legacy GameDifficulty.fromString untouched (existing regression tests lock it).
+
+SERVER GRADING (authoritative grading remains server-side):
+- No correctAnswer field added to any production payload/model. _answers holds UI selections only; correctness exclusively from QUIZ-002 AnswerReview.isCorrect (local score/combo reconciled from server flags, presentation-only). Test proves QUIZ-001 carries no correctAnswer key while QUIZ-002 returns answers/explanations post-submission.
+
+MECHANICS (preserved):
+- Global countdown (60/45/30s EASY/MEDIUM/HARD), _onTimeout auto-submit, _onSelect speed-bonus preview + 220ms advance, flash micro-feedback, urgency banner, sound toggle, GameScaffold HUD, combo/scoring presentation, input guards (_submitting/answered), win/lose via server accuracy — all untouched (only _load hardened + 1 additive item validator). Timer contract verified (medium -> 45s, start/stop/dispose).
+
+RESULT (existing submission preserved):
+- Speed Run -> GameResult -> GameResultScreen._submitResultPersistent (_submitted guard) -> GameResultSubmission{clientRequestId UUID, gameType speed_run, difficulty apiValue, completed, score, durationSeconds, bestCombo} -> POST /api/v1/me/game-results. No second system, no local XP/mastery/streak invention (toJson asserts no xpEarned key), no PROG-101 modification.
+
+TESTS: 947/947 PASS (914 pre-gate baseline + 33 new in test/games/speed_run_backend_test.dart: all 25 required 1-25 plus 8 adversarial A1-A8 — missing ID, empty text, whitespace-only options, duplicate-options renderability documented, invalid payload structure -> safe empty, global-mixed only in global mode, unknown kind, empty content ID). No test weakened or removed.
+
+ANALYZER: flutter analyze --no-pub => 0 errors (457 infos/warnings = pre-gate baseline exactly; Gate 3 delta contributes zero new lints; the 2 speed_run_screen infos are pre-existing build()-level style notes).
+
+WEB BUILD: flutter build web --no-pub => PASS (Built build/web).
+
+UI (STEP 14, no redesign):
+- Mechanics/UI/timer/animations/audio/haptics/result/responsive untouched. Dynamic backend content verified by widget tests: standard, realistic-long (~150-char question / ~100-char options, no overflow), empty, error states. HONEST FINDING: Speed Run uses a fixed Column + Spacer (no scroll, unlike Quiz Battle's SingleChildScrollView), so pathological lengths (~600-char question) overflow by ~449px — reproduced during this gate, then scoped to realistic backend-shaped content in the committed test. Recorded as known limitation; NOT redesigned per gate rules. Browser/Playwright: NOT claimed (unavailable; verification is flutter test + analyze + web build only).
+
+FILES CHANGED (frontend only):
+- lib/features/games/speed_run/presentation/speed_run_screen.dart (_load hardening only: structure gate + strict difficulty; imports added)
+- lib/features/game_engine/content/game_content_validation.dart (additive validateSpeedRunItem with contract note; existing behavior untouched)
+- test/games/speed_run_backend_test.dart (new, 33 tests)
+- report.txt (this section)
+
+KNOWN LIMITATIONS:
+- QUIZ-001 carries no subjectId; subject isolation rides on globally-unique topicIds (mismatch -> rejected safely).
+- Unknown quiz-level difficulty renders with MEDIUM presentation default (45s timer); authoritative difficulty unaffected.
+- One malformed question rejects the whole load (fail-closed) to preserve count/ordering coherence.
+- Fixed-Column layout can overflow on pathological content lengths (pre-existing, source-independent, not redesigned).
+- No live-backend gameplay validation (needs running backend); no browser screenshots claimed.
+
+BACKEND: "No backend files modified."
+GIT: "No commit/push performed." (no reset/clean/history rewrite; unrelated working-tree changes preserved.)
+
+STOP: Gate 3 complete. Memory Match / Drag & Drop / others NOT implemented (later gates).
+
+============================================================
+PHASE 11 — GATE 2 — QUIZ BATTLE
+DATE: 2026-09-13
+BASELINE: ef602d9 feat(frontend): complete multi-world production experience
+FINAL: HEAD (uncommitted working tree; NO commit per phase rules)
+BRANCH: main
+
+STATUS: PASS (verification + hardening; STOP before Speed Run / Gate 3)
+
+CONTENT FLOW (exact verified runtime path, code-traced):
+USER SELECTS subject/topic
+  -> Routes.quizBattle(topicId, subjectId/subjectName query) [router.dart]
+  -> GoRoute /games/:topicId/quiz-battle -> QuizBattleScreen(topicId, subjectId, subjectName)
+  -> _load(): QuizRepository.quizForTopic(topicId) = GET /api/v1/quiz/{topicId} (QUIZ-001; no answers)
+  -> WorldContentGate.rejectionMessage topic-scope check (quiz.topicId == requested topicId)
+  -> NEW fail-closed QUIZ-001 structure gate (every question: id + text + >=2 options + strict difficulty; answer absence expected)
+  -> strict quiz-difficulty resolution (presentation-only) -> per-question GameTimer
+  -> gameplay: _onSelectOption stores UI selection only -> _nextOrFinish preserves backend order verbatim
+  -> _submit(): POST /api/v1/quiz/{quizId}/submit answers (QUIZ-002; server grades -> isCorrect/correctAnswer/explanation post-submission only)
+  -> GameResult (server correctCount/accuracy; local preview scoring presentation-only) -> GameResultScreen
+  -> POST /api/v1/me/game-results via GameResultSubmission (PROG-101, idempotent clientRequestId)
+  -> backend progression (XP/mastery/streak/achievements/leaderboard all backend-authoritative).
+
+BACKEND CONTENT (how Quiz Battle consumes it):
+- QUIZ-001 Quiz{id, topicId, title, description, difficulty, timeLimitSeconds?, questionCount, questions[]}; QuizQuestion{id, questionText, options[], difficulty} — never correct answers. IDs/text/options/difficulty pass through verbatim into the existing engine; no fake questions, no modification, no substitution.
+- GameContentItem path intentionally NOT used for Quiz Battle gameplay (its QUESTION items likewise withhold answers); the A/B distinction from the gate brief is implemented as additive GameContentValidation.validateQuizQuestion (A: client-renderable structure, answer absence expected) vs validateAnswerInOptions (B: locally-graded flows only, never called by Quiz Battle). Global Gate 1 validation NOT weakened.
+
+VALIDATION (subject/topic/gameType/difficulty):
+- Subject/topic isolation by ID, never display names: existing topic gate (quiz.topicId == request.topicId) verified + unit/widet tests for wrong subject, wrong topic, same topic name under another subject (IDs decide) — all reject safely. QUIZ-001 carries no subjectId field, so topic-UUID match is the isolation anchor (topics are globally unique).
+- GameType: QUIZ-001 has no gameType field; isolation is route-level (only the quiz_battle route builds QuizBattleScreen) + GameContentItem-level validateQuizBattleItem enforces exactly QUESTION/quiz_battle (speed_run etc. rejected, never converted) + PROG-101 posts gameType quiz_battle.
+- Difficulty: EASY/MEDIUM/HARD pass through (quiz-level and per-question). NEW strict path DifficultyUtils.tryParseBackend/resolveStrict returns null for unknown/null/empty — the Gate 0 danger (GameDifficulty.fromString defaults unknown->EASY, locked by existing regression tests and left untouched) can no longer leak into Quiz Battle: unknown quiz difficulty -> explicit presentation-only MEDIUM default (timer + local preview only; authoritative difficulty stays backend-side via QUIZ-002/adaptive). Per-question malformed difficulty rejects the load. DifficultyBadge already renders unknown strings honestly (neutral chip, raw label).
+
+SERVER-SIDE GRADING (frontend NOT authoritative):
+- No correctAnswer field added to any production payload/model. _answers holds UI selections only; correctness comes exclusively from QUIZ-002 AnswerReview.isCorrect. Local GameScoring/GameCombo preview is presentation-only; XP/mastery/streak/achievements/leaderboard/adaptive all backend-computed (snapshot delta display + PROG-101 response). Test proves QUIZ-001 fixture carries no correctAnswer key.
+
+FALLBACK (exact behavior):
+- Quiz Battle has NO static fallback (verified: no static bank import, no mapper call). Valid backend -> plays backend (precedence total). Malformed -> ErrorState (TRY AGAIN), never unrelated content (malformed question text asserted not rendered). Empty questions -> EmptyState ('No questions'). Network failure (500) -> ErrorState. Retry re-runs _load preserving context.
+
+RESULT (existing submission flow preserved):
+- Quiz Battle -> GameResult -> GameResultScreen._submitResultPersistent (_submitted guard) -> GameResultSubmission{clientRequestId UUID, gameType quiz_battle, difficulty apiValue, completed, score, durationSeconds, bestCombo} -> POST /api/v1/me/game-results. No second system, no local XP invention (toJson asserts no xpEarned key), no PROG-101 modification. Existing full-flow wiring test (QUIZ-001 -> answer -> QUIZ-002 -> result + asserted PROG-101 POST) still green.
+
+TESTS: 914/914 PASS (889 pre-gate baseline + 25 new in test/games/quiz_battle_backend_test.dart covering all 25 required: 1-6 content/IDs/order, 7-8 gameType, 9-11 subject/topic/same-name, 12-15 difficulty incl. unknown-never-EASY, 16-20 malformed/empty/network/precedence/no-substitution, 21 timer, 22 progression, 23 result contract, 24 audio silent-double, 25 long-content layout). No test weakened or removed.
+
+ANALYZER: flutter analyze --no-pub => 0 errors (457 infos/warnings = pre-gate baseline exactly; Gate 2 delta contributes zero new lints).
+
+WEB BUILD: flutter build web --no-pub => PASS (Built build/web).
+
+UI (STEP 12, no redesign):
+- Mechanics/UI/timer/progression/animations/audio/haptics/result/responsive untouched (only _load hardened + 2 additive validator/parse helpers). Dynamic backend content verified by widget tests: standard, long-question/long-option (no overflow, takeException null), empty, error states. Browser/Playwright: NOT claimed (unavailable; verification is flutter test + analyze + web build only).
+
+FILES CHANGED (frontend only):
+- lib/features/games/quiz_battle/presentation/quiz_battle_screen.dart (_load hardening only: structure gate + strict difficulty; imports added)
+- lib/features/game_engine/utils/difficulty_utils.dart (additive tryParseBackend/resolveStrict; existing fromString/resolve untouched)
+- lib/features/game_engine/content/game_content_validation.dart (additive validateQuizQuestion/validateQuizBattleItem; existing behavior untouched)
+- test/games/quiz_battle_backend_test.dart (new, 25 tests)
+- report.txt (this section)
+
+KNOWN LIMITATIONS:
+- QUIZ-001 carries no subjectId, so subject isolation rides on globally-unique topicIds; a backend topic reassigned across subjects would surface as topic mismatch (rejected safely).
+- Unknown quiz-level difficulty renders with a MEDIUM presentation default (timer 18s); this default is display-only and documented at the call site — authoritative difficulty unaffected.
+- One malformed question rejects the whole load (fail-closed) rather than skipping the question, preserving question count/ordering coherence.
+- No live-backend gameplay validation (needs running backend); no browser screenshots claimed.
+
+BACKEND: "No backend files modified."
+GIT: "No commit/push performed." (no reset/clean/history rewrite; unrelated working-tree changes preserved.)
+
+STOP: Gate 2 complete. Speed Run / Memory Match / others NOT implemented (later gates).
+
+============================================================
+PHASE 11 — GATE 0 + GATE 1
+DATE: 2026-09-13
+BASELINE: ef602d9 feat(frontend): complete multi-world production experience
+FINAL: HEAD (uncommitted working tree; NO commit per phase rules)
+BRANCH: main
+
+STATUS: GATE 0 PASS + GATE 1 PASS (shared foundation only; STOP before Quiz Battle / Gate 2)
+
+AUDIT SUMMARY (all 14 games audited; code-verified, no game code modified for the audit):
+- Architecture reused: ApiClient -> GameContentRepository (GET /api/v1/game-content, /global, /subjects/{id}/games) -> GameContentPayload/GameContentItem/SubjectGames models -> WorldContentGate (subject/topic/mode/world scope) + GameContentAdapters (CONCEPT/STRUCTURE -> engine shapes) -> existing engines -> existing GameResult -> GameResultSubmission -> POST /api/v1/me/game-results (PROG-101, idempotent via clientRequestId). State via existing Riverpod families (validatedSubjectContentProvider / globalGameContentProvider / subjectGamesProvider); no new state management, no new packages.
+- GameContentItem (existing): kind/id/subjectId/subjectName/topicId?/topicName?/unitId?/gameType/difficulty/questionText?/options[]/definition?. QUESTION items expose options but never correct answers (contract); CONCEPT definitions server-resolved; hasContent true only when playable items back the combination.
+- Result architecture (existing, untouched): every game -> GameResultScreen (_submitted guard, GamificationDelta overlay) -> POST /api/v1/me/game-results. No local XP/mastery authority invented.
+
+14-GAME MATRIX (GAME | CONTENT SOURCE | BACKEND COMPATIBLE? | ADAPTER REQUIRED? | FALLBACK? | RESULT FLOW | RISK | RECOMMENDATION):
+1. quiz_battle | QUIZ-001 quizForTopic + QUIZ-002 submit + WorldContentGate | YES (already backend) | NO (answers are server-side; items carry no answers) | none (server-graded) | existing result POST | LOW | VERIFY ONLY in Gate 2; never local-grade.
+2. speed_run | QUIZ-001/002 + gate | YES (already backend) | NO (same reason) | none | existing result POST | LOW | VERIFY ONLY.
+3. memory_match | lesson/quiz/topic via GameContentMapper + NEW working-tree backend-first GameContentAdapters.memoryPairsFromItems (CONCEPT) + gate | YES (CONCEPT->pairs) | EXISTS in working tree | explicit mapper fallback (pre-Phase-11 path) | existing result POST | LOW | Keep backend-first; fallback explicit.
+4. drag_drop | lesson/quiz/topic mapper + NEW working-tree dragPayloadFromItems (STRUCTURE->zones/items) + gate | YES (STRUCTURE->zones/items) | EXISTS in working tree | explicit mapper fallback | existing result POST | LOW | Keep backend-first; fallback explicit.
+5. concept_builder | static bank + NEW working-tree conceptChallenge(s)FromItem(s) (CONCEPT definition sentences->blocks, order = definition order) + gate | YES (CONCEPT->blocks) | EXISTS in working tree | explicit static selectStatic fallback | existing result POST | LOW | Keep backend-first; fallback explicit.
+6. target_challenge | static bank (TargetChallenges) + WorldContentGate.selectStatic world filter | NO (needs authored actions/targets/states; QUESTION exposes neither) | would require fabrication -> FORBIDDEN | explicit honest empty/SOON | existing result POST | HIGH if forced | STATIC-ONLY (contract necessity).
+7. debug_arena | static bank (DebugChallenges, bankDefaultWorld=programming) + world filter | NO (needs correctDiagnosis; no answers) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+8. unlock_code | static bank (UnlockChallenges) + world filter | NO (needs correctAnswer in choices) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+9. sequence_master | static bank + world filter | NO (STRUCTURE exposes no authoritative order) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+10. mystery_case | static bank + world filter | NO (needs authored solutions + correctSolutionId) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+11. boss_battle | static bank + world filter | NO (needs phases + answers) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+12. puzzle_arena | static bank + world filter | NO (needs puzzles + solutions) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+13. connectivity_lab | static bank (bankDefaultWorld=computerNetworks) + world filter | NO (needs device/topology graph) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+14. snake_and_ladder | static byId + world filter (foreign cells inert) | NO (needs answers) | FORBIDDEN | honest empty | existing | HIGH if forced | STATIC-ONLY.
+Static classification: all 10 static banks are production authored content (answers/explanations, world-attributed via gate) — Category 1 production fallback where used; GameContentMapper quiz/topic placeholder pairs ('Review focus', 'Key concept of X') are demo-grade last-resort chrome, now second to authoritative backend CONCEPT definitions where backend-first applies. Nothing deleted.
+Dangerous assumptions discovered: (a) GameDifficulty.fromString defaults unknown->EASY — must never be used for backend content (new validator rejects instead); (b) validateGameContentPayload did not check per-item gameType/difficulty/id/kind-required-fields — closed by the new Gate 1 validator; (c) assuming every game can consume MCQ content directly is FALSE — 9 mechanic games provably cannot without answer/mechanic exposure (backend contract change, out of scope).
+Recommended migration order: Gate 2 Quiz Battle VERIFY ONLY (no adapter possible) -> memory/drag/concept already backend-first in working tree (verify) -> remaining 9 STATIC-ONLY (no adapters; honest SOON). No generic game framework. Thin adapters only.
+
+SHARED FOUNDATION (Gate 1 delta; frontend-only, no engine/result/audio/UI redesign):
+- NEW lib/features/game_engine/content/game_content_validation.dart: pure-Dart fail-closed GameContentValidation boundary (validateItem / validateAnswerInOptions / validatePayload / shouldUseBackend + isValidDifficulty). Closes the payload-level gap: id/kind/gameType-exact/difficulty-strict/subject/topic-by-ID/kind-required-fields (CONCEPT definition+topicName, STRUCTURE topicName, QUESTION text+>=2 options), GLOBAL vs SUBJECT mode, empty-safe, ID-based (never display names), backend-first precedence rule. QUESTION answers: backend never embeds them; local grading requires an explicit alongside answer (missing/not-in-options rejected); server-graded QUIZ-002 flows never call it.
+- Pre-existing working-tree foundation reused (not re-modified in Gate 1): game_content_models.dart, game_content_repository.dart, game_content_scope.dart (WorldContentGate), game_content_adapters.dart, game_content_providers.dart, static_bank_availability.dart.
+- No game mechanics, scoring, timer, combo, lives, animations, audio, HUD, routing, responsive, accessibility, or result logic touched by the Gate 1 delta (2 files added only: validator + its test).
+
+VALIDATION RULES (enforced): valid->allowed; wrong subject/topic/gameType/malformed/missing-required -> GameContentScopeMismatch (rejected, never repaired/substituted); empty -> safe empty state (returns normally); network failure -> existing ApiException path -> safe error state (validator never masks transport errors); same topic name across subjects -> IDs decide; GLOBAL mixed accepted with per-item subject identity, never re-filtered into one subject; difficulty EASY/MEDIUM/HARD strict, never defaulted; static never overrides valid backend (shouldUseBackend).
+
+TEST RESULTS:
+- NEW test/game_engine/game_content_validation_test.dart: 14/14 PASS (exactly the Gate 1 required cases 1-14).
+- Full suite: flutter test --no-pub => 889/889 PASS (875 prior incl. working-tree adapter/wiring tests + 14 new). No failures, no skips.
+- Existing result-submission tests preserved (no result file touched).
+
+ANALYZER RESULT: flutter analyze --no-pub => 0 errors (457 infos/warnings, all pre-existing; none from the 2 new Gate 1 files).
+
+WEB BUILD RESULT: flutter build web --no-pub => PASS (Built build/web).
+
+REGRESSION RESULT: PASS — all prior tests green; game mechanics, result POST /api/v1/me/game-results, audio, premium UI, routing, responsive, reduced-motion untouched by Gate 1 delta. Browser/Playwright: NOT claimed (no browser automation used; verification is flutter test + analyze + web build only).
+
+FILES CHANGED (Gate 1 delta; frontend only):
+- lib/features/game_engine/content/game_content_validation.dart (new)
+- test/game_engine/game_content_validation_test.dart (new)
+- report.txt (this section)
+Pre-existing uncommitted working-tree state preserved (not reverted per git rules): lib/features/game_engine/content/game_content_adapters.dart, memory_match/drag_drop/concept_builder screens, audio_manager/settings tweaks, backend Phase 10 files. Gate 1 delta touches none of those.
+
+KNOWN LIMITATIONS:
+- 9 mechanic games remain static-driven by contract necessity (no answers/mechanics exposed); wiring them would need a backend contract change (STOP condition) or fabrication (forbidden).
+- Concept/drag adapters' presentational chrome (zone labels, instruction strings) is generic; educational text stays verbatim from backend.
+- Validator is additive (adapters/providers not yet rewired to delegate to it) — intentional to keep Gate 1 risk minimal; wiring is Gate 2 work.
+- Browser gameplay validation not performed (requires running backend); no Playwright claimed.
+
+BACKEND: "No backend files modified."
+GIT: "No commit/push performed." (git status inspected before modification; no reset/clean/history rewrite; unrelated working-tree changes preserved.)
+
+STOP: Gate 1 complete. Quiz Battle / Gate 2 NOT implemented.
+
+============================================================
+PHASE: 11 — Backend Content → Actual Game Engines
+DATE: 2026-09-13
+BASELINE: ef602d9 feat(frontend): complete multi-world production experience
+FINAL: HEAD (uncommitted working tree; NO commit per phase rules)
+BRANCH: main
+
+STATUS: PARTIAL (honest: 3 of 14 games newly backend-driven; 2 already were;
+9 static-only by contract necessity, documented below)
+
+SUMMARY:
+Phase 11 connects backend GameContentItem payloads to real game engines through
+a thin adapter layer with fail-closed validation. Memory Match, Drag & Drop and
+Concept Builder now play backend CONCEPT/STRUCTURE content backend-first with an
+explicit same-topic fallback; Quiz Battle and Speed Run verified already
+backend-backed via QUIZ-001/002. The remaining 9 mechanic games provably cannot
+consume answer-less backend QUESTION items (they require authored answers or
+mechanics the contract does not expose), so they keep their world-gated static
+banks — no fake content introduced anywhere. 875/875 tests pass, analyzer 0
+errors, web build passes, production boot + onboarding→login verified in a real
+browser with zero console errors. No backend change. No commit (per rules).
+
+AUDIT (all 14 games; source → model needs → backend kind → verdict):
+1. quiz_battle: QUIZ-001 quizForTopic + QUIZ-002 submit + gate (already backend).
+   VERIFY ONLY. No adapter possible (items carry no answers; grading is server-side).
+2. speed_run: QUIZ-001/002 + gate (already backend). VERIFY ONLY (same reason).
+3. target_challenge: static bank + world filter. Model needs authored
+   actions/targets/states. QUESTION items expose neither answers nor mechanics.
+   STATIC-ONLY (contract necessity).
+4. memory_match: lesson/quiz/topic + mapper + gate. Pairs(term,definition) map
+   directly from CONCEPT items. MIGRATED (backend-first, mapper fallback explicit).
+5. drag_drop: lesson/quiz/topic + mapper + gate. Zones+items map from STRUCTURE
+   items (difficulty buckets + topic names). MIGRATED (backend-first, explicit).
+6. debug_arena: static bank + world filter. Model needs correctDiagnosis.
+   QUESTION items carry no answers. STATIC-ONLY.
+7. unlock_code: static bank + world filter. Model needs correctAnswer ∈ choices.
+   STATIC-ONLY.
+8. concept_builder: static bank + world filter. Blocks+correctOrder derivable
+   from CONCEPT definition sentence order (backend content order, not invented).
+   MIGRATED (backend-first, static fallback explicit).
+9. sequence_master: static bank + world filter. STRUCTURE items expose no
+   authoritative order. STATIC-ONLY.
+10. mystery_case: static bank + world filter. Needs authored solutions +
+    correctSolutionId. STATIC-ONLY.
+11. boss_battle: static bank + world filter. Needs phases + answers. STATIC-ONLY.
+12. puzzle_arena: static bank + world filter. Needs puzzles + solutions. STATIC-ONLY.
+13. connectivity_lab: static bank + world filter. Needs device/topology graph.
+    STRUCTURE items expose no topology. STATIC-ONLY.
+14. snake_and_ladder: static byId + world filter (foreign cells inert). Needs
+    answers. STATIC-ONLY.
+Static classification (Rule 15): all 10 static banks are Category A production
+authored content (answers/explanations, world-attributed via gate). No demo/
+placeholder content found in banks. Dangerous assumption fixed by migration:
+mapper topic/quiz placeholder pairs ('Key concept of X', 'Review focus') are now
+second to authoritative backend CONCEPT definitions where available.
+
+IMPLEMENTATION (frontend only):
+- frontend/lib/features/game_engine/content/game_content_adapters.dart (new):
+  GameContentAdapters with memoryPairsFromItems (CONCEPT→pairs, term=topicName,
+  definition verbatim, order preserved, dedupe, ≥2 required), dragPayloadFromItems
+  (STRUCTURE→canonical EASY/MEDIUM/HARD zones + topic items, ≥2 zones/≥3 items),
+  conceptChallengeFromItem(s) (definition sentences→blocks, correctOrder =
+  definition order, ≥2 blocks, strict EASY/MEDIUM/HARD else reject, never default).
+  Shared _acceptItem: id/gameType-exact/kind/subject/topic/world agreement.
+- frontend/lib/features/games/memory_match/presentation/memory_match_screen.dart:
+  backend-first _tryBackendPairs (subjectContent w/ topicId else globalContent,
+  payload validation, adapt) + explicit _fallbackPairs (mapper path unchanged);
+  scope violations fail hard with honest message; transport/empty/insufficiency
+  fall back explicitly; mechanics/timer/scoring/audio untouched.
+- frontend/lib/features/games/drag_drop/presentation/drag_drop_screen.dart:
+  same pattern via _tryBackendPayload/_fallbackPayload; shuffle/timer/scoring kept.
+- frontend/lib/features/games/concept_builder/presentation/concept_builder_screen.dart:
+  async _load with loading/error states + backend-first _tryBackendChallenges and
+  static selectStatic fallback; timer starts post-load; mechanics untouched.
+- Screens import only api_exception/models/adapters additions; no engine, result,
+  audio, theme, routing, or gamification changes.
+
+VALIDATION:
+- test/game_engine/game_content_adapters_test.dart (new, 22 tests): per-game
+  mapping/metadata/order/difficulty preservation; adversarial Cases 1,2,6,7,9,10,11
+  plus repo Case 8 (NetworkException) and bank Cases 3/4/5 (correctAnswer/diagnosis
+  ∈ choices, choices ≥2, explanations non-empty, ids unique).
+- test/games/backend_content_wiring_test.dart (new, 9 tests): memory/drag/concept
+  backend-first play, 404→explicit fallback, scope-violation→honest hard failure,
+  quiz_battle QUIZ-001 load → answer → QUIZ-002 submit → result screen with
+  asserted PROG-101 POST (gameType quiz_battle + clientRequestId).
+- Flutter tests 875/875 (844 prior +31 new). Analyzer 0 errors (457 infos/warnings,
+  none from new/changed lines). Web build PASS. Responsive: new screens verified
+  at default + tall viewports; existing 360-1440 suites preserved.
+- Browser (real Chromium via playwright-core, production build served locally):
+  BOOT-ONLY validation (no backend running): mobile 390 + desktop 1280 render
+  onboarding correctly, onboarding→login navigation works, zero console errors.
+  No gameplay validation claimed (requires running backend).
+
+CONTENT INTEGRITY:
+- Subject isolation: payload/item/world-identity agreement enforced in gate +
+  adapters + providers; cross-subject fails closed (tested both directions).
+- Topic isolation: UUID-based (never names); mismatched topic fails closed.
+- Game isolation: exact gameType equality per item; unknown kinds rejected.
+- Malformed: empty ids/definitions/topics, bad difficulty, <2 blocks/zones —
+  item skipped or batch rejected; never repaired, never defaulted.
+- Global arena: mixed accepted with per-item identity preserved; never re-filtered.
+
+BACKWARD COMPATIBILITY:
+- quiz/speed flows, result submission (PROG-101 idempotent), gamification,
+  audio, themes, routing, auth, dashboard, path, leaderboard, tutor, settings —
+  untouched; full suite green. Static banks unchanged. Snake restart untouched
+  (screen not modified). Fallback paths preserve pre-Phase-11 behavior exactly
+  when backend content is absent.
+
+KNOWN LIMITATIONS (exact, honest):
+- 9 mechanic games remain static-driven because backend QUESTION items expose no
+  correct answers and no game mechanics; wiring them would require either answer
+  exposure (backend contract change — STOP condition, not attempted) or
+  fabrication (forbidden). Hub compat/SOON behavior for them is unchanged.
+- Concept adapter instruction/objective strings are generic presentational chrome;
+  educational text stays verbatim from backend definitions.
+- Drag wide layout (fixed 420px zones list) can overflow viewports shorter than
+  ~700px height regardless of content source (pre-existing, source-independent;
+  not redesigned per Rule 5; required widths 360-1440 unaffected).
+- Concept Builder shows a loading spinner on entry now (was synchronous static);
+  first-paint behavior changed minimally to support backend-first load.
+- Browser validation is boot-only; no authenticated gameplay screenshots claimed.
+
+FILES CHANGED (frontend only):
+- frontend/lib/features/game_engine/content/game_content_adapters.dart (new)
+- frontend/lib/features/games/memory_match/presentation/memory_match_screen.dart
+- frontend/lib/features/games/drag_drop/presentation/drag_drop_screen.dart
+- frontend/lib/features/games/concept_builder/presentation/concept_builder_screen.dart
+- frontend/test/game_engine/game_content_adapters_test.dart (new)
+- frontend/test/games/backend_content_wiring_test.dart (new)
+- frontend/report.txt (this section)
+GIT: NO commit, NO push, NO destructive operation (per phase rules).
+BACKEND: NO files modified. API contracts: NO changes. Fake data: NONE.
+
+NEXT PHASE:
+Do NOT implement. Remaining honest work: backend answer-exposure contract (if ever
+offered) would unlock QUESTION-kind static games; engine-level consumption of
+STRUCTURE items for sequence/connectivity needs an order/topology contract that
+does not exist today.
+
+============================================================
+
 DATE: 2026-09-06
 BASELINE: b0867ad feat(frontend): enforce production state consistency
 FINAL: HEAD feat(frontend): polish production ux and performance (see git log -1 --oneline)
