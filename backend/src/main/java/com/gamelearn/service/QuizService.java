@@ -103,9 +103,17 @@ public class QuizService {
             return List.of();
         }
         try {
-            JsonNode node = objectMapper.readTree(optionsJson).path("options");
-            return objectMapper.convertValue(node,
+            JsonNode root = objectMapper.readTree(optionsJson);
+            // Some databases return a seeded JSON document double-encoded as a
+            // JSON string literal; unwrap once so seeded rows parse identically
+            // to rows written through JPA on every database.
+            if (root.isTextual()) {
+                root = objectMapper.readTree(root.asText());
+            }
+            JsonNode node = root.path("options");
+            List<String> options = objectMapper.convertValue(node,
                     objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return options == null ? List.of() : options;
         } catch (Exception malformedContent) {
             return List.of();
         }
