@@ -14,7 +14,7 @@ import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
-import '../../../shared/widgets/game_surfaces.dart';
+import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../subjects/domain/canonical_worlds.dart' show WorldCatalog;
@@ -240,22 +240,47 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                     if (_messages.length <= 1 &&
                         !_sending &&
                         i == _messages.length) {
-                      // Contextual starter prompts (A7) — weak/strong/insufficient aware
+                      // Contextual starter prompts (A7) — weak/strong/insufficient aware.
+                      // Presented as the reference SUGGESTED ACTIONS 2×2 grid;
+                      // tapping still fills the input and sends (behavior kept).
                       final prompts = _contextualPrompts();
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            for (final s in prompts)
-                              _SuggestionChip(
-                                label: s,
-                                onTap: () {
-                                  _input.text = s;
-                                  _send();
-                                },
-                              ),
+                            const NeonSectionHeader(
+                              icon: Icons.bolt_rounded,
+                              title: 'Suggested actions',
+                              subtitle: 'Pick what you need!',
+                              accent: AppColors.secondary,
+                            ),
+                            const SizedBox(height: 10),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics:
+                                  const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 1.5,
+                                  ),
+                              itemCount: prompts.length.clamp(0, 4),
+                              itemBuilder: (context, pi) {
+                                final s = prompts[pi];
+                                return _SuggestedActionCard(
+                                  label: s,
+                                  icon: _suggestionIcon(pi, s),
+                                  accent: _suggestionAccent(pi),
+                                  onTap: () {
+                                    _input.text = s;
+                                    _send();
+                                  },
+                                );
+                              },
+                            ),
                           ],
                         ),
                       );
@@ -387,26 +412,102 @@ class _Bubble {
   final bool degraded;
 }
 
-class _SuggestionChip extends StatelessWidget {
-  const _SuggestionChip({required this.label, required this.onTap});
+/// Icon mapping for the Suggested Actions grid — keyword-driven, falls back
+/// by position. Decorative only; the label text carries the meaning.
+IconData _suggestionIcon(int index, String label) {
+  final l = label.toLowerCase();
+  if (l.contains('hint')) return Icons.lightbulb_outline_rounded;
+  if (l.contains('example')) return Icons.code_rounded;
+  if (l.contains('practice') || l.contains('question') || l.contains('challenge')) {
+    return Icons.track_changes_rounded;
+  }
+  if (l.contains('explain') || l.contains('simple')) return Icons.article_outlined;
+  if (l.contains('revise') || l.contains('wrong')) return Icons.refresh_rounded;
+  if (l.contains('harder') || l.contains('next steps')) return Icons.trending_up_rounded;
+  return const [
+    Icons.article_outlined,
+    Icons.lightbulb_outline_rounded,
+    Icons.code_rounded,
+    Icons.track_changes_rounded,
+  ][index % 4];
+}
+
+Color _suggestionAccent(int index) => const [
+  AppColors.success,
+  AppColors.primary,
+  AppColors.secondary,
+  AppColors.xp,
+][index % 4];
+
+/// Suggested-action grid card — same send-on-tap behavior as the former
+/// chips, in the reference 2×2 card language.
+class _SuggestedActionCard extends StatelessWidget {
+  const _SuggestedActionCard({
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
 
   final String label;
+  final IconData icon;
+  final Color accent;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => ActionChip(
-    label: Text(
-      label,
-      style: const TextStyle(
-        fontSize: 12.5,
-        color: AppColors.secondary,
-        fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      label: 'Ask Nova: $label',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.surfaceElevated.withValues(alpha: 0.8)
+                : AppLightColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: accent.withValues(alpha: isDark ? 0.45 : 0.35),
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 22, color: accent),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppLightColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),
-    backgroundColor: AppColors.secondary.withValues(alpha: 0.08),
-    side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.35)),
-    onPressed: onTap,
-  );
+    );
+  }
 }
 
 class _MessageTile extends StatelessWidget {

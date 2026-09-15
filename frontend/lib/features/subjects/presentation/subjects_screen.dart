@@ -17,6 +17,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/subject_visual_identity.dart';
 import '../../../shared/widgets/achievement_icon.dart' show SubjectGlyph;
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
@@ -171,29 +172,39 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // ── WORLD EXPLORER HEADER ──
+                          // ── CHOOSE YOUR WORLD HERO ──
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('WORLD EXPLORER', style: AppTypography.overline(context)),
-                                const SizedBox(height: 4),
-                                Text('Choose your world', style: AppTypography.hero(context, size: 26)),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const NovaCompanion(size: 38, mood: NovaMood.encouraging),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        'Pick a world, Player. Your path adapts to you.',
-                                        style: AppTypography.bodySecondary(context),
+                            child: CinematicHero(
+                              accent: AppColors.primary,
+                              badge: 'World Explorer',
+                              badgeIcon: Icons.public_rounded,
+                              title: Text(
+                                'CHOOSE YOUR WORLD',
+                                style: AppTypography.hero(
+                                  context,
+                                  size: 26,
+                                ),
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  const NovaCompanion(
+                                    size: 38,
+                                    mood: NovaMood.encouraging,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Pick a world, Player. Your path adapts to you.',
+                                      style: AppTypography.bodySecondary(
+                                        context,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
+                              tagline:
+                                  'LEARN • EXPLORE\nMASTER • LEVEL UP',
                             ),
                           ),
                           // ── FEATURED / CURRENT WORLD ──

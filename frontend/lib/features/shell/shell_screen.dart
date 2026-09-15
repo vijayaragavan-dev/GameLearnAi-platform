@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/router.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
@@ -26,7 +27,7 @@ class ShellScreen extends ConsumerWidget {
   final Widget child;
 
   static const _tabs = [
-    ('/home', AppIcons.navHomeIdle, AppIcons.navHomeActive, 'Command'),
+    ('/home', AppIcons.navHomeIdle, AppIcons.navHomeActive, 'Home'),
     ('/subjects', AppIcons.navWorldsIdle, AppIcons.navWorldsActive, 'Worlds'),
     ('/progress', AppIcons.navStatsIdle, AppIcons.navStatsActive, 'Stats'),
     ('/profile', AppIcons.navProfileIdle, AppIcons.navProfileActive, 'Profile'),
@@ -139,10 +140,19 @@ class _ShellBackground extends StatelessWidget {
   }
 }
 
-/// Premium bottom bar — 66dp compact HUD. Active = glow + strong label, inactive muted.
+/// Premium bottom bar — glass HUD with the signature central
+/// LEARN · PLAY · GROW orb (Nova Tutor shortcut).
+///
+/// Layout: Home · Worlds · [ORB] · Stats · Profile. The orb pushes the
+/// existing Tutor route; all tab destinations are unchanged.
 class _PremiumBottomBar extends ConsumerWidget {
   const _PremiumBottomBar({required this.index});
   final int index;
+
+  void _go(BuildContext context, WidgetRef ref, String destination) {
+    ref.read(hapticsProvider).tap();
+    context.go(destination);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -151,117 +161,224 @@ class _PremiumBottomBar extends ConsumerWidget {
     final surface = Theme.of(context).colorScheme.surface;
     return Container(
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: isDark ? 0.96 : 0.98),
+        color: surface.withValues(alpha: isDark ? 0.92 : 0.97),
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.border : AppLightColors.border,
+            color: isDark
+                ? AppColors.primary.withValues(alpha: 0.28)
+                : AppLightColors.border,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, -6),
+            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
           ),
+          if (isDark)
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              blurRadius: 28,
+              offset: const Offset(0, -2),
+            ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 66,
+          height: 78,
           child: Row(
-            children: List.generate(tabs.length, (i) {
-              final tab = tabs[i];
-              final selected = index == i;
-              return Expanded(
-                child: Semantics(
-                  button: true,
-                  selected: selected,
-                  label: '${tab.$4} tab',
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: selected
-                        ? null
-                        : () {
-                            ref.read(hapticsProvider).tap();
-                            context.go(tab.$1);
-                          },
-                    child: AnimatedContainer(
-                      duration: AppMotion.fast,
-                      curve: AppMotion.easeOut,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.primary.withValues(
-                                alpha: isDark ? 0.14 : 0.09,
-                              )
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        border: selected
-                            ? Border.all(
-                                color: AppColors.primary.withValues(
-                                  alpha: isDark ? 0.22 : 0.16,
-                                ),
-                              )
-                            : null,
-                      ),
-                      child: AnimatedScale(
-                        scale: selected ? 1.04 : 1.0,
-                        duration: AppMotion.fast,
-                        curve: AppMotion.spring,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: selected
-                                  ? BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      boxShadow: AppShadows.glow(
-                                        AppColors.primary,
-                                        alpha: isDark ? 0.22 : 0.10,
-                                      ),
-                                    )
-                                  : null,
-                              child: Icon(
-                                selected ? tab.$3 : tab.$2,
-                                size: 23,
-                                color: selected
-                                    ? (isDark
-                                          ? AppColors.primaryBright
-                                          : AppColors.primary)
-                                    : (isDark
-                                          ? AppColors.textTertiary
-                                          : AppLightColors.textTertiary),
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              tab.$4.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.3,
-                                color: selected
-                                    ? (isDark
-                                          ? AppColors.primaryBright
-                                          : AppColors.primary)
-                                    : (isDark
-                                          ? AppColors.textTertiary
-                                          : AppLightColors.textTertiary),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: _NavItem(
+                selected: index == 0,
+                tab: tabs[0],
+                onTap: () => _go(context, ref, tabs[0].$1),
+              )),
+              Expanded(child: _NavItem(
+                selected: index == 1,
+                tab: tabs[1],
+                onTap: () => _go(context, ref, tabs[1].$1),
+              )),
+              // Signature center orb — Nova Tutor shortcut.
+              _LearnPlayGrowOrb(
+                onTap: () {
+                  ref.read(hapticsProvider).select();
+                  context.push(Routes.tutor);
+                },
+              ),
+              Expanded(child: _NavItem(
+                selected: index == 2,
+                tab: tabs[2],
+                onTap: () => _go(context, ref, tabs[2].$1),
+              )),
+              Expanded(child: _NavItem(
+                selected: index == 3,
+                tab: tabs[3],
+                onTap: () => _go(context, ref, tabs[3].$1),
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.selected,
+    required this.tab,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final (String, IconData, IconData, String) tab;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${tab.$4} tab',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: selected ? null : onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.fast,
+          curve: AppMotion.easeOut,
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.09)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: selected
+                ? Border.all(
+                    color: AppColors.primary.withValues(
+                      alpha: isDark ? 0.28 : 0.18,
                     ),
+                  )
+                : null,
+          ),
+          child: AnimatedScale(
+            scale: selected ? 1.04 : 1.0,
+            duration: AppMotion.fast,
+            curve: AppMotion.spring,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: selected
+                      ? BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: AppShadows.glow(
+                            AppColors.primary,
+                            alpha: isDark ? 0.25 : 0.12,
+                          ),
+                        )
+                      : null,
+                  child: Icon(
+                    selected ? tab.$3 : tab.$2,
+                    size: 23,
+                    color: selected
+                        ? (isDark
+                              ? AppColors.primaryBright
+                              : AppColors.primary)
+                        : (isDark
+                              ? AppColors.textTertiary
+                              : AppLightColors.textTertiary),
                   ),
                 ),
-              );
-            }),
+                const SizedBox(height: 3),
+                Text(
+                  tab.$4.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.3,
+                    color: selected
+                        ? (isDark
+                              ? AppColors.primaryBright
+                              : AppColors.primary)
+                        : (isDark
+                              ? AppColors.textTertiary
+                              : AppLightColors.textTertiary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Signature central orb — gradient LEARN · PLAY · GROW action.
+/// Navigates to the Nova Tutor companion route.
+class _LearnPlayGrowOrb extends StatelessWidget {
+  const _LearnPlayGrowOrb({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      label: 'Learn Play Grow — open Nova Tutor',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          width: 86,
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                margin: const EdgeInsets.only(bottom: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: AppGradients.brand,
+                  border: Border.all(
+                    color: Colors.white.withValues(
+                      alpha: isDark ? 0.28 : 0.0,
+                    ),
+                    width: 1.6,
+                  ),
+                  boxShadow: isDark
+                      ? AppShadows.glow(AppColors.primary, alpha: 0.55)
+                      : AppShadows.elevated(alpha: 0.12),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.sports_esports_rounded,
+                      size: 22,
+                      color: Colors.white,
+                    ),
+                    Text(
+                      'LEARN\nPLAY\nGROW',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 6.5,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
