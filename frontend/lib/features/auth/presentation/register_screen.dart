@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../providers/session_controller.dart';
@@ -54,9 +55,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('CREATE PLAYER')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-          child: Form(
+        // Same responsive treatment as the login screen: breakpoint
+        // gutters plus a capped form width so tablet/desktop do not
+        // stretch inputs edge to edge. Phones are unaffected.
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppGutters.pagePadding(context),
+              vertical: 12,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -206,6 +217,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   busy: session.busy,
                 ),
               ],
+            ),
+                ),
+              ),
             ),
           ),
         ),

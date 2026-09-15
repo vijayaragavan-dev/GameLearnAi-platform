@@ -571,9 +571,16 @@ class _HeroCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.bolt_rounded, size: 14, color: AppColors.xp),
                         const SizedBox(width: 4),
-                        Text(
-                          '${Formatters.count(g.totalXp)} XP',
-                          style: AppTypography.xpLabel(context, size: 12),
+                        // Flexible (loose fit): renders identically when the
+                        // XP text fits, ellipsizes instead of overflowing the
+                        // hero row on narrow screens or large text scales.
+                        Flexible(
+                          child: Text(
+                            '${Formatters.count(g.totalXp)} XP',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.xpLabel(context, size: 12),
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Flexible(

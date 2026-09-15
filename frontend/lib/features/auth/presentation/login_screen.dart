@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../providers/session_controller.dart';
@@ -48,8 +49,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Form(
+            // Responsive gutters (20 compact / 24 medium / 32 wide) instead
+            // of a fixed 28px inset, so narrow phones keep usable width.
+            padding: EdgeInsets.symmetric(
+              horizontal: AppGutters.pagePadding(context),
+              vertical: 24,
+            ),
+            // Cap the form width on tablet/desktop so inputs and buttons do
+            // not stretch across the entire viewport; phones are unaffected.
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,13 +70,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       NovaCompanion(size: 52, mood: NovaMood.idle),
                       SizedBox(width: 12),
-                      Text(
-                        'GAMELEARN AI',
-                        style: TextStyle(
-                          fontFamily: AppTypography.displayFamily,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 3,
+                      // The wordmark has a fixed intrinsic width (21px plus
+                      // 3px letter spacing) that overflowed viewports below
+                      // ~410px. FittedBox with scaleDown shrinks it only
+                      // when it cannot fit, so wider screens are unchanged.
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'GAMELEARN AI',
+                            style: TextStyle(
+                              fontFamily: AppTypography.displayFamily,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 3,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -192,6 +212,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ],
+              ),
+                ),
               ),
             ),
           ),

@@ -280,12 +280,20 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                         mood: NovaMood.idle,
                                       ),
                                       SizedBox(width: 7),
-                                      Text(
-                                        'Stuck? Ask Nova for a hint',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.secondary,
+                                      // Flexible (loose fit): identical when
+                                      // the hint fits; ellipsizes instead of
+                                      // overflowing on narrow screens or
+                                      // large text scales.
+                                      Flexible(
+                                        child: Text(
+                                          'Stuck? Ask Nova for a hint',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.secondary,
+                                          ),
                                         ),
                                       ),
                                     ],

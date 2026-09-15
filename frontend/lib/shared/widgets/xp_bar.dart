@@ -112,10 +112,26 @@ class XPBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('LEVEL ${currentLevel.toString().padLeft(2, '0')}'),
-                Text(
-                  atMax ? 'MAX LEVEL' : '$xpToNextLevel XP TO NEXT',
-                  style: const TextStyle(color: AppColors.xp),
+                // Flexible labels (loose fit): identical layout when both
+                // fit; ellipsis instead of a RenderFlex overflow when the
+                // level/progress texts crowd a narrow row or large text
+                // scale. The right label keeps its trailing alignment.
+                Flexible(
+                  child: Text(
+                    'LEVEL ${currentLevel.toString().padLeft(2, '0')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    atMax ? 'MAX LEVEL' : '$xpToNextLevel XP TO NEXT',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(color: AppColors.xp),
+                  ),
                 ),
               ],
             ),

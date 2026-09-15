@@ -33,7 +33,7 @@ class IntelligenceSection extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Icon(Icons.psychology_rounded, size: 18, color: AppColors.primary), const SizedBox(width: 8), Text('YOUR LEARNING INTELLIGENCE', style: AppTypography.overline(context).copyWith(color: AppColors.primary))]),
+            Row(children: [const Icon(Icons.psychology_rounded, size: 18, color: AppColors.primary), const SizedBox(width: 8), Flexible(child: Text('YOUR LEARNING INTELLIGENCE', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.overline(context).copyWith(color: AppColors.primary)))]),
             const SizedBox(height: 8),
             Text('Keep learning to unlock personalized insights', style: AppTypography.h3(context)),
             const SizedBox(height: 6),
