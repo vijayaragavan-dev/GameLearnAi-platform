@@ -232,14 +232,20 @@ class SectionHeader extends StatelessWidget {
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title.toUpperCase(),
-          style: const TextStyle(
-            fontFamily: AppTypography.bodyFamily,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2.2,
-            color: AppColors.textTertiary,
+        // Flexible title: section headers must never overflow narrow
+        // phones, while an optional trailing action keeps its place.
+        Flexible(
+          child: Text(
+            title.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: AppTypography.bodyFamily,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2.2,
+              color: AppColors.textTertiary,
+            ),
           ),
         ),
         ?trailing,

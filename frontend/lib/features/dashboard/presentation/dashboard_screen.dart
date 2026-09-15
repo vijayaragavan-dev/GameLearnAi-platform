@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
 import '../../../core/error/user_facing_error.dart';
-import '../../../core/models/content_models.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
 import '../../subjects/domain/world_context.dart';
@@ -171,10 +171,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 }
                 final dashboard = state.data;
                 if (dashboard != null) {
+                  // Refresh failed but stale content is shown: say so
+                  // honestly (connectivity failures only) instead of
+                  // silently presenting old data as fresh.
+                  final offline =
+                      state.error is NetworkException ||
+                      state.error is TimeoutApiException;
                   return _DashboardBody(
                     dashboard: dashboard,
                     onContinue: () => _continueAdventure(dashboard),
                     onOpenRecommendation: _openRecommendation,
+                    showOfflineBanner: offline,
+                    onRetryOffline: _refresh,
                   );
                 }
                 return const SkeletonDashboard();
@@ -192,11 +200,15 @@ class _DashboardBody extends StatelessWidget {
     required this.dashboard,
     required this.onContinue,
     required this.onOpenRecommendation,
+    this.showOfflineBanner = false,
+    this.onRetryOffline,
   });
 
   final Dashboard dashboard;
   final VoidCallback onContinue;
   final void Function(RecommendationItem) onOpenRecommendation;
+  final bool showOfflineBanner;
+  final VoidCallback? onRetryOffline;
 
   Widget _staggered(int index, Widget child) {
     return Builder(
@@ -241,6 +253,10 @@ class _DashboardBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (showOfflineBanner) ...[
+                OfflineBanner(onRetry: onRetryOffline ?? () {}),
+                const SizedBox(height: 12),
+              ],
               // ── COMMAND CENTER HEADER — player identity + continue as hero row on expanded
               if (isExpanded) ...[
                 Row(
@@ -481,6 +497,10 @@ class _HeroCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = dashboard.learner.displayName;
     final mastery = (dashboard.learner.overallMastery.clamp(0, 100) / 100).clamp(0.0, 1.0);
+    // 320px-class phones cannot fit avatar + identity + orb + streak chip
+    // in one row: orb and chip move to a second row instead of squeezing
+    // the identity column into overflow. Wider phones keep the dense row.
+    final compactHero = MediaQuery.sizeOf(context).width < 360;
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -596,16 +616,31 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              // Mastery orb alongside streak for command-center density
-              MasteryOrb(fraction: mastery, size: 56, animate: false),
-              const SizedBox(width: 8),
-              StreakChip(
-                days: dashboard.streak.currentStreakDays,
-                onTap: () => context.go(Routes.streak),
-              ),
+              if (!compactHero) ...[
+                const SizedBox(width: 10),
+                // Mastery orb alongside streak for command-center density
+                MasteryOrb(fraction: mastery, size: 56, animate: false),
+                const SizedBox(width: 8),
+                StreakChip(
+                  days: dashboard.streak.currentStreakDays,
+                  onTap: () => context.go(Routes.streak),
+                ),
+              ],
             ],
           ),
+          if (compactHero) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                MasteryOrb(fraction: mastery, size: 48, animate: false),
+                const SizedBox(width: 8),
+                StreakChip(
+                  days: dashboard.streak.currentStreakDays,
+                  onTap: () => context.go(Routes.streak),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 14),
           XPBar(
             currentLevel: g.currentLevel,
@@ -659,16 +694,23 @@ class _ContinueCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: isDark ? 0.18 : 0.10),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: accent.withValues(alpha: 0.35)),
-                ),
-                child: Text(
-                  'CURRENT ADVENTURE',
-                  style: AppTypography.overline(context).copyWith(color: accent, letterSpacing: 1.4),
+              // Flexible + scale-down: the pill keeps its shape on narrow
+              // screens instead of overflowing the row.
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: isDark ? 0.18 : 0.10),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: accent.withValues(alpha: 0.35)),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'CURRENT ADVENTURE',
+                      style: AppTypography.overline(context).copyWith(color: accent, letterSpacing: 1.4),
+                    ),
+                  ),
                 ),
               ),
               const Spacer(),
@@ -1158,20 +1200,27 @@ class _GameZoneSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(AppIcons.navGamesActive, size: 13, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Text('GAME ZONE', style: AppTypography.badgeLabel(context, color: AppColors.primary)),
-                  ],
+              // Flexible + scale-down like the section pills above: the
+              // label never pushes the trailing pill out on narrow phones.
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(AppIcons.navGamesActive, size: 13, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text('GAME ZONE', style: AppTypography.badgeLabel(context, color: AppColors.primary)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const Spacer(),
@@ -1284,6 +1333,10 @@ class _NovaSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasRec = dashboard.recommendations.isNotEmpty;
     final nextTopic = hasRec ? dashboard.recommendations.first.topicName : null;
+    // Keep the recommended topic context when the tutor is opened from
+    // here; a bare tutor route is the honest global fallback.
+    final nextTopicId =
+        hasRec ? dashboard.recommendations.first.topicId : null;
     return GameIdentitySurface(
       accent: AppColors.secondary,
       showGlow: false,
@@ -1319,7 +1372,14 @@ class _NovaSection extends StatelessWidget {
             semanticLabel: 'Open Nova tutor',
             color: AppColors.secondary,
             filled: true,
-            onTap: () => context.push(Routes.tutor),
+            onTap: () => context.push(
+              nextTopicId != null
+                  ? Routes.tutorWithContext(
+                      topicId: nextTopicId,
+                      topicName: nextTopic,
+                    )
+                  : Routes.tutor,
+            ),
           ),
         ],
       ),
@@ -1977,36 +2037,31 @@ class _NewWorldsStrip extends ConsumerStatefulWidget {
 }
 
 class _NewWorldsStripState extends ConsumerState<_NewWorldsStrip> {
-  late final Future<List<Subject>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = ref.read(contentRepoProvider).subjects();
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final assessedIds = widget.dashboard.assessment.assessedSubjects
         .map((a) => a.subjectId)
         .toSet();
-    return FutureBuilder<List<Subject>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 4),
-            child: SizedBox(
-              width: double.infinity,
-              child: LinearProgressIndicator(minHeight: 3),
-            ),
-          );
-        }
-        if (snap.hasError) {
-          return const EmptyMiniCard(text: 'Cannot load worlds right now.');
-        }
-        final subjects = snap.data ?? const <Subject>[];
+    // Shared cached catalog (same fetch as worlds/arena/tutor resolve):
+    // no duplicate request, honors logout invalidation, single refresh.
+    final async = ref.watch(subjectsProvider);
+    return async.when(
+      loading: () {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: LinearProgressIndicator(minHeight: 3),
+          ),
+        );
+      },
+      error: (e, st) {
+        return const EmptyMiniCard(text: 'Cannot load worlds right now.');
+      },
+      data: (loaded) {
+        final subjects = [...loaded]
+          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
         final newSubjects = subjects
             .where((s) => !assessedIds.contains(s.id))
             .take(3)

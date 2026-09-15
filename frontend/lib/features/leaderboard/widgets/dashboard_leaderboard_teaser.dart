@@ -53,10 +53,34 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
       );
     }
 
-    final rank = data?.rank ?? 0;
-    final xp = data?.totalXp ?? 0;
-    final xpToNext = data?.xpToNextRank;
-    final top = data?.top ?? [];
+    // No data and no error (e.g. reset/invalidation race): never render
+    // a fabricated #0 rank. Show the honest unavailable state instead.
+    if (data == null) {
+      return GameChallengeSurface(
+        accent: AppColors.primary,
+        title: 'CHAMPIONS ARENA',
+        icon: Icons.emoji_events_rounded,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Rank unavailable right now',
+              style: AppTypography.bodySecondary(context),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => ref.read(myPositionProvider.notifier).refreshOverall(),
+              child: const Text('RETRY'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final rank = data.rank;
+    final xp = data.totalXp;
+    final xpToNext = data.xpToNextRank;
+    final top = data.top;
 
     return Semantics(
       label: 'Champions Arena teaser, rank $rank, $xp XP',
@@ -70,9 +94,9 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
           children: [
             Row(
               children: [
-                if (data?.avatar != null)
+                if (data.avatar != null)
                   LeaderboardAvatarView(
-                    avatar: data!.avatar!,
+                    avatar: data.avatar!,
                     displayName: 'You',
                     size: 44,
                   )
