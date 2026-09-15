@@ -399,12 +399,17 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                         ],
                       ),
                     ),
+                    // Level + streak standing from the authoritative
+                    // gamification summary (GAM-001, already carries streak).
+                    // Shown only when the read succeeds — never fabricated.
+                    const SizedBox(height: 12),
+                    const _ResultStanding(),
                     if (r.bestScore != null && r.score >= r.bestScore!) ...[
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: AppColors.success.withValues(alpha: 0.32))),
-                        child: const Row(children: [Icon(Icons.emoji_events_rounded, size: 16, color: AppColors.success), SizedBox(width: 8), Text('NEW PERSONAL BEST!', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success, letterSpacing: 1))]),
+                        child: const Row(children: [Icon(Icons.emoji_events_rounded, size: 16, color: AppColors.success), SizedBox(width: 8), Flexible(child: Text('NEW PERSONAL BEST!', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success, letterSpacing: 1)))]),
                       ),
                     ],
                     // Adaptive: mastery updated + personalized next (A6)
@@ -472,6 +477,105 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
   Color _scoreColor(double s) => s >= 80 ? AppColors.success : s >= 50 ? AppColors.warning : AppColors.error;
 }
 
+/// Level progress + streak standing from the authoritative gamification
+/// summary (GAM-001). Renders only on a successful read: loading shows a
+/// compact spinner, errors hide the section — standing is never invented.
+class _ResultStanding extends ConsumerWidget {
+  const _ResultStanding();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return FutureBuilder<GamificationSummary>(
+      future: ref.watch(gamificationRepoProvider).summary(),
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done || !snap.hasData) {
+          if (snap.hasError) return const SizedBox.shrink();
+          return const SizedBox(
+            height: 56,
+            child: Center(
+              child: SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+        final s = snap.data!;
+        final streakLine = s.currentStreakDays > 0
+            ? 'Best ${s.longestStreakDays} days • Learn daily to keep it burning'
+            : 'Play daily to start a streak';
+        return Semantics(
+          label:
+              'Level ${s.currentLevel}, ${s.currentStreakDays} day streak',
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: isDark ? AppColors.border : AppLightColors.border,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                XPBar(
+                  currentLevel: s.currentLevel,
+                  totalXp: s.totalXp,
+                  xpToNextLevel: s.xpToNextLevel,
+                  height: 8,
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.local_fire_department_rounded,
+                      size: 18,
+                      color: AppColors.streak,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${s.currentStreakDays}-DAY STREAK',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                              color: AppColors.streak,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            streakLine,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppLightColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _AdaptiveResultInsight extends ConsumerWidget {
   const _AdaptiveResultInsight({required this.result});
   final GameResult result;
@@ -489,7 +593,8 @@ class _AdaptiveResultInsight extends ConsumerWidget {
     // Show mastery updated or next difficulty hint
     final isWeak = intel.weakTopics.any((w) => w.topicId == result.config.topicId);
     final isStrong = intel.strongTopics.any((s) => s.topicId == result.config.topicId);
-    String masteryLine = 'Mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
+    // Overall (not topic) mastery: label it honestly.
+    String masteryLine = 'Overall mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
     String nextLine;
     if (isWeak && result.accuracy < 60) {
       nextLine = 'This concept needs a little more practice — try an easier challenge or ask Tutor.';
