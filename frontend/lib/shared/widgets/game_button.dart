@@ -417,14 +417,21 @@ class GameChip extends StatelessWidget {
               Icon(icon, size: 13, color: color),
               const SizedBox(width: 5),
             ],
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTypography.bodyFamily,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
-                color: color,
+            // Flexible (loose fit): identical when the label fits;
+            // ellipsizes instead of overflowing narrow rows or large
+            // text scales (e.g. long dashboard CTA labels at 390px).
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: AppTypography.bodyFamily,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: color,
+                ),
               ),
             ),
           ],

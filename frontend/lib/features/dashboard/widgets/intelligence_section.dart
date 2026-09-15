@@ -249,7 +249,11 @@ class IntelligenceSection extends ConsumerWidget {
   void _handleRecTap(BuildContext context, AdaptiveRecommendation r) {
     if (r.topicId != null) {
       if (r.gameType != null) {
-        context.push(Routes.gameHub(r.topicId!, subjectId: null, subjectName: r.topicName), extra: r.topicName);
+        // Global arena entry: recommendations carry no subject, so no
+        // subject scope is passed. (Passing the topic name as subjectName
+        // here previously risked mis-scoping the arena when a topic name
+        // happened to match a world display name.)
+        context.push(Routes.gameHub(r.topicId!), extra: r.topicName);
       } else {
         context.push(Routes.topic(r.topicId!));
       }

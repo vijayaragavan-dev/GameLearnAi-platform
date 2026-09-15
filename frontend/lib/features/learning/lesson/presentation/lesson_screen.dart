@@ -85,7 +85,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
 
   void _openTutor() {
     ref.read(audioManagerProvider).play(Sfx.buttonTap);
-    context.push(Routes.tutor);
+    // Keep the lesson's topic context, like the inline hint path and the
+    // world/tutor entries elsewhere — a bare tutor route loses it.
+    context.push(Routes.tutorWithContext(topicId: widget.topicId));
   }
 
   @override

@@ -595,11 +595,22 @@ class _RecommendedWorldStrip extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final rec = dashboard.recommendations.firstOrNull;
     if (rec == null || rec.topicName == null || rec.topicName!.isEmpty) return const SizedBox.shrink();
-    // Try to resolve subject for that recommendation's topic via currentSubject or fallback
-    final subject = subjects.firstWhere(
-      (s) => s.id == dashboard.currentSubject?.id,
-      orElse: () => subjects.first,
-    );
+    // Enter the learner's current world only. Guessing another world
+    // (e.g. subjects.first) would point the recommendation at the wrong
+    // world, so without a resolved current subject show nothing.
+    final currentId = dashboard.currentSubject?.id;
+    Subject? resolved;
+    if (currentId != null && currentId.isNotEmpty) {
+      for (final s in subjects) {
+        if (s.id == currentId) {
+          resolved = s;
+          break;
+        }
+      }
+    }
+    // Final for closure capture below (onEnter tap).
+    final subject = resolved;
+    if (subject == null) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

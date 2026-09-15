@@ -132,13 +132,16 @@ class _GameHubScreenState extends State<GameHubScreen> {
     return GameDefinition.of(GameType.quizBattle);
   }
 
-  void _open(BuildContext context, GameType type) {
+  void _open(BuildContext context, GameType type, {bool global = false}) {
     // Safe audio tap — optional ProviderScope (tests pump without it)
     try {
       ProviderScope.containerOf(context, listen: false).read(audioManagerProvider).play(Sfx.buttonTap);
     } catch (_) {}
-    final sid = _hasSubject ? widget.subjectId : null;
-    final sname = _hasSubject ? widget.subjectName : null;
+    // The GENERAL GAMES section is labelled "no subject required": its
+    // launches must stay global even inside a world-scoped hub. Subject
+    // section launches keep the world scope.
+    final sid = (!global && _hasSubject) ? widget.subjectId : null;
+    final sname = (!global && _hasSubject) ? widget.subjectName : null;
     final extra = widget.topicName;
     switch (type) {
       case GameType.quizBattle:
@@ -461,12 +464,12 @@ class _GameHubScreenState extends State<GameHubScreen> {
                             _Staggered(
                               index: i,
                               reduceMotion: reduceMotion,
-                              child: _ArcadeGameCard(
-                                def: filtered[i],
-                                onTap: () => _open(context, filtered[i].type),
-                                topicName: effectiveTopic,
-                                isSubjectContext: false,
-                              ),
+                                  child: _ArcadeGameCard(
+                                    def: filtered[i],
+                                    onTap: () => _open(context, filtered[i].type, global: true),
+                                    topicName: effectiveTopic,
+                                    isSubjectContext: false,
+                                  ),
                             ),
                         ],
                       ),

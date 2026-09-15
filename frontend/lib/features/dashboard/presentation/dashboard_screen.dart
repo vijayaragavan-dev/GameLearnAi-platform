@@ -1121,7 +1121,23 @@ class _GameZoneSection extends StatelessWidget {
     return recent;
   }
 
-  String? _subjectNameForGames() => dashboard.currentSubject?.name ?? dashboard.learningPath?.subjectName;
+  /// Topic label for the Global Arena entry, mirroring [_topicIdForGames]
+  /// source-by-source. The arena is intentionally subject-free, so the hub
+  /// must show the topic — never the subject name in the topic slot.
+  String? _topicNameForGames() {
+    final t = dashboard.currentSubject?.currentTopic?.topicName;
+    if (t != null && t.isNotEmpty) return t;
+    final lp = dashboard.learningPath;
+    if (lp != null && lp.nodes.isNotEmpty) {
+      final n = lp.nodes.first.topicName;
+      if (n.isNotEmpty) return n;
+    }
+    final rec = dashboard.recommendations.firstOrNull?.topicName;
+    if (rec != null && rec.isNotEmpty) return rec;
+    final recent = dashboard.mastery.recentTopics.firstOrNull?.topicName;
+    if (recent != null && recent.isNotEmpty) return recent;
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1191,8 +1207,7 @@ class _GameZoneSection extends StatelessWidget {
                   // scope is passed, so no previous world can leak in or
                   // restrict mixed content. World-specific play lives in
                   // each world's own arena (world landing → Enter game arena).
-                  final name = _subjectNameForGames();
-                  context.push(Routes.gameHub(topicId), extra: name);
+                  context.push(Routes.gameHub(topicId), extra: _topicNameForGames());
                 },
                 child: GameIdentitySurface(
                   accent: identity.accent,
@@ -1240,8 +1255,7 @@ class _GameZoneSection extends StatelessWidget {
                   return;
                 }
                 // Global Arena (see featured-cards tap above for the rule).
-                final name = _subjectNameForGames();
-                context.push(Routes.gameHub(topicId), extra: name);
+                context.push(Routes.gameHub(topicId), extra: _topicNameForGames());
               },
             ),
           ),
