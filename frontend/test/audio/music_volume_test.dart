@@ -319,5 +319,139 @@ void main() {
       final live = scope.musicPlayers.where((p) => p.disposeCount == 0);
       expect(live.length, lessThanOrEqualTo(1));
     });
+
+    test('volume change while disabled never starts playback (D)', () async {
+      final scope = await _scope({});
+      final audio = scope.manager();
+
+      await audio.playContext(MusicContext.menu);
+      expect(scope.musicPlayers, hasLength(1));
+
+      await audio.setMusicEnabled(false);
+      expect(audio.musicEnabled, isFalse);
+      final stopped = scope.musicPlayers.single;
+      expect(stopped.stopCount, greaterThanOrEqualTo(1));
+
+      // Slider moves while disabled: persisted, but stays silent.
+      await audio.setMusicVolume(0.7);
+      expect(audio.musicVolume, 0.7);
+      expect(scope.prefs.getDouble('pref_music_volume'), 0.7);
+      expect(scope.musicPlayers, hasLength(1));
+      expect(scope.musicPlayers.single.playCount, 1);
+
+      // Re-enable resumes a fresh player at the latest stored volume.
+      await audio.setMusicEnabled(true);
+      expect(scope.musicPlayers, hasLength(2));
+      final resumed = scope.musicPlayers.last;
+      expect(resumed.playCount, 1);
+      expect(resumed.lastVolume, closeTo(0.16 * 0.7, 1e-9));
+    });
+
+    test('context switch uses the latest volume (F)', () async {
+      final scope = await _scope({});
+      final audio = scope.manager();
+
+      await audio.playContext(MusicContext.menu);
+      final first = scope.musicPlayers.single;
+      expect(first.lastVolume, closeTo(0.16 * 1.0, 1e-9));
+
+      await audio.setMusicVolume(0.25);
+      await audio.playContext(MusicContext.quiz);
+
+      expect(first.disposeCount, 1);
+      expect(scope.musicPlayers, hasLength(2));
+      final live = scope.musicPlayers.last;
+      expect(live.playCount, 1);
+      expect(live.lastVolume, closeTo(0.16 * 0.25, 1e-9));
+      expect(
+        (live.lastSource as AssetSource).path,
+        contains('music_quiz.wav'),
+      );
+    });
+
+    test('repeated volume changes never duplicate players (G)', () async {
+      final scope = await _scope({});
+      final audio = scope.manager();
+
+      await audio.playContext(MusicContext.menu);
+      final player = scope.musicPlayers.single;
+      final playsBefore = player.playCount;
+
+      for (var i = 0; i <= 10; i++) {
+        final v = i / 10.0;
+        await audio.setMusicVolume(v);
+        expect(player.lastVolume, closeTo(0.16 * v, 1e-9));
+      }
+
+      expect(scope.musicPlayers, hasLength(1));
+      expect(player.playCount, playsBefore);
+      expect(player.stopCount, 0);
+      expect(player.disposeCount, 0);
+      expect(scope.prefs.getDouble('pref_music_volume'), 1.0);
+    });
+
+    test('pause/resume preserves volume without duplicating players (I)',
+        () async {
+      final scope = await _scope({});
+      final audio = scope.manager();
+
+      await audio.playContext(MusicContext.menu);
+      final player = scope.musicPlayers.single;
+
+      await audio.pauseForBackground();
+      expect(player.pauseCount, 1);
+
+      // Slider moves while paused: pushed to the paused player in place.
+      await audio.setMusicVolume(0.4);
+      expect(player.lastVolume, closeTo(0.16 * 0.4, 1e-9));
+      expect(player.playCount, 1);
+
+      await audio.resumeFromBackground();
+      expect(player.resumeCount, 1);
+      expect(player.playCount, 1);
+      expect(scope.musicPlayers, hasLength(1));
+    });
+
+    test('resume stays silent when muted or disabled (I)', () async {
+      final scope = await _scope({});
+      final audio = scope.manager();
+
+      await audio.playContext(MusicContext.menu);
+      final player = scope.musicPlayers.single;
+
+      await audio.setMusicVolume(0.0);
+      await audio.pauseForBackground();
+      await audio.resumeFromBackground();
+      expect(player.resumeCount, 0);
+      expect(player.playCount, 1);
+
+      await audio.setMusicVolume(0.5);
+      await audio.setMusicEnabled(false);
+      await audio.resumeFromBackground();
+      // Disabled: no player revived, nothing recreated.
+      expect(scope.musicPlayers, hasLength(1));
+      expect(scope.musicPlayers.single.playCount, 1);
+    });
+
+    test('dispose stops music; later volume change is safe (I)', () async {
+      final scope = await _scope({});
+      final audio = scope.manager();
+
+      await audio.playContext(MusicContext.menu);
+      final player = scope.musicPlayers.single;
+
+      await audio.dispose();
+      expect(player.disposeCount, greaterThanOrEqualTo(1));
+
+      // Must persist without touching players or throwing.
+      await audio.setMusicVolume(0.5);
+      expect(audio.musicVolume, 0.5);
+      expect(scope.prefs.getDouble('pref_music_volume'), 0.5);
+      expect(scope.musicPlayers, hasLength(1));
+
+      // A fresh manager restores the persisted value.
+      final restarted = scope.manager();
+      expect(restarted.musicVolume, 0.5);
+    });
   });
 }
