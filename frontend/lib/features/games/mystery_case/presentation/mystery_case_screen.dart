@@ -380,7 +380,7 @@ class _MysteryCaseScreenState extends ConsumerState<MysteryCaseScreen> {
           FilledButton(
             onPressed: () => setState(() => _briefingDone = true),
             style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 56), backgroundColor: const Color(0xFF8B5CF6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.search_rounded, size: 18), SizedBox(width: 8), Text('START INVESTIGATION', style: TextStyle(letterSpacing: 1.2, fontWeight: FontWeight.w800))]),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.search_rounded, size: 18), const SizedBox(width: 8), Flexible(child: Text('START INVESTIGATION', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(letterSpacing: 1.2, fontWeight: FontWeight.w800)))]),
           ),
           const SizedBox(height: 10),
           OutlinedButton(onPressed: () => context.pop(), style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)), child: const Text('EXIT CASE')),

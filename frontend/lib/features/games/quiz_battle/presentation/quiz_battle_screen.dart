@@ -58,6 +58,9 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
   // Game engine pieces
   late GameCombo _combo;
   late GameTimer _questionTimer;
+  // Manual-advance generation: every explicit Next/Back tap bumps this so
+  // a stale auto-advance beat can never override the learner's navigation.
+  int _advanceGen = 0;
   int _score = 0;
   int _questionStartElapsed = 0;
   Timer? _feedbackTimer;
@@ -166,8 +169,18 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
     // Combo/score will be reconciled after server submission at the end, but we also give local preview scoring.
     // To keep game feeling, we use local scoring assuming selected answer is pending.
     // We'll show neutral feedback and advance after delay for UX.
+    // Capture the navigation generation + question identity: any manual
+    // Next/Back tap during the beat wins, and the delayed callback must
+    // never double-advance (which would skip the next question and
+    // auto-fill its answer at submit).
+    final scheduledGen = _advanceGen;
+    final scheduledIndex = _index;
+    final scheduledId = q.id;
     Future.delayed(const Duration(milliseconds: 220), () {
-      if (!mounted) return;
+      if (!mounted || _quiz == null) return;
+      if (_advanceGen != scheduledGen) return;
+      if (_index != scheduledIndex) return;
+      if (_quiz!.questions[_index].id != scheduledId) return;
       _nextOrFinish();
     });
   }
@@ -367,13 +380,29 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
                     Row(
                       children: [
                         if (_index > 0)
-                          SecondaryGameButton(label: 'Back', expanded: false, onTap: () => setState(() => _index--)),
+                          SecondaryGameButton(
+                            label: 'Back',
+                            expanded: false,
+                            onTap: () {
+                              _advanceGen++;
+                              setState(() => _index--);
+                            },
+                          ),
                         if (_index > 0) const SizedBox(width: 10),
                         Expanded(
                           child: PrimaryGameButton(
                             label: selected == null ? 'Select an answer' : (isLast ? 'Submit battle' : 'Next'),
                             busy: _submitting,
-                            onTap: selected == null ? null : () => isLast ? _submit() : _nextOrFinish(),
+                            onTap: selected == null
+                                ? null
+                                : () {
+                                    _advanceGen++;
+                                    if (isLast) {
+                                      _submit();
+                                    } else {
+                                      _nextOrFinish();
+                                    }
+                                  },
                           ),
                         ),
                       ],

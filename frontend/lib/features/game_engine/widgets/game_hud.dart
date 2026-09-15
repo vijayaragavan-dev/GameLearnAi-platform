@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
@@ -49,6 +50,11 @@ class GameHud extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final a = _resolveAccent(context);
     final showIdentity = gameIcon != null && gameTitle != null;
+    // The score/timer/pause controls must never be pushed out: on compact
+    // phones the identity pill collapses to its icon (the game title stays
+    // visible in each screen's own header), freeing ~80px for live HUD data.
+    final compactIdentity =
+        showIdentity && MediaQuery.sizeOf(context).width < AppBreakpoints.compact;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
@@ -71,22 +77,42 @@ class GameHud extends StatelessWidget {
           Row(
             children: [
               if (showIdentity) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: a.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(color: a.withValues(alpha: 0.32)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(gameIcon, size: 12, color: a),
-                      const SizedBox(width: 4),
-                      Text(gameTitle!.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: a)),
-                    ],
-                  ),
-                ),
+                // Compact phones get the icon-only pill (with a semantic
+                // title, since the text is hidden); wider screens keep the
+                // full wordmark. Every game screen already shows its title
+                // in its own header, so nothing is lost.
+                compactIdentity
+                    ? Semantics(
+                        label: 'Game ${gameTitle!}',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: a.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            border: Border.all(color: a.withValues(alpha: 0.32)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [Icon(gameIcon, size: 12, color: a)],
+                          ),
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: a.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(color: a.withValues(alpha: 0.32)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(gameIcon, size: 12, color: a),
+                            const SizedBox(width: 4),
+                            Text(gameTitle!.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: a)),
+                          ],
+                        ),
+                      ),
                 const SizedBox(width: 8),
               ],
               _Pill(label: difficultyLabel, color: a),
@@ -114,7 +140,9 @@ class GameHud extends StatelessWidget {
                 label: 'Time remaining $timeRemaining',
                 child: AnimatedContainer(
                   duration: AppMotion.fast,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  // Compact horizontal padding: the timer row is the most
+                  // crowded HUD row on narrow phones.
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
                     color: _timerColor(timeRemaining).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(AppRadius.pill),

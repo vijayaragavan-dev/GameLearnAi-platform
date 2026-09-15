@@ -411,15 +411,20 @@ class _DragDropScreenState extends ConsumerState<DragDropScreen> {
               title: 'DRAG ITEMS',
               icon: identity.icon,
               subtitle: '${_placements.values.where((v) => v != null).length}/${_items.length} PLACED',
-              child: ListView.separated(
-                itemCount: _items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final item = _items[i];
-                  final placed = _placements[item.id];
-                  final fb = _feedback[item.id];
-                  return _DraggableCard(item: item, isPlaced: placed != null, feedback: fb);
-                },
+              // The surface stacks title + child in a Column, so a raw
+              // ListView child would receive unbounded height and crash.
+              // Expanded bounds it to the surface's remaining space.
+              child: Expanded(
+                child: ListView.separated(
+                  itemCount: _items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final item = _items[i];
+                    final placed = _placements[item.id];
+                    final fb = _feedback[item.id];
+                    return _DraggableCard(item: item, isPlaced: placed != null, feedback: fb);
+                  },
+                ),
               ),
             ),
           ),

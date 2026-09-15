@@ -387,7 +387,9 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                                 children: [
                                   const Icon(Icons.grid_view_rounded, size: 14, color: Color(0xFFF59E0B)),
                                   const SizedBox(width: 6),
-                                  const Text('SNAKE & LADDER BOARD', style: TextStyle(fontSize: 11, letterSpacing: 1.4, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B))),
+                                  const Flexible(
+                                    child: Text('SNAKE & LADDER BOARD', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, letterSpacing: 1.4, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B))),
+                                  ),
                                   const Spacer(),
                                   Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: AppColors.surfaceHigh, borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: AppColors.border)), child: Text('${_board.size} CELLS', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary))),
                                 ],
@@ -442,16 +444,28 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                                       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6), border: Border.all(color: border, width: isPlayer ? 1.6 : 1.0)),
                                       child: Stack(
                                         children: [
+                                          // Board cells are fixed ~30px at 390px: skip the
+                                          // empty icon line on plain cells and
+                                          // scale down only when the stacked
+                                          // content would otherwise clip. The
+                                          // full cell meaning stays in the
+                                          // Semantics label above.
                                           Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Text(icon, style: const TextStyle(fontSize: 10)),
-                                                const SizedBox(height: 2),
-                                                Text(label, style: TextStyle(fontSize: isStart ? 7 : 9, fontWeight: FontWeight.w700, color: isPlayer ? const Color(0xFFF59E0B) : AppColors.textPrimary), textAlign: TextAlign.center),
-                                                if (cell.snakeTo != null) Text('→${cell.snakeTo}', style: const TextStyle(fontSize: 7, color: AppColors.error)),
-                                                if (cell.ladderTo != null) Text('→${cell.ladderTo}', style: const TextStyle(fontSize: 7, color: AppColors.success)),
-                                              ],
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  if (icon.isNotEmpty) ...[
+                                                    Text(icon, style: const TextStyle(fontSize: 10)),
+                                                    const SizedBox(height: 2),
+                                                  ],
+                                                  Text(label, style: TextStyle(fontSize: isStart ? 7 : 9, fontWeight: FontWeight.w700, color: isPlayer ? const Color(0xFFF59E0B) : AppColors.textPrimary), textAlign: TextAlign.center),
+                                                  if (cell.snakeTo != null) Text('→${cell.snakeTo}', style: const TextStyle(fontSize: 7, color: AppColors.error)),
+                                                  if (cell.ladderTo != null) Text('→${cell.ladderTo}', style: const TextStyle(fontSize: 7, color: AppColors.success)),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                           if (isPlayer)
@@ -468,15 +482,16 @@ class _SnakeAndLadderScreenState extends ConsumerState<SnakeAndLadderScreen> {
                                 },
                               ),
                               const SizedBox(height: 4),
-                              const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              // Wrap (not Row): four chips exceed 390px on
+                              // narrow phones, so they flow onto two lines.
+                              const Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8,
+                                runSpacing: 6,
                                 children: [
                                   _LegendChip(icon: '🧠', label: 'Challenge'),
-                                  SizedBox(width: 8),
                                   _LegendChip(icon: '🐍', label: 'Snake'),
-                                  SizedBox(width: 8),
                                   _LegendChip(icon: '🪜', label: 'Ladder'),
-                                  SizedBox(width: 8),
                                   _LegendChip(icon: '🏁', label: 'Finish'),
                                 ],
                               ),

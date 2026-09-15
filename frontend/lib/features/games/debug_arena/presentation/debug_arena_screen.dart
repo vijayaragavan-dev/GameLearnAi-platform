@@ -268,7 +268,7 @@ class _DebugArenaScreenState extends ConsumerState<DebugArenaScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(children: [const Icon(Icons.code_rounded, size: 14, color: AppColors.secondary), const SizedBox(width: 6), Text('${ch.language} • ${ch.title}', style: const TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.w600)), const Spacer(), if (ch.hint != null) const Icon(Icons.lightbulb_outline_rounded, size: 14, color: AppColors.textTertiary)]),
+                                Row(children: [const Icon(Icons.code_rounded, size: 14, color: AppColors.secondary), const SizedBox(width: 6), Flexible(child: Text('${ch.language} • ${ch.title}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.w600))), const Spacer(), if (ch.hint != null) const Icon(Icons.lightbulb_outline_rounded, size: 14, color: AppColors.textTertiary)]),
                                 const SizedBox(height: 10),
                                 SelectableText(ch.buggyCode, style: const TextStyle(fontFamily: 'monospace', fontSize: 13.5, height: 1.6, color: AppColors.textPrimary)),
                               ],
