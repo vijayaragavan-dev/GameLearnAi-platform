@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../providers/session_controller.dart';
@@ -62,6 +63,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       body: Stack(
         children: [
           const AtmosphericBackground(),
+          // Cinematic world backdrop — matches login atmosphere.
+          const Positioned.fill(
+            child: CinematicScenery(
+              palette: ScenePalette.indigo,
+              seed: 4,
+              intensity: 0.55,
+            ),
+          ),
           if (isDark)
             const Positioned(
               top: -80,

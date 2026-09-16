@@ -14,6 +14,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/badges.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
@@ -126,6 +127,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: FeaturedSurface(
                                       accent: rarity.toLowerCase() == 'legendary' ? AppColors.xp : AppColors.primary,
                                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                                      scene: rarity.toLowerCase() == 'legendary'
+                                          ? ScenePalette.solar
+                                          : ScenePalette.violet,
+                                      sceneSeed: seedForKey(assetKey),
                                       child: Column(
                                         children: [
                                           Text('YOUR CHARACTER', style: AppTypography.overline(context).copyWith(color: AppColors.primaryBright, letterSpacing: 1.4)),

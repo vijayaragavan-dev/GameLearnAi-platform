@@ -14,6 +14,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/subject_visual_identity.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/badges.dart';
+import '../../../../shared/widgets/cinematic_scenery.dart';
 import '../../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
@@ -119,6 +120,8 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                           accent: identity.accent,
                           badge: 'Mission Briefing',
                           badgeIcon: Icons.track_changes_rounded,
+                          scene: scenePaletteForWorld(identity.iconKey),
+                          sceneSeed: seedForKey(topic.name),
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [

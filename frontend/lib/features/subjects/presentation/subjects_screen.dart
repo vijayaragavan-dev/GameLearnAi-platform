@@ -17,6 +17,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/subject_visual_identity.dart';
 import '../../../shared/widgets/achievement_icon.dart' show SubjectGlyph;
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_surfaces.dart';
@@ -179,6 +180,8 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                               accent: AppColors.primary,
                               badge: 'World Explorer',
                               badgeIcon: Icons.public_rounded,
+                              scene: ScenePalette.indigo,
+                              sceneSeed: 11,
                               title: Text(
                                 'CHOOSE YOUR WORLD',
                                 style: AppTypography.hero(
@@ -347,6 +350,8 @@ class _FeaturedWorldCard extends StatelessWidget {
       child: FeaturedSurface(
         accent: accent,
         padding: EdgeInsets.zero,
+        scene: scenePaletteForWorld(subject.iconKey),
+        sceneSeed: seedForKey(subject.id),
         child: Stack(
           children: [
             // Gradient wash with world accent
@@ -720,7 +725,14 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
             scale: _down ? 0.97 : 1,
             duration: reduce ? Duration.zero : AppMotion.fast,
             curve: AppMotion.easeOut,
-            child: AnimatedContainer(
+            // Bounded column width here (grid cell), so the art thumb can
+            // decide honestly whether it fits without crowding text.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final showArt =
+                    constraints.maxWidth.isFinite &&
+                    constraints.maxWidth >= 300;
+                return AnimatedContainer(
               duration: reduce ? Duration.zero : AppMotion.normal,
               curve: AppMotion.easeOut,
               padding: const EdgeInsets.all(18),
@@ -781,6 +793,28 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                     ),
                   ),
                   const SizedBox(width: 6),
+                  // Identity artwork — the illustrated world panel from the
+                  // references. Fits single-column phones (≥360px cells)
+                  // and wide grid cells; hidden in narrow cells so text
+                  // and SCAN never crowd.
+                  if (showArt)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: SceneThumb(
+                        palette: scenePaletteForWorld(
+                          widget.subject.iconKey,
+                        ),
+                        seed: seedForKey(widget.subject.id),
+                        icon: SubjectVisualRegistry.fromIconKey(
+                          widget.subject.iconKey,
+                        ).icon,
+                        accent: _tint,
+                        width: 76,
+                        height: 68,
+                        iconSize: 22,
+                        label: '${widget.subject.name} world artwork',
+                      ),
+                    ),
                   Semantics(
                     button: true,
                     label: 'Scan ${widget.subject.name} knowledge',
@@ -825,6 +859,8 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                   ),
                 ],
               ),
+                );
+              },
             ),
           ),
         ),

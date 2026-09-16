@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../providers/session_controller.dart';
@@ -57,6 +58,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Stack(
         children: [
           const AtmosphericBackground(),
+          // Cinematic world backdrop (reference: mountain castle vista
+          // behind the sign-in card). Static, low-intensity, decorative.
+          const Positioned.fill(
+            child: CinematicScenery(
+              palette: ScenePalette.indigo,
+              seed: 3,
+              intensity: 0.55,
+            ),
+          ),
           if (isDark)
             const Positioned(
               top: -80,

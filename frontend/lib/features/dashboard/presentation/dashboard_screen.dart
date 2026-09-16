@@ -28,6 +28,7 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_surfaces.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/premium_buttons.dart';
 import '../../../shared/widgets/progression_widgets.dart';
@@ -504,6 +505,8 @@ class _HeroCard extends StatelessWidget {
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      scene: ScenePalette.indigo,
+      sceneSeed: seedForKey(name),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -689,6 +692,10 @@ class _ContinueCard extends StatelessWidget {
     return FeaturedSurface(
       accent: accent,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      scene: _hasSubject
+          ? scenePaletteForWorld(subject!.iconKey)
+          : ScenePalette.arcane,
+      sceneSeed: _hasSubject ? seedForKey(subject!.id) : 7,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1010,6 +1017,23 @@ class _SubjectsSection extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // Identity artwork on roomy screens — hidden on
+                  // 320px phones so name + status never crowd.
+                  if (MediaQuery.sizeOf(context).width >= 380)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: SceneThumb(
+                        palette: scenePaletteForWorld(s.iconKey),
+                        seed: seedForKey(s.id),
+                        icon: identity.icon,
+                        accent: accent,
+                        width: 64,
+                        height: 54,
+                        iconSize: 20,
+                        borderRadius: 12,
+                        label: '${s.name} world artwork',
+                      ),
+                    ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
@@ -1195,6 +1219,8 @@ class _GameZoneSection extends StatelessWidget {
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      scene: ScenePalette.violet,
+      sceneSeed: 42,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1264,15 +1290,19 @@ class _GameZoneSection extends StatelessWidget {
                   radius: AppRadius.lg,
                   child: Column(
                     children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          gradient: identity.gradient,
-                          borderRadius: BorderRadius.circular(10),
+                      // Identity artwork — illustrated game panel from the
+                      // references (art + title + category).
+                      SceneThumb(
+                        palette: scenePaletteForGame(
+                          identity.type.name,
                         ),
-                        alignment: Alignment.center,
-                        child: Icon(identity.icon, size: 18, color: Colors.white),
+                        seed: seedForKey(identity.type.name),
+                        icon: identity.icon,
+                        accent: identity.accent,
+                        width: double.infinity,
+                        height: 76,
+                        iconSize: 22,
+                        label: '${identity.type.displayName} game artwork',
                       ),
                       const SizedBox(height: 8),
                       Text(

@@ -12,6 +12,7 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/subject_visual_identity.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
@@ -261,6 +262,8 @@ class _WorldHero extends StatelessWidget {
       child: FeaturedSurface(
         accent: accent,
         padding: EdgeInsets.zero,
+        scene: scenePaletteForWorld(identity.iconKey),
+        sceneSeed: seedForKey(displayName),
         child: Stack(
           children: [
             Positioned.fill(

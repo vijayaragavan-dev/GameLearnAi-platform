@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_styles.dart';
+import 'cinematic_scenery.dart';
 
 /// Premium reusable surfaces — single language for all future game screens.
 ///
@@ -364,21 +365,32 @@ class _InteractiveSurfaceState extends State<InteractiveSurface> {
 /// Featured surface — premium highlighted card for hero/spotlight content.
 /// Use for "Current Path Node", "Today's Challenge", "Recommended Game".
 /// One per screen max — use sparingly.
+///
+/// [scene] paints a procedural cinematic landscape ([CinematicScenery],
+/// keyed by world/game identity) behind the content. When set, the flat
+/// gradient wash is softened so the artwork carries the hero, and a bottom
+/// scrim keeps text legible. Null (default) preserves the legacy gradient
+/// treatment exactly — existing call sites are unaffected.
 class FeaturedSurface extends StatelessWidget {
   const FeaturedSurface({
     super.key,
     required this.child,
     this.accent = AppColors.primary,
     this.padding = const EdgeInsets.all(20),
+    this.scene,
+    this.sceneSeed = 7,
   });
 
   final Widget child;
   final Color accent;
   final EdgeInsetsGeometry padding;
+  final ScenePalette? scene;
+  final int sceneSeed;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasScene = scene != null;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -397,19 +409,18 @@ class FeaturedSurface extends StatelessWidget {
         ],
       ),
       child: Container(
-        padding: padding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    accent.withValues(alpha: 0.18),
+                    accent.withValues(alpha: hasScene ? 0.10 : 0.18),
                     AppColors.surfaceElevated,
                     AppColors.surfaceElevated.withValues(alpha: 0.95),
                   ]
                 : [
-                    accent.withValues(alpha: 0.08),
+                    accent.withValues(alpha: hasScene ? 0.04 : 0.08),
                     AppLightColors.surface,
                   ],
             stops: isDark ? const [0.0, 0.55, 1.0] : const [0.0, 1.0],
@@ -420,7 +431,42 @@ class FeaturedSurface extends StatelessWidget {
             width: 1.5,
           ),
         ),
-        child: child,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.xl - 1.5),
+          child: Stack(
+            children: [
+              if (hasScene)
+                Positioned.fill(
+                  child: CinematicScenery(
+                    palette: scene!,
+                    seed: sceneSeed,
+                    intensity: isDark ? 1.0 : 0.55,
+                  ),
+                ),
+              if (hasScene)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(
+                              alpha: isDark ? 0.45 : 0.18,
+                            ),
+                          ],
+                          stops: const [0.3, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Padding(padding: padding, child: child),
+            ],
+          ),
+        ),
       ),
     );
   }

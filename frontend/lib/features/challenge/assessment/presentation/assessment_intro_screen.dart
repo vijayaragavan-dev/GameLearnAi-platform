@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
+import '../../../../shared/widgets/cinematic_scenery.dart';
 import '../../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../providers/assessment_provider.dart';
@@ -82,6 +83,8 @@ class _AssessmentIntroScreenState extends ConsumerState<AssessmentIntroScreen> {
                         accent: AppColors.secondary,
                         badge: 'Nova · Calibration',
                         badgeIcon: Icons.radar_rounded,
+                        scene: ScenePalette.abyss,
+                        sceneSeed: 21,
                         title: Text(
                           'KNOWLEDGE SCAN',
                           style: TextStyle(

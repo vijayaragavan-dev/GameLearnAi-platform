@@ -11,6 +11,8 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
+import '../../../../shared/widgets/cinematic_scenery.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../game_engine/models/game_models.dart';
 import '../../../game_engine/models/game_content_models.dart' show SubjectGames;
@@ -531,20 +533,11 @@ class _ArcadeHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
+    return FeaturedSurface(
+      accent: AppColors.primary,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [AppColors.primary.withValues(alpha: 0.18), AppColors.surfaceElevated, AppColors.surfaceElevated.withValues(alpha: 0.96)]
-              : [AppColors.primary.withValues(alpha: 0.07), Theme.of(context).colorScheme.surface],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.18)),
-        boxShadow: isDark ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.14), blurRadius: 20, offset: const Offset(0, 8))] : AppShadows.elevated(alpha: 0.06),
-      ),
+      scene: ScenePalette.arcane,
+      sceneSeed: seedForKey(topicId),
       child: Row(
         children: [
           Container(

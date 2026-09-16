@@ -5,6 +5,7 @@ import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
 import 'app_backgrounds.dart';
+import 'cinematic_scenery.dart';
 import 'nova_companion.dart';
 import 'pressable.dart';
 
@@ -37,7 +38,9 @@ import 'pressable.dart';
 /// Nova companion at [novaSize] when non-null. [badge] is an overline pill
 /// (e.g. "FEATURED WORLD", "CURRENT MISSION"). [tagline] renders as the
 /// neon side-quote seen across references (hidden when null or on narrow
-/// widths where it would crowd content).
+/// widths where it would crowd content). [scene] paints a procedural
+/// cinematic landscape ([CinematicScenery]) behind the content; when set,
+/// the flat gradient wash is softened so the artwork carries the hero.
 class CinematicHero extends StatelessWidget {
   const CinematicHero({
     super.key,
@@ -54,6 +57,8 @@ class CinematicHero extends StatelessWidget {
     this.trailing,
     this.bottom,
     this.padding = const EdgeInsets.fromLTRB(20, 20, 20, 20),
+    this.scene,
+    this.sceneSeed = 7,
   });
 
   final Gradient? gradient;
@@ -69,20 +74,30 @@ class CinematicHero extends StatelessWidget {
   final Widget? trailing;
   final Widget? bottom;
   final EdgeInsetsGeometry padding;
+  final ScenePalette? scene;
+  final int sceneSeed;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
     final showTagline = tagline != null && width >= 560;
+    final hasScene = scene != null;
+    final wash =
+        gradient ?? AppGradients.featured(context, accent: accent);
 
     return Semantics(
       container: true,
       child: Container(
         decoration: BoxDecoration(
-          gradient:
-              gradient ??
-              AppGradients.featured(context, accent: accent),
+          // When a procedural scene carries the hero, the gradient drops
+          // to a flat base so the artwork — not the wash — leads.
+          gradient: hasScene ? null : wash,
+          color: hasScene
+              ? (isDark
+                    ? AppColors.surfaceElevated
+                    : AppLightColors.surface)
+              : null,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
             color: isDark
@@ -97,8 +112,30 @@ class CinematicHero extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.xl),
           child: Stack(
             children: [
-              // Ambient orbs — static, cheap, behind content.
-              if (isDark)
+              // Procedural cinematic landscape (world/game identity art).
+              if (hasScene)
+                Positioned.fill(
+                  child: CinematicScenery(
+                    palette: scene!,
+                    seed: sceneSeed,
+                    intensity: isDark ? 1.0 : 0.55,
+                  ),
+                ),
+              // Translucent brand wash over the scene for cohesion.
+              if (hasScene)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: isDark ? 0.45 : 0.30,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(gradient: wash),
+                      ),
+                    ),
+                  ),
+                ),
+              // Ambient orbs + stars — flat-gradient heroes only; the
+              // scene already paints sky, glow and depth.
+              if (isDark && !hasScene)
                 const Positioned(
                   top: -70,
                   right: -50,
@@ -108,7 +145,7 @@ class CinematicHero extends StatelessWidget {
                     opacity: 0.22,
                   ),
                 ),
-              if (isDark)
+              if (isDark && !hasScene)
                 const Positioned(
                   bottom: -90,
                   left: -60,
@@ -118,9 +155,30 @@ class CinematicHero extends StatelessWidget {
                     opacity: 0.14,
                   ),
                 ),
-              if (isDark)
+              if (isDark && !hasScene)
                 const Positioned.fill(
                   child: StarFieldDecoration(starCount: 22, seed: 7),
+                ),
+              // Bottom scrim over scenes keeps titles legible.
+              if (hasScene)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(
+                              alpha: isDark ? 0.40 : 0.14,
+                            ),
+                          ],
+                          stops: const [0.35, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               Padding(
                 padding: padding,

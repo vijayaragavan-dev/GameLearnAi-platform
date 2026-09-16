@@ -10,6 +10,7 @@ import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
@@ -277,6 +278,8 @@ class _HeaderHero extends StatelessWidget {
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      scene: ScenePalette.violet,
+      sceneSeed: 5,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

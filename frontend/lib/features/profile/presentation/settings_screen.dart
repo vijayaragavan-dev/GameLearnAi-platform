@@ -11,6 +11,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../auth/providers/session_controller.dart';
 import '../../../shared/widgets/game_card.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
+import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 
 /// Local preferences only (audio, haptics). Server-side settings do not
@@ -36,6 +38,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+          // ── Cinematic settings header (reference: illustrated header,
+          // "Customize your experience") ──
+          CinematicHero(
+            accent: AppColors.primary,
+            badge: 'Settings',
+            badgeIcon: Icons.tune_rounded,
+            scene: ScenePalette.indigo,
+            sceneSeed: 99,
+            // No Nova here: Settings must stay animation-free so taps
+            // settle instantly (runtime regression contract); the scene
+            // art carries the cinematic identity.
+            title: Text(
+              'CUSTOMIZE YOUR EXPERIENCE',
+              style: TextStyle(
+                fontFamily: AppTypography.displayFamily,
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+                color: isDark
+                    ? AppColors.textPrimary
+                    : AppLightColors.textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              'A better you, for a brighter tomorrow.',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontStyle: FontStyle.italic,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary,
+              ),
+            ),
+            tagline: 'GOOD THINGS\nTAKE TIME',
+          ),
+          const SizedBox(height: 14),
           SectionCard(
             title: 'APPEARANCE',
             children: [
