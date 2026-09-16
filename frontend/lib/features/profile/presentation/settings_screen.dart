@@ -31,7 +31,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final themeMode = ref.watch(themeControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('SETTINGS')),
+      // Title-less bar: back affordance stays; the "Settings" title lives
+      // once in the cinematic hero below.
+      appBar: AppBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         child: ResponsiveCenter(

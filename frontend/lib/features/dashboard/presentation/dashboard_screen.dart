@@ -158,9 +158,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             color: AppColors.primaryBright,
             backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
             onRefresh: _refresh,
-            child: Builder(
-              builder: (context) {
-                if (state.showLoading) return const SkeletonDashboard();
+            // Top system inset for this AppBar-less tab: clears the
+            // status bar/notch on real devices while background layers
+            // stay full-bleed. No-op in tests/desktop (zero padding).
+            child: SafeArea(
+              top: true,
+              bottom: false,
+              child: Builder(
+                builder: (context) {
+                  if (state.showLoading) {
+                    return const SkeletonDashboard();
+                  }
                 final error = state.error;
                 if (error != null && state.data == null) {
                   final err = describeError(error);
@@ -188,6 +196,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 }
                 return const SkeletonDashboard();
               },
+            ),
             ),
           ),
         ],

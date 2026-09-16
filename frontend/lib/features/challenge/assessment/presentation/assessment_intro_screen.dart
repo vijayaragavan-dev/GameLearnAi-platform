@@ -41,9 +41,10 @@ class _AssessmentIntroScreenState extends ConsumerState<AssessmentIntroScreen> {
     final state = ref.watch(assessmentProvider(widget.subjectId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('KNOWLEDGE SCAN'),
-      ),
+      // Title-less bar: the back affordance stays, but the "KNOWLEDGE
+      // SCAN" title lives once in the cinematic hero below — stacking
+      // both reads as a duplicate.
+      appBar: AppBar(),
       body: Stack(
         children: [
           const AtmosphericBackground(),

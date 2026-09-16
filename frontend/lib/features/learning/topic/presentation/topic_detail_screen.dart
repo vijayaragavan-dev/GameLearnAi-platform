@@ -54,9 +54,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MISSION BRIEFING'),
-      ),
+      // Title-less bar: back affordance stays; "MISSION BRIEFING" lives
+      // once in the hero badge below.
+      appBar: AppBar(),
       body: Stack(
         children: [
           const Positioned.fill(child: AtmosphericBackground()),

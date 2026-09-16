@@ -103,8 +103,10 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // No AppBar: this tab root leads with its cinematic hero (which owns
+    // the "CHOOSE YOUR WORLD" title), matching the dashboard tab. An
+    // AppBar here would stack a duplicate title above the hero.
     return Scaffold(
-      appBar: AppBar(title: const Text('CHOOSE YOUR WORLD')),
       body: RefreshIndicator(
         color: AppColors.primaryBright,
         backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
@@ -168,11 +170,18 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                 SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: ResponsiveCenter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 110),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
+                    // Top system inset: with no AppBar the scroll content
+                    // must clear the status bar/notch on real devices.
+                    // Background layers above stay full-bleed. No-op in
+                    // tests and desktop browsers (zero system padding).
+                    child: SafeArea(
+                      top: true,
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 110),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                           // ── CHOOSE YOUR WORLD HERO ──
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
@@ -316,6 +325,7 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                       ),
                     ),
                   ),
+                ),
                 ),
               ],
             );
