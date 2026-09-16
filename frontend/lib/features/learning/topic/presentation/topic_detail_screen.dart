@@ -154,8 +154,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                             ],
                           ),
                           tagline: 'SMALL LOGIC\nBIG POSSIBILITIES',
-                          novaMood: NovaMood.idle,
-                          novaSize: 76,
+                          leading: const NovaAvatar(size: 76),
                         ),
                         const SizedBox(height: 14),
                         // ── MISSION INTEL ──

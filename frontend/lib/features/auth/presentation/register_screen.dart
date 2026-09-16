@@ -99,10 +99,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const NovaCompanion(
-                                size: 64,
-                                mood: NovaMood.idle,
-                              ),
+                              const NovaAvatar(size: 64),
                               const SizedBox(width: 12),
                               Flexible(
                                 child: Container(

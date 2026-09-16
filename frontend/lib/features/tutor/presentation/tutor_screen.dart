@@ -14,7 +14,10 @@ import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
+import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
+import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../subjects/domain/canonical_worlds.dart' show WorldCatalog;
@@ -214,17 +217,80 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
           ],
         ),
       ),
-      body: SafeArea(
-        child: FocusTraversalGroup(
-          policy: OrderedTraversalPolicy(),
-          child: Column(
-            children: [
-              // Contextual personalization card (A7) — visible when topic/subject or intelligence available
-              _TutorContextPanel(
-                initialTopicName: widget.initialTopicName,
-                initialSubjectId: widget.initialSubjectId,
-                initialFocus: widget.initialFocus,
-              ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: AtmosphericBackground()),
+          SafeArea(
+            child: FocusTraversalGroup(
+              policy: OrderedTraversalPolicy(),
+              child: Column(
+                children: [
+                  // ── Cinematic Nova header — the reference's Nova focal
+                  // point: real robot art, identity, tagline. Static (no
+                  // animation) and free of world-scope language so the
+                  // global-tutor honesty contract holds.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: FeaturedSurface(
+                      accent: AppColors.secondary,
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      scene: ScenePalette.abyss,
+                      sceneSeed: 8,
+                      child: Row(
+                        children: [
+                          const NovaAvatar(size: 64),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'NOVA TUTOR',
+                                  style: TextStyle(
+                                    fontFamily: AppTypography.displayFamily,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.2,
+                                    color: isDark
+                                        ? AppColors.textPrimary
+                                        : AppLightColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Your AI learning companion',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? AppColors.textSecondary
+                                        : AppLightColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Ask · Explore · Learn · Level Up!',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.4,
+                                    color: AppColors.secondary.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Contextual personalization card (A7) — visible when topic/subject or intelligence available
+                  _TutorContextPanel(
+                    initialTopicName: widget.initialTopicName,
+                    initialSubjectId: widget.initialSubjectId,
+                    initialFocus: widget.initialFocus,
+                  ),
               Expanded(
                 child: ListView.builder(
                   controller: _scroll,
@@ -332,16 +398,43 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                 ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _input,
-                        focusNode: _focus,
-                        maxLines: 4,
-                        minLines: 1,
-                        maxLength: _maxQuestionChars,
+                child: Container(
+                  // Premium input dock — glowing Nova-bordered bar from the
+                  // reference. Wraps the existing field + send button;
+                  // behavior, hints and limits are unchanged.
+                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.surfaceElevated.withValues(alpha: 0.92)
+                        : AppLightColors.surface,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: AppColors.secondary.withValues(
+                        alpha: isDark ? 0.45 : 0.35,
+                      ),
+                    ),
+                    boxShadow: isDark
+                        ? [
+                            BoxShadow(
+                              color: AppColors.secondary.withValues(
+                                alpha: 0.18,
+                              ),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          focusNode: _focus,
+                          maxLines: 4,
+                          minLines: 1,
+                          maxLength: _maxQuestionChars,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
                         onChanged: (v) => _typingController.onChanged(v),
@@ -390,11 +483,13 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                   ],
                 ),
               ),
+              ),
             ],
           ),
         ),
       ),
-    );
+      ],
+    ));
   }
 }
 

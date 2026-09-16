@@ -109,10 +109,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const NovaCompanion(
-                                size: 92,
-                                mood: NovaMood.idle,
-                              ),
+                              // Nova's real character art — the reference's
+                              // robot guide greeting the player.
+                              const NovaAvatar(size: 92),
                               const SizedBox(width: 12),
                               Flexible(
                                 child: Container(

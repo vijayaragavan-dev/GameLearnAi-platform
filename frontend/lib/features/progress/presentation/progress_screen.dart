@@ -15,8 +15,11 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
+import '../../../shared/widgets/cinematic_scenery.dart';
+import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_card.dart';
+import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/recommendation_card.dart'
     show SectionHeader, DifficultyPill;
 import '../../../shared/widgets/stat_card.dart';
@@ -150,6 +153,89 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       ),
                       child: Column(
                         children: [
+                          // ── Cinematic stats header (reference: level band
+                          // + tagline). All values are the same backend reads
+                          // used below — identity strip, not a second source.
+                          FeaturedSurface(
+                            accent: AppColors.primary,
+                            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                            scene: ScenePalette.violet,
+                            sceneSeed: seedForKey(profile.displayName),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'YOUR PROGRESS',
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  AppTypography.displayFamily,
+                                              fontSize: 21,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Track your progress. See your growth.',
+                                            style: TextStyle(
+                                              fontSize: 12.5,
+                                              color: Theme.of(
+                                                    context,
+                                                  ).brightness ==
+                                                  Brightness.dark
+                                                  ? AppColors.textSecondary
+                                                  : AppLightColors
+                                                        .textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const NeonQuote(
+                                      text:
+                                          'PROGRESS\nTURNS EFFORT\nINTO MASTERY',
+                                      fontSize: 10,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _StatChip(
+                                      icon: Icons.military_tech_rounded,
+                                      label:
+                                          'LEVEL ${summary.currentLevel}',
+                                      color: AppColors.primaryBright,
+                                    ),
+                                    _StatChip(
+                                      icon: Icons.bolt_rounded,
+                                      label:
+                                          '${Formatters.count(summary.totalXp)} XP',
+                                      color: AppColors.xp,
+                                    ),
+                                    _StatChip(
+                                      icon: Icons
+                                          .local_fire_department_rounded,
+                                      label:
+                                          '${streak.currentStreakDays}-DAY STREAK',
+                                      color: AppColors.streak,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
                           // Hero stats — responsive grid.
                           if (isCompact)
                             Column(
@@ -336,7 +422,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           const SizedBox(height: 18),
 
                           // Mastery header + filter chips.
-                          const SectionHeader(title: 'Topic mastery'),
+                          const NeonSectionHeader(
+                            icon: Icons.radar_rounded,
+                            title: 'Topic mastery',
+                            subtitle: 'Stages update as you learn',
+                            accent: AppColors.primary,
+                          ),
                           if (topics.isEmpty)
                             const EmptyMiniCard(
                               text:
@@ -448,11 +539,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           // Recent accuracy — sparkline/history.
                           if (quizzes.isNotEmpty) ...[
                             const SizedBox(height: 18),
-                            const SectionHeader(title: 'Recent accuracy'),
+                            const NeonSectionHeader(
+                              icon: Icons.track_changes_rounded,
+                              title: 'Recent accuracy',
+                              subtitle:
+                                  'Your performance in recent attempts',
+                              accent: AppColors.secondary,
+                            ),
                             if (quizzes.length >= 2)
                               GameCard(
                                 child: SizedBox(
-                                  height: 110,
+                                  height: 152,
                                   child: AccuracyBars(
                                     quizzes: quizzes.reversed.toList(),
                                   ),
@@ -490,10 +587,60 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                     SizedBox(
                                       height: 56,
                                       width: double.infinity,
-                                      child: _ScoreSparkline(
-                                        scores: quizzes.reversed
-                                            .map((q) => q.score)
-                                            .toList(),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: _ScoreSparkline(
+                                              scores: quizzes.reversed
+                                                  .map((q) => q.score)
+                                                  .toList(),
+                                            ),
+                                          ),
+                                          // Latest-value badge (reference:
+                                          // glowing % pill at the line end).
+                                          // Same backend read as the axis
+                                          // labels below — no new data.
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: Semantics(
+                                              label:
+                                                  'Latest score ${Formatters.percent(quizzes.first.score)}',
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 3,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary
+                                                      .withValues(alpha: 0.9),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        999,
+                                                      ),
+                                                  border: Border.all(
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.35,
+                                                        ),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  Formatters.percent(
+                                                    quizzes.first.score,
+                                                  ),
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight:
+                                                        FontWeight.w800,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -535,7 +682,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             ],
                           ] else ...[
                             const SizedBox(height: 18),
-                            const SectionHeader(title: 'Recent accuracy'),
+                            const NeonSectionHeader(
+                              icon: Icons.track_changes_rounded,
+                              title: 'Recent accuracy',
+                              subtitle:
+                                  'Your performance in recent attempts',
+                              accent: AppColors.secondary,
+                            ),
                             const EmptyMiniCard(
                               text:
                                   'Complete a few missions to reveal your skill trend.',
@@ -954,6 +1107,56 @@ class _MasteryCard extends StatelessWidget {
   }
 }
 
+/// Compact identity metric chip for the stats header band — icon + text,
+/// never color alone. Values mirror the cards below (same backend reads).
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      label: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.14 : 0.10),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Trend indicator — icon + text, accessible, backend-authoritative.
 class _TrendIndicator extends StatelessWidget {
   const _TrendIndicator({required this.trend});
@@ -1099,49 +1302,113 @@ class _SparklinePainter extends CustomPainter {
 }
 
 /// Simple accuracy bar chart — only when it improves understanding.
+/// Each bar carries its real score (% label) and attempt date; color bands
+/// mirror the mastery language (strong/developing/starting), always paired
+/// with the numeric label so state is never color-only.
 class AccuracyBars extends StatelessWidget {
   const AccuracyBars({super.key, required this.quizzes});
 
   final List<RecentQuizRun> quizzes;
 
+  Color _band(double score) => score >= 80
+      ? AppColors.success
+      : score >= 50
+      ? AppColors.warning
+      : AppColors.error;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final items = quizzes.take(10).toList();
+    return Column(
       children: [
-        for (final q in quizzes.take(10))
-          Expanded(
-            child: Semantics(
-              label: '${q.topicName} score ${Formatters.percent(q.score)}',
-              child: Tooltip(
-                message: '${q.topicName}: ${Formatters.percent(q.score)}',
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final h =
-                          (q.score / 100).clamp(0.05, 1.0) *
-                          constraints.maxHeight;
-                      return Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Container(
-                          height: h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
-                            color: q.score >= 80
-                                ? AppColors.success.withValues(alpha: 0.85)
-                                : q.score >= 50
-                                ? AppColors.warning.withValues(alpha: 0.85)
-                                : AppColors.error.withValues(alpha: 0.85),
-                          ),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final q in items)
+                Expanded(
+                  child: Semantics(
+                    label:
+                        '${q.topicName} score ${Formatters.percent(q.score)}',
+                    child: Tooltip(
+                      message:
+                          '${q.topicName}: ${Formatters.percent(q.score)}',
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              Formatters.percent(q.score),
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: _band(q.score),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final h =
+                                      (q.score / 100).clamp(0.12, 1.0) *
+                                      constraints.maxHeight;
+                                  final band = _band(q.score);
+                                  return Align(
+                                    alignment: Alignment.bottomCenter,
+                                    child: Container(
+                                      height: h,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          5,
+                                        ),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            band.withValues(alpha: 0.95),
+                                            band.withValues(alpha: 0.45),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: band.withValues(alpha: 0.5),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            for (final q in items)
+              Expanded(
+                child: Text(
+                  Formatters.shortDate(q.submittedAt),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 8.5,
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ),
-            ),
-          ),
+          ],
+        ),
       ],
     );
   }

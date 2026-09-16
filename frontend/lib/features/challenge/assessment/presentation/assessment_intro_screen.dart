@@ -108,8 +108,10 @@ class _AssessmentIntroScreenState extends ConsumerState<AssessmentIntroScreen> {
                           ),
                         ),
                         tagline: 'LEARN\nADAPT\nIMPROVE\nREPEAT',
-                        novaMood: NovaMood.thinking,
-                        novaSize: 104,
+                        // Nova's real character art leads the scan (the
+                        // reference's robot guide); the radar badge below
+                        // carries the calibration state.
+                        leading: const NovaAvatar(size: 88),
                       ),
                       const SizedBox(height: 16),
                       // ── Nova explanation panel ──

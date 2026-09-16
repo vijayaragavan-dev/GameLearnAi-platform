@@ -1372,7 +1372,7 @@ class _NovaSection extends StatelessWidget {
       showGlow: false,
       child: Row(
         children: [
-          NovaCompanion(size: 56, mood: hasRec ? NovaMood.encouraging : NovaMood.idle),
+          const NovaAvatar(size: 56),
           const SizedBox(width: 16),
           Expanded(
             child: Column(

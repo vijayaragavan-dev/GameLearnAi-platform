@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_styles.dart';
@@ -193,6 +194,112 @@ class _NovaPainter extends CustomPainter {
       oldDelegate.progress != progress ||
       oldDelegate.mood != mood ||
       oldDelegate.tint != tint;
+}
+
+/// NOVA avatar — the real Nova robot character art
+/// (`assets/characters/nova_spark.svg`) presented as a cinematic focal
+/// point: glow ring, halo, optional status dot.
+///
+/// Static and animation-free by design, so it is safe on every screen
+/// (including animation-sensitive ones like Settings). For the ambient
+/// animated orb, use [NovaCompanion] instead. Decorative art is merged
+/// into one semantic node describing Nova.
+class NovaAvatar extends StatelessWidget {
+  const NovaAvatar({
+    super.key,
+    this.size = 72,
+    this.ringColor = AppColors.secondary,
+    this.showHalo = true,
+    this.statusDot,
+    this.semanticsLabel = 'Nova, AI learning companion',
+  });
+
+  final double size;
+  final Color ringColor;
+  final bool showHalo;
+
+  /// Optional small status dot (e.g. online/strong). Null hides it.
+  final Color? statusDot;
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      label: semanticsLabel,
+      image: true,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            if (showHalo && isDark)
+              Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: ringColor.withValues(alpha: 0.35),
+                      blurRadius: size * 0.35,
+                      spreadRadius: size * 0.04,
+                    ),
+                  ],
+                ),
+              ),
+            Container(
+              width: size * 0.94,
+              height: size * 0.94,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark
+                    ? AppColors.surfaceElevated
+                    : AppLightColors.surface,
+                border: Border.all(
+                  color: ringColor.withValues(alpha: isDark ? 0.65 : 0.45),
+                  width: 2,
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SvgPicture.asset(
+                'assets/characters/nova_spark.svg',
+                fit: BoxFit.cover,
+                placeholderBuilder: (_) => Icon(
+                  Icons.smart_toy_outlined,
+                  size: size * 0.4,
+                  color: ringColor,
+                ),
+              ),
+            ),
+            if (statusDot != null)
+              Positioned(
+                right: size * 0.04,
+                bottom: size * 0.04,
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: size * 0.20,
+                    height: size * 0.20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: statusDot,
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.background
+                            : AppLightColors.background,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Speech bubble anchored to a small Nova orb.
