@@ -9,7 +9,9 @@ import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/game_button.dart';
+import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/recommendation_card.dart'
     show DifficultyPill, PriorityPill;
@@ -37,12 +39,16 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final canStart = item.topicId != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Text('NEXT MISSION'),
         automaticallyImplyLeading: false,
       ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: AtmosphericBackground()),
+          SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           children: [
@@ -51,41 +57,36 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
               child: NovaCompanion(size: 88, mood: NovaMood.encouraging),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'The Game Master has chosen',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: AppTypography.displayFamily,
                 fontSize: 23,
                 fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.textPrimary
+                    : AppLightColors.textPrimary,
               ),
             ),
 
             if (item.topicName != null) ...[
               const SizedBox(height: 22),
-              Container(
+              FeaturedSurface(
+                accent: AppColors.primary,
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.16),
-                      AppColors.surfaceElevated,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                  ),
-                ),
                 child: Column(
                   children: [
                     Text(
                       item.topicName!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: AppTypography.displayFamily,
                         fontSize: 21,
                         fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppLightColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -129,21 +130,23 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
             if (item.reason.trim().isNotEmpty) ...[
               // WHY - backend reason string, verbatim.
               const SizedBox(height: 18),
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.auto_awesome_rounded,
                     size: 14,
                     color: AppColors.secondary,
                   ),
-                  SizedBox(width: 7),
+                  const SizedBox(width: 7),
                   Text(
                     'WHY THIS MISSION',
                     style: TextStyle(
                       fontSize: 10.5,
                       letterSpacing: 2,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textTertiary,
+                      color: isDark
+                          ? AppColors.textTertiary
+                          : AppLightColors.textTertiary,
                     ),
                   ),
                 ],
@@ -156,10 +159,15 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
               ),
             ] else ...[
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'No explanation was provided for this recommendation.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12.5, color: AppColors.textTertiary),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark
+                      ? AppColors.textTertiary
+                      : AppLightColors.textTertiary,
+                ),
               ),
             ],
 
@@ -191,6 +199,8 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
             ),
           ],
         ),
+          ),
+        ],
       ),
     );
   }

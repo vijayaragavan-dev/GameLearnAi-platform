@@ -250,7 +250,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                               children: [
                                 Icon(isVictory ? Icons.emoji_events_rounded : Icons.replay_rounded, size: 14, color: isVictory ? AppColors.success : AppColors.error),
                                 const SizedBox(width: 6),
-                                Text(isVictory ? 'VICTORY' : 'MISSION COMPLETE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: isVictory ? AppColors.success : AppColors.textSecondary)),
+                                Text(isVictory ? 'VICTORY' : 'MISSION COMPLETE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: isVictory ? AppColors.success : (isDark ? AppColors.textSecondary : AppLightColors.textSecondary))),
                               ],
                             ),
                           ),
@@ -283,7 +283,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                             child: AnimatedCounter(
                               value: r.score,
                               duration: reduceMotion ? Duration.zero : AppMotion.celebration,
-                              style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 48, fontWeight: FontWeight.w800, color: isVictory ? identity.accent : AppColors.textSecondary),
+                              style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 48, fontWeight: FontWeight.w800, color: isVictory ? identity.accent : (isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                             ),
                           ),
                           Text('SCORE', style: TextStyle(fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
@@ -321,7 +321,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                                         style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 52, fontWeight: FontWeight.w700, color: _scoreColor(r.accuracy)),
                                         suffix: '%',
                                       ),
-                                      Text('${r.correctCount} / ${r.totalQuestions} CORRECT', style: const TextStyle(fontSize: 11.5, letterSpacing: 1.6, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                                      Text('${r.correctCount} / ${r.totalQuestions} CORRECT', style: TextStyle(fontSize: 11.5, letterSpacing: 1.6, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                                       const SizedBox(height: 4),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -390,7 +390,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                                     ],
                                   )
                                 else
-                                  const Text('No XP this run', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                                  Text('No XP this run', style: TextStyle(fontSize: 13, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                                 if (d?.leveledUpTo != null)
                                   Text('Level up! → ${d!.leveledUpTo}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryBright)),
                               ],

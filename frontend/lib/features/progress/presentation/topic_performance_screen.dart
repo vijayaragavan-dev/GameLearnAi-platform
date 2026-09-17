@@ -119,6 +119,8 @@ class _TopicPerformanceScreenState
           return LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
+              final isDark =
+                  Theme.of(context).brightness == Brightness.dark;
               final isCompact = width < 600;
               final horizontalPad = isCompact ? 16.0 : 20.0;
               final contentMax = width >= 1024 ? 720.0 : double.infinity;
@@ -151,9 +153,11 @@ class _TopicPerformanceScreenState
                               topic.subjectName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.5,
-                                color: AppColors.textSecondary,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppLightColors.textSecondary,
                               ),
                             ),
                           ),
@@ -220,7 +224,9 @@ class _TopicPerformanceScreenState
                                   ),
                                   minHeight: 8,
                                   color: tint,
-                                  backgroundColor: AppColors.surfaceHigh,
+                                  backgroundColor: isDark
+                                      ? AppColors.surfaceHigh
+                                      : AppLightColors.surfaceHigh,
                                   semanticsLabel:
                                       '${topic.name} mastery ${Formatters.percent(mastery.masteryScore)}',
                                 ),
@@ -271,13 +277,15 @@ class _TopicPerformanceScreenState
                                         color: tint,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Expanded(
+                                      Expanded(
                                         child: Text(
                                           'This skill needs practice — your next mission can strengthen it.',
                                           style: TextStyle(
                                             fontSize: 12,
                                             height: 1.35,
-                                            color: AppColors.textSecondary,
+                                            color: isDark
+                                                ? AppColors.textSecondary
+                                                : AppLightColors.textSecondary,
                                           ),
                                         ),
                                       ),
@@ -325,9 +333,11 @@ class _TopicPerformanceScreenState
                               const SizedBox(height: 4),
                               Text(
                                 'Last activity ${Formatters.shortDate(progress!.lastActivityAt)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary,
+                                  color: isDark
+                                      ? AppColors.textSecondary
+                                      : AppLightColors.textSecondary,
                                 ),
                               ),
                             ],

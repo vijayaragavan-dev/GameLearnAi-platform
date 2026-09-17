@@ -319,11 +319,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   onPressed: session.busy
                                       ? null
                                       : () => context.go(Routes.login),
-                                  child: const Text(
+                                  child: Text(
                                     'Already have a player? Sign in →',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.primaryBright,
+                                      color: isDark
+                                          ? AppColors.primaryBright
+                                          : AppColors.primary,
                                     ),
                                   ),
                                 ),

@@ -25,30 +25,38 @@ class QuizOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surface : AppLightColors.surface;
+    final borderIdle =
+        isDark ? AppColors.border : AppLightColors.borderStrong;
+    final inkPrimary =
+        isDark ? AppColors.textPrimary : AppLightColors.textPrimary;
+    final inkSecondary =
+        isDark ? AppColors.textSecondary : AppLightColors.textSecondary;
     final (border, fill, glyphColor, textColor) = switch (state) {
       QuizOptionState.selected => (
         AppColors.primary,
-        AppColors.primary.withValues(alpha: 0.16),
+        AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
         AppColors.primaryBright,
-        AppColors.textPrimary,
+        inkPrimary,
       ),
       QuizOptionState.correct => (
         AppColors.success,
-        AppColors.success.withValues(alpha: 0.14),
+        AppColors.success.withValues(alpha: isDark ? 0.14 : 0.10),
         AppColors.success,
-        AppColors.textPrimary,
+        inkPrimary,
       ),
       QuizOptionState.incorrect => (
         AppColors.error,
-        AppColors.error.withValues(alpha: 0.14),
+        AppColors.error.withValues(alpha: isDark ? 0.14 : 0.10),
         AppColors.error,
-        AppColors.textPrimary,
+        inkPrimary,
       ),
       QuizOptionState.idle => (
-        AppColors.border,
-        AppColors.surface,
-        AppColors.textTertiary,
-        AppColors.textSecondary,
+        borderIdle,
+        surface,
+        isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+        inkSecondary,
       ),
     };
 
@@ -154,6 +162,7 @@ class QuestionProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: List.generate(total, (i) {
         final answered = i < answeredFlags.length && answeredFlags[i];
@@ -170,7 +179,9 @@ class QuestionProgress extends StatelessWidget {
                   ? AppColors.success
                   : isCurrent
                   ? AppColors.primaryBright
-                  : AppColors.surfaceHigh,
+                  : (isDark
+                        ? AppColors.surfaceHigh
+                        : AppLightColors.surfaceHigh),
               boxShadow: isCurrent
                   ? [
                       BoxShadow(

@@ -305,21 +305,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       ? null
                                       : () => context.go(Routes.register),
                                   child: RichText(
-                                    text: const TextSpan(
+                                    text: TextSpan(
                                       style: TextStyle(
                                         fontFamily:
                                             AppTypography.bodyFamily,
                                         fontSize: 13.5,
-                                        color: AppColors.textSecondary,
+                                        // Light-theme contrast: slate body
+                                        // + deep primary link (AA) instead
+                                        // of the dark-theme tokens.
+                                        color: isDark
+                                            ? AppColors.textSecondary
+                                            : AppLightColors.textSecondary,
                                       ),
                                       children: [
-                                        TextSpan(text: 'New here? '),
+                                        const TextSpan(text: 'New here? '),
                                         TextSpan(
                                           text: 'Create your player →',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w700,
-                                            color:
-                                                AppColors.primaryBright,
+                                            color: isDark
+                                                ? AppColors.primaryBright
+                                                : AppColors.primary,
                                           ),
                                         ),
                                       ],

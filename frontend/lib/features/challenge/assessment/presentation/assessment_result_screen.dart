@@ -11,6 +11,7 @@ import '../../../../core/theme/app_breakpoints.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/celebrations.dart' show ConfettiEffect;
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
@@ -64,7 +65,12 @@ class _AssessmentResultScreenState
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Stack(
+              children: [
+                Positioned.fill(child: AtmosphericBackground()),
+                CinematicLoading(message: 'Loading scan results...'),
+              ],
+            );
           }
           if (snap.hasError) {
             final err = describeError(snap.error!);
@@ -83,6 +89,7 @@ class _AssessmentResultScreenState
 
           return Stack(
             children: [
+              const Positioned.fill(child: AtmosphericBackground()),
               ResponsiveCenter(
                 child: ListView(
                   padding: EdgeInsets.symmetric(
@@ -374,6 +381,7 @@ class _ScoreRing extends StatelessWidget {
         : score >= 50
         ? AppColors.warning
         : AppColors.error;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       width: 52,
       height: 52,
@@ -385,7 +393,8 @@ class _ScoreRing extends StatelessWidget {
             strokeWidth: 4,
             strokeCap: StrokeCap.round,
             color: tint,
-            backgroundColor: AppColors.surfaceHigh,
+            backgroundColor:
+                isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
           ),
           Text(
             '${score.toStringAsFixed(0)}%',

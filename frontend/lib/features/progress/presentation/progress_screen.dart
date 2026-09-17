@@ -100,7 +100,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       appBar: AppBar(title: const Text('PLAYER STATS')),
       body: RefreshIndicator(
         color: AppColors.primaryBright,
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.surfaceElevated
+            : Colors.white,
         onRefresh: () async => _reload(),
         child: FutureBuilder(
           future: _future,
@@ -137,6 +139,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
+                final isDark =
+                    Theme.of(context).brightness == Brightness.dark;
                 final isCompact = width < 600;
                 final isExpanded = width >= 1024;
                 final contentMax = isExpanded ? 840.0 : double.infinity;
@@ -367,8 +371,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                               strokeWidth: 7,
                                               strokeCap: StrokeCap.round,
                                               color: AppColors.primaryBright,
-                                              backgroundColor:
-                                                  AppColors.surfaceHigh,
+                                              backgroundColor: isDark
+                                                  ? AppColors.surfaceHigh
+                                                  : AppLightColors
+                                                        .surfaceHigh,
                                             ),
                                       ),
                                       Semantics(
@@ -390,12 +396,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 18),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'OVERALL MASTERY',
                                         style: TextStyle(
                                           fontSize: 10.5,
@@ -410,7 +416,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                         style: TextStyle(
                                           fontSize: 13,
                                           height: 1.4,
-                                          color: AppColors.textSecondary,
+                                          color: isDark
+                                              ? AppColors.textSecondary
+                                              : AppLightColors.textSecondary,
                                         ),
                                       ),
                                     ],
@@ -501,19 +509,24 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                             focus.topicName,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
+                                              color: isDark
+                                                  ? AppColors.textPrimary
+                                                  : AppLightColors.textPrimary,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             'Needs practice — ${Formatters.percent(focus.masteryScore)} mastery. Your next mission can strengthen this skill.',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
                                               height: 1.35,
-                                              color: AppColors.textSecondary,
+                                              color: isDark
+                                                  ? AppColors.textSecondary
+                                                  : AppLightColors
+                                                        .textSecondary,
                                             ),
                                           ),
                                         ],
@@ -924,6 +937,7 @@ class _MasteryFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chips = MasteryFilter.values;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const AlwaysScrollableScrollPhysics(
@@ -941,15 +955,23 @@ class _MasteryFilterChips extends StatelessWidget {
                 labelStyle: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: selected == f ? Colors.white : AppColors.textSecondary,
+                  color: selected == f
+                      ? Colors.white
+                      : (isDark
+                            ? AppColors.textSecondary
+                            : AppLightColors.textSecondary),
                 ),
                 selectedColor: AppColors.primary,
-                backgroundColor: AppColors.surfaceHigh,
+                backgroundColor: isDark
+                    ? AppColors.surfaceHigh
+                    : AppLightColors.surfaceHigh,
                 checkmarkColor: Colors.white,
                 side: BorderSide(
                   color: selected == f
                       ? AppColors.primaryBright
-                      : AppColors.border,
+                      : (isDark
+                            ? AppColors.border
+                            : AppLightColors.border),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -988,6 +1010,7 @@ class _MasteryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => context.push(Routes.topicPerformance(topic.topicId)),
       child: GameCard(
@@ -1078,7 +1101,9 @@ class _MasteryCard extends StatelessWidget {
                 value: (topic.masteryScore / 100).clamp(0, 1),
                 minHeight: 6,
                 color: tint,
-                backgroundColor: AppColors.surfaceHigh,
+                backgroundColor: isDark
+                    ? AppColors.surfaceHigh
+                    : AppLightColors.surfaceHigh,
                 semanticsLabel:
                     '${topic.topicName} mastery ${Formatters.percent(topic.masteryScore)}',
               ),
@@ -1217,16 +1242,20 @@ class _ScoreSparkline extends StatelessWidget {
       return const EmptyMiniCard(text: 'Not enough data for trajectory.');
     }
     return CustomPaint(
-      painter: _SparklinePainter(scores: scores),
+      painter: _SparklinePainter(
+        scores: scores,
+        isDark: Theme.of(context).brightness == Brightness.dark,
+      ),
       size: Size.infinite,
     );
   }
 }
 
 class _SparklinePainter extends CustomPainter {
-  _SparklinePainter({required this.scores});
+  _SparklinePainter({required this.scores, required this.isDark});
 
   final List<double> scores;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1277,7 +1306,7 @@ class _SparklinePainter extends CustomPainter {
     // Dots
     final dotPaint = Paint()..color = AppColors.primaryBright;
     final dotBorder = Paint()
-      ..color = AppColors.surface
+      ..color = isDark ? AppColors.surface : AppLightColors.surface
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     for (final p in points) {
@@ -1298,7 +1327,8 @@ class _SparklinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SparklinePainter old) => old.scores != scores;
+  bool shouldRepaint(_SparklinePainter old) =>
+      old.scores != scores || old.isDark != isDark;
 }
 
 /// Simple accuracy bar chart — only when it improves understanding.

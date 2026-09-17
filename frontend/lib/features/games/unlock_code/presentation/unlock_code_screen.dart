@@ -188,7 +188,8 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
     final r = _timer.remaining;
     if (r <= 10) return AppColors.error;
     if (r <= 30) return AppColors.warning;
-    return AppColors.textSecondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.textSecondary : AppLightColors.textSecondary;
   }
 
   @override
@@ -412,6 +413,11 @@ class _ChoiceCard extends StatelessWidget {
     Color border;
     Color fill;
     Color glyph;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final idleBorder = isDark ? AppColors.border : AppLightColors.border;
+    final idleSurface = isDark ? AppColors.surface : AppLightColors.surface;
+    final idleGlyph =
+        isDark ? AppColors.textTertiary : AppLightColors.textTertiary;
     if (showResult) {
       if (isCorrect) {
         border = AppColors.success;
@@ -422,9 +428,9 @@ class _ChoiceCard extends StatelessWidget {
         fill = AppColors.error.withValues(alpha: 0.12);
         glyph = AppColors.error;
       } else {
-        border = AppColors.border;
-        fill = AppColors.surface;
-        glyph = AppColors.textTertiary;
+        border = idleBorder;
+        fill = idleSurface;
+        glyph = idleGlyph;
       }
     } else {
       if (selected) {
@@ -432,9 +438,9 @@ class _ChoiceCard extends StatelessWidget {
         fill = AppColors.warning.withValues(alpha: 0.16);
         glyph = AppColors.warning;
       } else {
-        border = AppColors.border;
-        fill = AppColors.surface;
-        glyph = AppColors.textTertiary;
+        border = idleBorder;
+        fill = idleSurface;
+        glyph = idleGlyph;
       }
     }
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
@@ -468,7 +474,20 @@ class _ChoiceCard extends StatelessWidget {
                         : Text(String.fromCharCode(65 + index), style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 13, fontWeight: FontWeight.w700, color: glyph)),
               ),
               const SizedBox(width: 12),
-              Expanded(child: Text(label, style: TextStyle(fontFamily: AppTypography.bodyFamily, fontSize: 14.5, fontWeight: selected ? FontWeight.w600 : FontWeight.w500, height: 1.35, color: AppColors.textPrimary))),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
+                    fontSize: 14.5,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    height: 1.35,
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppLightColors.textPrimary,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -484,7 +503,19 @@ class _LivesIndicator extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         children: List.generate(3, (i) {
           final alive = i < lives;
-          return Padding(padding: EdgeInsets.only(left: i == 0 ? 0 : 4), child: Icon(alive ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 16, color: alive ? AppColors.error : AppColors.textTertiary));
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Padding(
+            padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+            child: Icon(
+              alive ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              size: 16,
+              color: alive
+                  ? AppColors.error
+                  : (isDark
+                        ? AppColors.textTertiary
+                        : AppLightColors.textTertiary),
+            ),
+          );
         }),
       );
 }
@@ -513,9 +544,16 @@ class _UnlockDialogState extends State<_UnlockDialog> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Dialog(
-      backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+      backgroundColor: isDark ? AppColors.surface : AppLightColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(
+          color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35),
+          width: 1.4,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -534,11 +572,46 @@ class _UnlockDialogState extends State<_UnlockDialog> with SingleTickerProviderS
               decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.success.withValues(alpha: 0.4))),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: widget.vault.fragments.map((f) => Container(margin: const EdgeInsets.symmetric(horizontal: 4), width: 44, height: 44, alignment: Alignment.center, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.success)), child: Text(f, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.success)))).toList(),
+                children: widget.vault.fragments
+                    .map(
+                      (f) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.surface
+                              : AppLightColors.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.success),
+                        ),
+                        child: Text(
+                          f,
+                          style: const TextStyle(
+                            fontFamily: AppTypography.displayFamily,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
             const SizedBox(height: 8),
-            Text('CODE: ${widget.vault.display}', style: const TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+            Text(
+              'CODE: ${widget.vault.display}',
+              style: TextStyle(
+                fontSize: 11,
+                letterSpacing: 2,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 18),
             SizedBox(width: double.infinity, child: FilledButton(onPressed: widget.onContinue, child: const Text('VIEW RESULTS'))),
           ],

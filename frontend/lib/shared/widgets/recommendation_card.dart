@@ -24,16 +24,22 @@ class RecommendationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, _) = EnumPresentation.activityType(item.activityType);
     final tint = _tintFor(item.activityType);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [tint.withValues(alpha: 0.13), AppColors.surfaceElevated],
+          colors: [
+            tint.withValues(alpha: isDark ? 0.13 : 0.08),
+            isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+          ],
         ),
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: tint.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: tint.withValues(alpha: isDark ? 0.4 : 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,11 +88,13 @@ class RecommendationCard extends StatelessWidget {
               item.topicName!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: AppTypography.displayFamily,
                 fontSize: 16.5,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: isDark
+                    ? AppColors.textPrimary
+                    : AppLightColors.textPrimary,
               ),
             ),
           ],
@@ -96,11 +104,13 @@ class RecommendationCard extends StatelessWidget {
               item.reason,
               maxLines: compact ? 2 : 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: AppTypography.bodyFamily,
                 fontSize: 12.5,
                 height: 1.4,
-                color: AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary,
               ),
             ),
           ],
@@ -155,12 +165,13 @@ class PriorityPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = switch (priority) {
       1 => AppColors.warning,
       2 => AppColors.primaryBright,
       3 => AppColors.secondary,
       4 => AppColors.success,
-      _ => AppColors.textTertiary,
+      _ => isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
     };
     return Semantics(
       label: 'Priority $priority',
@@ -194,11 +205,12 @@ class DifficultyPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (difficulty.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = switch (difficulty.toUpperCase()) {
       'EASY' => AppColors.success,
       'MEDIUM' => AppColors.warning,
       'HARD' => AppColors.error,
-      _ => AppColors.textTertiary,
+      _ => isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -239,12 +251,14 @@ class SectionHeader extends StatelessWidget {
             title.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: AppTypography.bodyFamily,
               fontSize: 11.5,
               fontWeight: FontWeight.w800,
               letterSpacing: 2.2,
-              color: AppColors.textTertiary,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textTertiary
+                  : AppLightColors.textTertiary,
             ),
           ),
         ),

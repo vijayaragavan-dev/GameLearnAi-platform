@@ -114,12 +114,14 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
               ),
               if (locked.isNotEmpty && unlocked.isEmpty) ...[
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'Win challenges to light up your trophy room.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppLightColors.textSecondary,
                   ),
                 ),
               ],
@@ -183,6 +185,7 @@ class _BadgeCellState extends State<_BadgeCell>
   @override
   Widget build(BuildContext context) {
     final a = widget.achievement;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return Semantics(
       button: true,
@@ -203,18 +206,23 @@ class _BadgeCellState extends State<_BadgeCell>
                         end: Alignment.bottomCenter,
                         colors: [
                           AppColors.xp.withValues(alpha: 0.10 + 0.08 * t),
-                          AppColors.surfaceElevated,
+                          isDark
+                              ? AppColors.surfaceElevated
+                              : AppLightColors.surface,
                         ],
                       )
                     : null,
                 color: a.isUnlocked
                     ? null
-                    : AppColors.surface.withValues(alpha: 0.6),
+                    : (isDark ? AppColors.surface : AppLightColors.surface)
+                        .withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(
                   color: a.isUnlocked
                       ? AppColors.xp.withValues(alpha: 0.4 + 0.2 * t)
-                      : AppColors.border,
+                      : (isDark
+                            ? AppColors.border
+                            : AppLightColors.border),
                 ),
                 boxShadow: a.isUnlocked
                     ? [
@@ -244,8 +252,12 @@ class _BadgeCellState extends State<_BadgeCell>
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: a.isUnlocked
-                          ? AppColors.textPrimary
-                          : AppColors.textTertiary,
+                          ? (isDark
+                                ? AppColors.textPrimary
+                                : AppLightColors.textPrimary)
+                          : (isDark
+                                ? AppColors.textTertiary
+                                : AppLightColors.textTertiary),
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -269,8 +281,12 @@ class _BadgeCellState extends State<_BadgeCell>
                         style: TextStyle(
                           fontSize: 10.5,
                           color: a.isUnlocked
-                              ? AppColors.textSecondary
-                              : AppColors.textTertiary,
+                              ? (isDark
+                                    ? AppColors.textSecondary
+                                    : AppLightColors.textSecondary)
+                              : (isDark
+                                    ? AppColors.textTertiary
+                                    : AppLightColors.textTertiary),
                         ),
                       ),
                     ],

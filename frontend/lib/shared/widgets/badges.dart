@@ -53,11 +53,15 @@ class DifficultyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (color, label) = switch (difficulty.toUpperCase()) {
       'EASY' => (AppColors.success, 'EASY'),
       'MEDIUM' => (AppColors.warning, 'MEDIUM'),
       'HARD' => (AppColors.error, 'HARD'),
-      _ => (AppColors.textSecondary, difficulty.toUpperCase()),
+      _ => (
+        isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+        difficulty.toUpperCase()
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -139,7 +143,11 @@ class StreakChip extends StatelessWidget {
                     ? Icons.local_fire_department
                     : Icons.local_fire_department_outlined,
                 size: 15,
-                color: active ? AppColors.streak : AppColors.textTertiary,
+                color: active
+                    ? AppColors.streak
+                    : (isDark
+                          ? AppColors.textTertiary
+                          : AppLightColors.textTertiary),
               ),
               const SizedBox(width: 5),
               Text(
@@ -148,7 +156,11 @@ class StreakChip extends StatelessWidget {
                   fontFamily: AppTypography.displayFamily,
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: active ? AppColors.streak : AppColors.textTertiary,
+                  color: active
+                      ? AppColors.streak
+                      : (isDark
+                            ? AppColors.textTertiary
+                            : AppLightColors.textTertiary),
                 ),
               ),
               const SizedBox(width: 3),
@@ -158,7 +170,11 @@ class StreakChip extends StatelessWidget {
                   fontSize: 9.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
-                  color: active ? AppColors.streak : AppColors.textTertiary,
+                  color: active
+                      ? AppColors.streak
+                      : (isDark
+                            ? AppColors.textTertiary
+                            : AppLightColors.textTertiary),
                 ),
               ),
             ],
@@ -264,7 +280,11 @@ class CategoryChip extends StatelessWidget {
                 Icon(
                   icon,
                   size: 14,
-                  color: selected ? AppColors.primary : AppColors.textTertiary,
+                  color: selected
+                      ? AppColors.primary
+                      : (isDark
+                            ? AppColors.textTertiary
+                            : AppLightColors.textTertiary),
                 ),
                 const SizedBox(width: 6),
               ],

@@ -11,6 +11,7 @@ import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/badges.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
@@ -100,27 +101,43 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: FutureBuilder<Quiz>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Stack(
+              children: [
+                Positioned.fill(child: AtmosphericBackground()),
+                CinematicLoading(message: 'Loading challenge...'),
+              ],
+            );
           }
           if (snap.hasError) {
             final err = describeError(snap.error!);
-            return ErrorState(
-              title: err.title,
-              message: err.message,
-              onRetry: _retry,
+            return Stack(
+              children: [
+                const Positioned.fill(child: AtmosphericBackground()),
+                ErrorState(
+                  title: err.title,
+                  message: err.message,
+                  onRetry: _retry,
+                ),
+              ],
             );
           }
           final quiz = snap.data!;
           if (quiz.questions.isEmpty) {
-            return const EmptyState(
-              icon: Icons.quiz_outlined,
-              title: 'No questions yet',
-              message: 'This challenge has no active questions.',
+            return const Stack(
+              children: [
+                Positioned.fill(child: AtmosphericBackground()),
+                EmptyState(
+                  icon: Icons.quiz_outlined,
+                  title: 'No questions yet',
+                  message: 'This challenge has no active questions.',
+                ),
+              ],
             );
           }
 
@@ -130,7 +147,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
           final reduce =
               MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-          return SafeArea(
+          return Stack(
+            children: [
+              const Positioned.fill(child: AtmosphericBackground()),
+              SafeArea(
             child: FocusTraversalGroup(
               policy: OrderedTraversalPolicy(),
               child: Padding(
@@ -149,11 +169,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                             children: [
                               Text(
                                 'CHALLENGE ${_index + 1} / ${quiz.questions.length}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 2.2,
-                                  color: AppColors.textTertiary,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -217,11 +239,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                             children: [
                               Text(
                                 question.questionText,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: AppTypography.displayFamily,
                                   fontSize: 21,
                                   fontWeight: FontWeight.w600,
                                   height: 1.3,
+                                  color: isDark
+                                      ? AppColors.textPrimary
+                                      : AppLightColors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -338,6 +363,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 ),
               ),
             ),
+              ),
+            ],
           );
         },
       ),

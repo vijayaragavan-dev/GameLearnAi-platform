@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_button.dart';
 
 /// Honest empty state for world-scoped game content.
 ///
@@ -31,11 +32,12 @@ class WorldScopeEmpty extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            OutlinedButton(
-              onPressed: () => context.canPop()
+            SecondaryGameButton(
+              label: 'BACK TO ARENA',
+              icon: Icons.arrow_back_rounded,
+              onTap: () => context.canPop()
                   ? context.pop()
                   : context.go('/subjects'),
-              child: const Text('BACK TO ARENA'),
             ),
           ],
         ),

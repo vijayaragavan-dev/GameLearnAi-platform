@@ -19,6 +19,7 @@ class BadgeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('BADGE')),
       body: SafeArea(
@@ -79,19 +80,23 @@ class BadgeDetailScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: isDark ? AppColors.surface : AppLightColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                  color: isDark ? AppColors.border : AppLightColors.border,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     achievement.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14.5,
                       height: 1.55,
-                      color: AppColors.textSecondary,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
                     ),
                   ),
                   const Divider(height: 28),
@@ -135,11 +140,13 @@ class _Row extends StatelessWidget {
   final Color? valueColor;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
         Text(
           label,
           style: const TextStyle(
@@ -155,10 +162,13 @@ class _Row extends StatelessWidget {
             fontFamily: AppTypography.displayFamily,
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.textPrimary,
+            color:
+                valueColor ??
+                (isDark ? AppColors.textPrimary : AppLightColors.textPrimary),
           ),
         ),
       ],
     ),
   );
+  }
 }

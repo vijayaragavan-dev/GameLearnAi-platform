@@ -101,6 +101,7 @@ class XPBar extends StatelessWidget {
     // at level L with threshold T(L) known via xpToNext, we render
     // "xpToNextLevel" as the unfilled remainder of a normalized bar using the
     // previous threshold when provided by callers through animateFrom.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final atMax = xpToNextLevel == null;
     final fraction = atMax ? 1.0 : _fractionForDisplay();
     return Column(
@@ -141,9 +142,15 @@ class XPBar extends StatelessWidget {
             Container(
               height: height,
               decoration: BoxDecoration(
-                color: AppColors.surfaceHigh,
+                color: isDark
+                    ? AppColors.surfaceHigh
+                    : AppLightColors.surfaceHigh,
                 borderRadius: BorderRadius.circular(height),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : AppLightColors.borderStrong.withValues(alpha: 0.6),
+                ),
               ),
             ),
             LayoutBuilder(

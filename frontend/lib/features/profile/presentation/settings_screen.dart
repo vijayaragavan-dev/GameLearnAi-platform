@@ -13,6 +13,7 @@ import '../../auth/providers/session_controller.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
+import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 
 /// Local preferences only (audio, haptics). Server-side settings do not
@@ -255,9 +256,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: AppColors.error,
                     ),
                   ),
-                  subtitle: const Text(
+                  subtitle: Text(
                     'Ends this session on this device',
-                    style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.textTertiary
+                          : AppLightColors.textTertiary,
+                    ),
                   ),
                   onTap: () => _confirmLogout(context),
                 ),
@@ -270,9 +276,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'GameLearn AI Â· ${ref.watch(appConfigInfoProvider).env.toUpperCase()} Â· '
               '${ref.watch(appConfigInfoProvider).baseUrl}',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
-                color: AppColors.textTertiary,
+                color: isDark
+                    ? AppColors.textTertiary
+                    : AppLightColors.textTertiary,
               ),
             ),
           ),
@@ -286,7 +294,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _confirmLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => CinematicDialog(
+        accent: AppColors.error,
         title: const Text('Sign out?'),
         content: const Text('Your progress lives safely on the servers.'),
         actions: [
@@ -329,11 +338,13 @@ class SectionCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               letterSpacing: 2.2,
               fontWeight: FontWeight.w800,
-              color: AppColors.textTertiary,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textTertiary
+                  : AppLightColors.textTertiary,
             ),
           ),
         ),

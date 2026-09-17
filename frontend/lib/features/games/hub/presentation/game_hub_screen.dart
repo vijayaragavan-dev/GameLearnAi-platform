@@ -277,11 +277,11 @@ class _GameHubScreenState extends State<GameHubScreen> {
                             if (_hasSubject) ...[
                               _ContextPill(icon: Icons.public_rounded, label: effectiveSubject ?? 'World', color: AppColors.primary),
                               _ContextPill(icon: Icons.topic_rounded, label: effectiveTopic ?? _shortId(widget.topicId), color: AppColors.secondary),
-                              _ContextPill(icon: Icons.sports_esports_rounded, label: '${cards.length} GAMES', color: AppColors.textTertiary),
+                              _ContextPill(icon: Icons.sports_esports_rounded, label: '${cards.length} GAMES', color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
                             ] else ...[
                               _ContextPill(icon: Icons.sports_esports_rounded, label: 'GENERAL GAME', color: AppColors.primary),
-                              _ContextPill(icon: Icons.topic_rounded, label: effectiveTopic ?? _shortId(widget.topicId), color: AppColors.textTertiary),
-                              _ContextPill(icon: Icons.grid_view_rounded, label: '${cards.length} GAMES', color: AppColors.textTertiary),
+                              _ContextPill(icon: Icons.topic_rounded, label: effectiveTopic ?? _shortId(widget.topicId), color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                              _ContextPill(icon: Icons.grid_view_rounded, label: '${cards.length} GAMES', color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
                             ],
                           ],
                         ),
@@ -302,9 +302,100 @@ class _GameHubScreenState extends State<GameHubScreen> {
                         runSpacing: 4,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.grid_view_rounded, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), Text('${cards.length} GAMES', style: const TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
-                          Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textTertiary)), const SizedBox(width: 8), const Icon(Icons.category_outlined, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), Text('${GameVisualRegistry.categories.length} CATEGORIES', style: const TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
-                          Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textTertiary)), const SizedBox(width: 8), const Icon(Icons.speed_rounded, size: 12, color: AppColors.textTertiary), const SizedBox(width: 6), const Text('VARIABLE DIFFICULTY', style: TextStyle(fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w800, color: AppColors.textTertiary))]),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.grid_view_rounded,
+                                size: 12,
+                                color: isDark
+                                    ? AppColors.textTertiary
+                                    : AppLightColors.textTertiary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${cards.length} GAMES',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 3,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.category_outlined,
+                                size: 12,
+                                color: isDark
+                                    ? AppColors.textTertiary
+                                    : AppLightColors.textTertiary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${GameVisualRegistry.categories.length} CATEGORIES',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 3,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.speed_rounded,
+                                size: 12,
+                                color: isDark
+                                    ? AppColors.textTertiary
+                                    : AppLightColors.textTertiary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'VARIABLE DIFFICULTY',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? AppColors.textTertiary
+                                      : AppLightColors.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -444,9 +535,27 @@ class _GameHubScreenState extends State<GameHubScreen> {
                         ],
                       ],
                       // Legacy header (backward compat)
-                      const Text('CHOOSE YOUR GAME', style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: AppColors.textTertiary)),
+                      Text(
+                        'CHOOSE YOUR GAME',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? AppColors.textTertiary
+                              : AppLightColors.textTertiary,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      const Text('All games available — no locked content. Pick any to start.', style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                      Text(
+                        'All games available — no locked content. Pick any to start.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? AppColors.textTertiary
+                              : AppLightColors.textTertiary,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       SectionHeaderWithCount(
                         title: _hasSubject ? 'GENERAL GAMES' : 'ALL GAMES',

@@ -272,10 +272,37 @@ class ErrorState extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('TRY AGAIN'),
+              Semantics(
+                button: true,
+                label: 'Try again',
+                child: Builder(
+                  builder: (context) {
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+                    return OutlinedButton.icon(
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('TRY AGAIN'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.lg),
+                        ),
+                        side: BorderSide(
+                          color: AppColors.secondary.withValues(
+                            alpha: isDark ? 0.55 : 0.45,
+                          ),
+                          width: 1.2,
+                        ),
+                        foregroundColor: AppColors.secondary,
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ],
@@ -324,7 +351,9 @@ class EmptyState extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
     child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 520),
       child: Padding(
@@ -342,7 +371,11 @@ class EmptyState extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.35),
                 ),
               ),
-              child: Icon(icon, color: AppColors.primaryBright, size: 28),
+              child: Icon(
+                icon,
+                color: isDark ? AppColors.primaryBright : AppColors.primary,
+                size: 28,
+              ),
             ),
             const SizedBox(height: 18),
             Text(title, style: AppTypography.h2(context), textAlign: TextAlign.center),
@@ -358,6 +391,7 @@ class EmptyState extends StatelessWidget {
       ),
     ),
   );
+  }
 }
 
 /// Slim connectivity banner pinned above content when offline.
@@ -412,6 +446,134 @@ class OfflineBanner extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Cinematic dialog shell — one premium surface language for confirm and
+/// reveal dialogs (avatar purchase/unlock, sign-out, …).
+///
+/// Behavior-neutral: [title], [content] and [actions] render exactly as
+/// given; only the surface is cinematic (theme-aware fill, XL radius,
+/// accent edge, soft glow). Keeps dialogs inside the GameLearnAI visual
+/// universe instead of default Material styling.
+class CinematicDialog extends StatelessWidget {
+  const CinematicDialog({
+    super.key,
+    required this.title,
+    this.content,
+    this.actions = const <Widget>[],
+    this.accent = AppColors.primary,
+  });
+
+  final Widget title;
+  final Widget? content;
+  final List<Widget> actions;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AlertDialog(
+      title: title,
+      content: content,
+      actions: actions,
+      backgroundColor: isDark
+          ? AppColors.surfaceElevated
+          : AppLightColors.surface,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(
+          color: accent.withValues(alpha: isDark ? 0.45 : 0.3),
+          width: 1.4,
+        ),
+      ),
+      titleTextStyle: TextStyle(
+        fontFamily: AppTypography.displayFamily,
+        fontSize: 17,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.4,
+        color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+      ),
+      contentTextStyle: TextStyle(
+        fontFamily: AppTypography.bodyFamily,
+        fontSize: 13.5,
+        height: 1.5,
+        color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// Cinematic loading state — one premium surface language for full-screen
+/// waits (quiz/scan/topic/character loads, game banks, …).
+///
+/// Behavior-neutral: shows an accent-ringed spinner with an honest [message].
+/// Theme-aware ink and surfaces keep waits inside the GameLearnAI visual
+/// universe instead of a bare Material spinner.
+class CinematicLoading extends StatelessWidget {
+  const CinematicLoading({super.key, this.message, this.accent});
+
+  final String? message;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final glow = accent ?? AppColors.primary;
+    return Semantics(
+      label: message ?? 'Loading',
+      child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: glow.withValues(alpha: isDark ? 0.12 : 0.08),
+                border: Border.all(
+                  color: glow.withValues(alpha: isDark ? 0.45 : 0.35),
+                  width: 1.4,
+                ),
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: glow.withValues(alpha: 0.22),
+                          blurRadius: 22,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(strokeWidth: 2.6),
+              ),
+            ),
+            if (message != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppLightColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      ),
+    );
+  }
 }
 
 /// Compact inline empty note used inside cards/sections.

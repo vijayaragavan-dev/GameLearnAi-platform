@@ -75,7 +75,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
             builder: (context, snap) {
               if (snap.connectionState != ConnectionState.done &&
                   !snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const CinematicLoading(
+                  message: 'Preparing mission briefing...',
+                );
               }
               if (snap.hasError) {
                 final err = describeError(snap.error!);

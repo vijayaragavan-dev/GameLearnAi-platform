@@ -11,6 +11,7 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../providers/avatar_providers.dart';
@@ -39,7 +40,8 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
   Future<void> _purchase(AvatarCollectionItem item) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => CinematicDialog(
+        accent: AppColors.xp,
         title: Text('UNLOCK ${item.displayName.toUpperCase()}?', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontWeight: FontWeight.w800)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -109,7 +111,8 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
   void _showCelebration(AvatarCollectionItem item) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => CinematicDialog(
+        accent: AppColors.xp,
         title: const Text('UNLOCKED!', style: TextStyle(fontFamily: AppTypography.displayFamily, fontWeight: FontWeight.w800, color: AppColors.xp)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -147,7 +150,12 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
     if (collectionState.showLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('CHARACTER')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Stack(
+          children: [
+            Positioned.fill(child: AtmosphericBackground()),
+            CinematicLoading(message: 'Loading character...'),
+          ],
+        ),
       );
     }
 
@@ -266,7 +274,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                   ],
                   // Action button
                   if (_isProcessing)
-                    const Center(child: CircularProgressIndicator())
+                    const CinematicLoading(message: 'Updating character...')
                   else if (isEquipped)
                     FilledButton(
                       onPressed: null,
@@ -316,10 +324,10 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                     ),
                   const SizedBox(height: 12),
                   // Back to collection
-                  OutlinedButton(
-                    onPressed: () => context.pop(),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                    child: const Text('BACK TO COLLECTION'),
+                  SecondaryGameButton(
+                    label: 'BACK TO COLLECTION',
+                    icon: Icons.collections_rounded,
+                    onTap: () => context.pop(),
                   ),
                 ],
               ),

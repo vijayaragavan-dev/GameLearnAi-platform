@@ -83,7 +83,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ],
           RefreshIndicator(
             color: AppColors.primaryBright,
-            backgroundColor: AppColors.surfaceElevated,
+            backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
             onRefresh: () async => _reload(),
             child: FutureBuilder<(LearnerProfile, GamificationSummary)>(
               future: _future,
@@ -148,7 +148,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           Text(rarity.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
                                           const SizedBox(height: 8),
                                           Text(profile.displayName, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 15, fontWeight: FontWeight.w700)),
-                                          Text(profile.email, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                          Text(profile.email, style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                                           const SizedBox(height: 8),
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -262,7 +262,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(children: [Icon(Icons.rocket_launch_rounded, size: 16, color: AppColors.primary), const SizedBox(width: 8), const Text("WHAT'S NEXT?", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textTertiary))]),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.rocket_launch_rounded,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "WHAT'S NEXT?",
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 1.2,
+                                            color: isDark
+                                                ? AppColors.textTertiary
+                                                : AppLightColors
+                                                      .textTertiary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                     const SizedBox(height: 8),
                                     Text('Complete your first game to earn XP and unlock your first badge. Your streak starts with a single day of learning.', style: TextStyle(fontSize: 12.5, height: 1.4, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                                   ],

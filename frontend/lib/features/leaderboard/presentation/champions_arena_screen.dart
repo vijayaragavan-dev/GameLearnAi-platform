@@ -688,7 +688,16 @@ class _RankDelta extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUp = delta > 0;
     final isDown = delta < 0;
-    final color = isUp ? AppColors.success : (isDown ? AppColors.textTertiary : AppColors.textSecondary);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isUp
+        ? AppColors.success
+        : (isDown
+              ? (isDark
+                    ? AppColors.textTertiary
+                    : AppLightColors.textTertiary)
+              : (isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary));
     final label = isUp ? '↑ $delta' : (isDown ? '↓ ${delta.abs()}' : '—');
     return Semantics(
       label: isUp ? 'rank up $delta' : (isDown ? 'rank down ${delta.abs()}' : 'rank unchanged'),

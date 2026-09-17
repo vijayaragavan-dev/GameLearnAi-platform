@@ -92,20 +92,28 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Lesson is a reading surface — every text/surface token resolves per
+    // theme so the module stays legible in the light theme (previously
+    // hardcoded dark tokens rendered near-white text on white).
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: FutureBuilder<Lesson>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done && !snap.hasData) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 14),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 14),
                   Text(
                     'Preparing training...',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -151,14 +159,16 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                         DifficultyBadge(difficulty: lesson.difficulty),
                         const SizedBox(width: 10),
                         if (lesson.summary.isNotEmpty)
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'TRAINING MODULE',
                               style: TextStyle(
                                 fontSize: 10.5,
                                 letterSpacing: 2.2,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textTertiary,
+                                color: isDark
+                                    ? AppColors.textTertiary
+                                    : AppLightColors.textTertiary,
                               ),
                             ),
                           ),
@@ -237,25 +247,33 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceElevated,
+                            color: isDark
+                                ? AppColors.surfaceElevated
+                                : AppLightColors.surface,
                             borderRadius: BorderRadius.circular(AppRadius.md),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.border
+                                  : AppLightColors.border,
+                            ),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              SizedBox(
+                              const SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               ),
-                              SizedBox(width: 10),
+                              const SizedBox(width: 10),
                               Text(
                                 'Nova is thinking...',
                                 style: TextStyle(
                                   fontSize: 12.5,
-                                  color: AppColors.textSecondary,
+                                  color: isDark
+                                      ? AppColors.textSecondary
+                                      : AppLightColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -283,20 +301,24 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceElevated,
+                            color: isDark
+                                ? AppColors.surfaceElevated
+                                : AppLightColors.surface,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                              color: AppColors.secondary.withValues(
-                                alpha: 0.25,
-                              ),
+                              color: isDark
+                                  ? AppColors.secondary.withValues(alpha: 0.25)
+                                  : AppColors.secondary.withValues(alpha: 0.4),
                             ),
                           ),
                           child: Text(
                             _hintText!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13.5,
                               height: 1.55,
-                              color: AppColors.textPrimary,
+                              color: isDark
+                                  ? AppColors.textPrimary
+                                  : AppLightColors.textPrimary,
                             ),
                           ),
                         ),
@@ -314,9 +336,11 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                             style: TextStyle(
                               fontSize: 15,
                               height: 1.7,
-                              color: AppColors.textPrimary.withValues(
-                                alpha: 0.92,
-                              ),
+                              color:
+                                  (isDark
+                                          ? AppColors.textPrimary
+                                          : AppLightColors.textPrimary)
+                                      .withValues(alpha: 0.92),
                             ),
                           ),
                         if (p.isNotEmpty) const SizedBox(height: 14),
@@ -357,10 +381,12 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                             const SizedBox(height: 8),
                             SelectableText(
                               lesson.summary,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13.5,
                                 height: 1.55,
-                                color: AppColors.textSecondary,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppLightColors.textSecondary,
                               ),
                             ),
                           ],
@@ -381,9 +407,15 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
           20,
           MediaQuery.paddingOf(context).bottom + 14,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceElevated,
-          border: Border(top: BorderSide(color: AppColors.border)),
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.surfaceElevated
+              : AppLightColors.surface,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.border : AppLightColors.border,
+            ),
+          ),
         ),
         child: PrimaryGameButton(
           label: 'Take the challenge',

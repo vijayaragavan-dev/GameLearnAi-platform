@@ -144,19 +144,19 @@ class GameHud extends StatelessWidget {
                   // crowded HUD row on narrow phones.
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _timerColor(timeRemaining).withValues(alpha: 0.14),
+                    color: _timerColor(timeRemaining, isDark).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(color: _timerColor(timeRemaining).withValues(alpha: 0.4)),
-                    boxShadow: _timerColor(timeRemaining) == AppColors.error ? [BoxShadow(color: AppColors.error.withValues(alpha: 0.18), blurRadius: 10)] : null,
+                    border: Border.all(color: _timerColor(timeRemaining, isDark).withValues(alpha: 0.4)),
+                    boxShadow: _timerColor(timeRemaining, isDark) == AppColors.error ? [BoxShadow(color: AppColors.error.withValues(alpha: 0.18), blurRadius: 10)] : null,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.timer_outlined, size: 14, color: _timerColor(timeRemaining)),
+                      Icon(Icons.timer_outlined, size: 14, color: _timerColor(timeRemaining, isDark)),
                       const SizedBox(width: 5),
                       Text(
                         timeRemaining,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor(timeRemaining)),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor(timeRemaining, isDark)),
                       ),
                     ],
                   ),
@@ -231,14 +231,14 @@ class GameHud extends StatelessWidget {
     );
   }
 
-  Color _timerColor(String time) {
+  Color _timerColor(String time, bool isDark) {
     final parts = time.split(':');
     int total = 0;
     if (parts.length == 2) total = (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
     else total = int.tryParse(time) ?? 99;
     if (total <= 10) return AppColors.error;
     if (total <= 30) return AppColors.warning;
-    return AppColors.textSecondary;
+    return isDark ? AppColors.textSecondary : AppLightColors.textSecondary;
   }
 }
 

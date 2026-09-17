@@ -42,11 +42,12 @@ class _StreakScreenState extends ConsumerState<StreakScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('STREAK')),
       body: RefreshIndicator(
         color: AppColors.streak,
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
         onRefresh: () async => _reload(),
         child: FutureBuilder<List<dynamic>>(
           future: Future.wait([_future, _summaryFuture]),
@@ -87,11 +88,13 @@ class _StreakScreenState extends ConsumerState<StreakScreen> {
                 Center(
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: AppTypography.displayFamily,
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppLightColors.textPrimary,
                       ),
                       children: [
                         TextSpan(
@@ -113,9 +116,11 @@ class _StreakScreenState extends ConsumerState<StreakScreen> {
                   child: Text(
                     _motivation(streak.currentStreakDays),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
-                      color: AppColors.textSecondary,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
                     ),
                   ),
                 ),
@@ -184,18 +189,22 @@ class _StreakScreenState extends ConsumerState<StreakScreen> {
                     'Last activity: ${Formatters.shortDate(streak.lastLearningDate)} Â· '
                     'Timezone ${streak.timezone}',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
-                      color: AppColors.textTertiary,
+                      color: isDark
+                          ? AppColors.textTertiary
+                          : AppLightColors.textTertiary,
                     ),
                   )
                 else
-                  const Text(
+                  Text(
                     'Complete a challenge to start your streak.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: AppColors.textSecondary,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
                     ),
                   ),
               ],
@@ -224,6 +233,7 @@ class _Flame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = days > 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: 130,
       height: 130,
@@ -231,8 +241,13 @@ class _Flame extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: active
             ? null
-            : const LinearGradient(
-                colors: [AppColors.surfaceHigh, AppColors.surface],
+            : LinearGradient(
+                colors: isDark
+                    ? [AppColors.surfaceHigh, AppColors.surface]
+                    : [
+                        AppLightColors.surfaceHigh,
+                        AppLightColors.surface,
+                      ],
               ),
         boxShadow: [
           BoxShadow(
@@ -246,14 +261,18 @@ class _Flame extends StatelessWidget {
         border: Border.all(
           color: active
               ? AppColors.streak.withValues(alpha: 0.7)
-              : AppColors.border,
+              : (isDark ? AppColors.border : AppLightColors.border),
           width: 2,
         ),
       ),
       child: Icon(
         Icons.local_fire_department_rounded,
         size: 62,
-        color: active ? AppColors.streak : AppColors.textTertiary,
+        color: active
+            ? AppColors.streak
+            : (isDark
+                  ? AppColors.textTertiary
+                  : AppLightColors.textTertiary),
       ),
     );
   }
@@ -275,6 +294,7 @@ class _MilestoneMarker extends StatelessWidget {
     final tint = reached
         ? AppColors.streak
         : (isLongest ? AppColors.secondary : AppColors.locked);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         Container(
@@ -284,7 +304,9 @@ class _MilestoneMarker extends StatelessWidget {
             shape: BoxShape.circle,
             color: reached
                 ? AppColors.streak.withValues(alpha: 0.25)
-                : AppColors.surfaceHigh,
+                : (isDark
+                      ? AppColors.surfaceHigh
+                      : AppLightColors.surfaceHigh),
             border: Border.all(color: tint.withValues(alpha: 0.7)),
           ),
           child: reached
@@ -296,10 +318,12 @@ class _MilestoneMarker extends StatelessWidget {
               : Center(
                   child: Text(
                     '$day',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textTertiary,
+                      color: isDark
+                          ? AppColors.textTertiary
+                          : AppLightColors.textTertiary,
                     ),
                   ),
                 ),

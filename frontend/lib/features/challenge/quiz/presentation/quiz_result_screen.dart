@@ -10,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/celebrations.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/nova_companion.dart';
@@ -64,6 +65,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
   @override
   Widget build(BuildContext context) {
     final result = widget.arg.result;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final perfect =
         result.correctCount == result.totalQuestions &&
         result.totalQuestions > 0;
@@ -75,6 +77,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
       ),
       body: Stack(
         children: [
+          const Positioned.fill(child: AtmosphericBackground()),
           ListView(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
             children: [
@@ -99,7 +102,9 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
                               strokeWidth: 9,
                               strokeCap: StrokeCap.round,
                               color: scoreColor(result.score),
-                              backgroundColor: AppColors.surfaceHigh,
+                              backgroundColor: isDark
+                                  ? AppColors.surfaceHigh
+                                  : AppLightColors.surfaceHigh,
                             ),
                       ),
                     ),
@@ -118,11 +123,13 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
                         ),
                         Text(
                           '${result.correctCount} / ${result.totalQuestions} CORRECT',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
                             letterSpacing: 1.6,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.textSecondary
+                                : AppLightColors.textSecondary,
                           ),
                         ),
                       ],
@@ -150,13 +157,15 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.xp.withValues(alpha: 0.12),
-                      AppColors.surfaceElevated,
+                      AppColors.xp.withValues(alpha: isDark ? 0.12 : 0.07),
+                      isDark
+                          ? AppColors.surfaceElevated
+                          : AppLightColors.surface,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(
-                    color: AppColors.xp.withValues(alpha: 0.4),
+                    color: AppColors.xp.withValues(alpha: isDark ? 0.4 : 0.3),
                   ),
                 ),
                 child: Row(
@@ -187,11 +196,13 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
                                     color: AppColors.xp,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Syncing your rewards...',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.textSecondary,
+                                    color: isDark
+                                        ? AppColors.textSecondary
+                                        : AppLightColors.textSecondary,
                                   ),
                                 ),
                         ],
@@ -211,13 +222,15 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
               // ---- ANSWER REVIEW --------------------------------------
               if (result.results.isNotEmpty) ...[
                 const SizedBox(height: 22),
-                const Text(
+                Text(
                   'REVIEW',
                   style: TextStyle(
                     fontSize: 11.5,
                     letterSpacing: 2.2,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textTertiary,
+                    color: isDark
+                        ? AppColors.textTertiary
+                        : AppLightColors.textTertiary,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -263,6 +276,7 @@ class _AdaptiveOutcomeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final trendUp = adaptive.trend == 'IMPROVING';
     final trendDown = adaptive.trend == 'DECLINING';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GameCardLike(
       tint: trendDown
           ? AppColors.warning
@@ -321,16 +335,20 @@ class _AdaptiveOutcomeCard extends StatelessWidget {
                     ? Icons.south_east_rounded
                     : Icons.drag_handle_rounded,
                 size: 13,
-                color: AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary,
               ),
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   'Trend: ${adaptive.trend.toLowerCase()} Â· Next: '
                   '${adaptive.recommendedActivity.toLowerCase().replaceAll('_', ' ')}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppLightColors.textSecondary,
                   ),
                 ),
               ),
@@ -350,12 +368,13 @@ class _MasteryTransition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final delta = current - previous;
     final deltaColor = delta > 0
         ? AppColors.success
         : delta < 0
         ? AppColors.warning
-        : AppColors.textSecondary;
+        : (isDark ? AppColors.textSecondary : AppLightColors.textSecondary);
     final deltaText = '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(2)}%';
     return Semantics(
       label:
@@ -364,9 +383,12 @@ class _MasteryTransition extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.55),
+          color: (isDark ? AppColors.surface : AppLightColors.surface)
+              .withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: isDark ? AppColors.border : AppLightColors.border,
+          ),
         ),
         child: Row(
           children: [
@@ -376,10 +398,12 @@ class _MasteryTransition extends StatelessWidget {
                 value: '${previous.toStringAsFixed(2)}%',
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_rounded,
               size: 16,
-              color: AppColors.textTertiary,
+              color: isDark
+                  ? AppColors.textTertiary
+                  : AppLightColors.textTertiary,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -411,16 +435,20 @@ class _Stat extends StatelessWidget {
   final Color? color;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 9.5,
           letterSpacing: 1.4,
           fontWeight: FontWeight.w700,
-          color: AppColors.textTertiary,
+          color: isDark
+              ? AppColors.textTertiary
+              : AppLightColors.textTertiary,
         ),
       ),
       const SizedBox(height: 2),
@@ -434,7 +462,8 @@ class _Stat extends StatelessWidget {
         ),
       ),
     ],
-  );
+    );
+  }
 }
 
 class GameCardLike extends StatelessWidget {
@@ -444,17 +473,25 @@ class GameCardLike extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       gradient: LinearGradient(
-        colors: [tint.withValues(alpha: 0.1), AppColors.surfaceElevated],
+        colors: [
+          tint.withValues(alpha: isDark ? 0.1 : 0.07),
+          isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+        ],
       ),
       borderRadius: BorderRadius.circular(AppRadius.lg),
-      border: Border.all(color: tint.withValues(alpha: 0.35)),
+      border: Border.all(
+        color: tint.withValues(alpha: isDark ? 0.35 : 0.28),
+      ),
     ),
     child: child,
-  );
+    );
+  }
 }
 
 class _AnswerReviewTile extends StatelessWidget {
@@ -465,6 +502,7 @@ class _AnswerReviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ok = review.isCorrect;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -512,10 +550,12 @@ class _AnswerReviewTile extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               review.explanation,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 height: 1.4,
-                color: AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppLightColors.textSecondary,
               ),
             ),
           ],
