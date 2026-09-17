@@ -322,27 +322,40 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                               accent: AppColors.secondary,
                             ),
                             const SizedBox(height: 10),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics:
-                                  const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 10,
-                                    crossAxisSpacing: 10,
-                                    childAspectRatio: 1.5,
-                                  ),
-                              itemCount: prompts.length.clamp(0, 4),
-                              itemBuilder: (context, pi) {
-                                final s = prompts[pi];
-                                return _SuggestedActionCard(
-                                  label: s,
-                                  icon: _suggestionIcon(pi, s),
-                                  accent: _suggestionAccent(pi),
-                                  onTap: () {
-                                    _input.text = s;
-                                    _send();
+                            Builder(
+                              builder: (context) {
+                                // Adaptive columns keep suggestion cards
+                                // compact on wide screens: a fixed 2-col
+                                // grid stretches cards to ~330px tall on
+                                // desktop while mobile stays 2-col.
+                                final w =
+                                    MediaQuery.sizeOf(context).width;
+                                final cols = w >= 1024
+                                    ? 4
+                                    : (w >= 600 ? 3 : 2);
+                                return GridView.builder(
+                                  shrinkWrap: true,
+                                  physics:
+                                      const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: cols,
+                                        mainAxisSpacing: 10,
+                                        crossAxisSpacing: 10,
+                                        childAspectRatio: 1.5,
+                                      ),
+                                  itemCount: prompts.length.clamp(0, 4),
+                                  itemBuilder: (context, pi) {
+                                    final s = prompts[pi];
+                                    return _SuggestedActionCard(
+                                      label: s,
+                                      icon: _suggestionIcon(pi, s),
+                                      accent: _suggestionAccent(pi),
+                                      onTap: () {
+                                        _input.text = s;
+                                        _send();
+                                      },
+                                    );
                                   },
                                 );
                               },

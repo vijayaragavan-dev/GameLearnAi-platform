@@ -159,9 +159,12 @@ class _PremiumBottomBar extends ConsumerWidget {
     final tabs = ShellScreen._tabs;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
+    // Fully opaque: extendBody lets list content scroll beneath the bar and
+    // a translucent fill ghosts list text ("Programming", "NEW") through
+    // the nav labels on narrow phones. Opaque keeps the HUD readable.
     return Container(
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: isDark ? 0.92 : 0.97),
+        color: surface,
         border: Border(
           top: BorderSide(
             color: isDark
@@ -547,7 +550,9 @@ class _DesktopPlayerHUD extends ConsumerWidget {
     if (data == null) {
       // Loading / error — hide metrics gracefully, keep brand + nav functional.
       // Show subtle placeholder hint without fabricating numbers.
+      // Fixed width: same unbounded-leading rationale as below.
       return Container(
+        width: AppLayout.railExtendedWidth - 24,
         margin: const EdgeInsets.symmetric(horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
@@ -602,7 +607,13 @@ class _DesktopPlayerHUD extends ConsumerWidget {
       xpFraction = 1.0;
     }
 
+    // Fixed width: NavigationRail lays out its extended leading/trailing
+    // with UNBOUNDED width, so any flex descendant (even Flexible) throws
+    // "non-zero flex but incoming width unbounded" and breaks the desktop
+    // rail header. 232 = 256 extended rail minus the 24 horizontal margin,
+    // exactly the real-layout width, so visuals are unchanged.
     return Container(
+      width: AppLayout.railExtendedWidth - 24,
       margin: const EdgeInsets.symmetric(horizontal: 12),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
@@ -655,7 +666,12 @@ class _DesktopPlayerHUD extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(
+              // Flexible (loose fit), not Expanded: rail leading is laid
+              // out with unbounded width in extended mode, where Expanded
+              // throws "non-zero flex but incoming width unbounded" and
+              // breaks the desktop rail header. Loose fit renders
+              // identically when bounded and shrink-wraps when not.
+              Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -726,7 +742,9 @@ class _DesktopPlayerHUD extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
+              // Flexible (loose fit): same unbounded-width rationale as
+              // the identity row above — rail leading must shrink-wrap.
+              Flexible(
                 child: Text(
                   atMax ? 'MAX LEVEL' : '${gam.totalXp} XP',
                   maxLines: 1,
@@ -832,7 +850,10 @@ class _RailFooter extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      // Fixed width: same unbounded-leading rationale as the player HUD
+      // above — 232 = 256 extended rail minus 24 horizontal padding.
       child: Container(
+        width: AppLayout.railExtendedWidth - 24,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: isDark ? 0.07 : 0.05),
@@ -847,7 +868,9 @@ class _RailFooter extends StatelessWidget {
               color: isDark ? AppColors.primaryBright : AppColors.primary,
             ),
             const SizedBox(width: 8),
-            Expanded(
+            // Flexible (loose fit): rail trailing shares the unbounded
+            // leading constraints in extended mode.
+            Flexible(
               child: Text(
                 'Learn → Play → Master',
                 style: TextStyle(

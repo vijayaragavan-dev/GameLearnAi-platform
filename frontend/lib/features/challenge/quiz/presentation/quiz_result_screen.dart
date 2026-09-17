@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -342,7 +342,7 @@ class _AdaptiveOutcomeCard extends StatelessWidget {
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
-                  'Trend: ${adaptive.trend.toLowerCase()} Â· Next: '
+                  'Trend: ${adaptive.trend.toLowerCase()} · Next: '
                   '${adaptive.recommendedActivity.toLowerCase().replaceAll('_', ' ')}',
                   style: TextStyle(
                     fontSize: 12,

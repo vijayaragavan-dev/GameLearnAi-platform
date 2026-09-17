@@ -558,8 +558,11 @@ class StateChip extends StatelessWidget {
         children: [
           Icon(icon, size: compact ? 10 : 12, color: color),
           SizedBox(width: compact ? 3 : 4),
+          // Compact keeps the smaller footprint but never truncates the
+          // label: blind substrings rendered "AVAI"/"IN P" in heroes.
+          // The parent Wrap lays out multiple chips without overflow.
           Text(
-            compact && text.length > 6 ? text.substring(0, 4) : text,
+            text,
             style: TextStyle(
               fontFamily: AppTypography.bodyFamily,
               fontSize: compact ? 9.5 : 10.5,

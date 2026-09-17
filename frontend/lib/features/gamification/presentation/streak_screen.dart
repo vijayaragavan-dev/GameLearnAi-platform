@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/audio/audio_manager.dart' show MusicContext;
@@ -186,7 +186,7 @@ class _StreakScreenState extends ConsumerState<StreakScreen> {
 
                 if (streak.lastLearningDate != null)
                   Text(
-                    'Last activity: ${Formatters.shortDate(streak.lastLearningDate)} Â· '
+                    'Last activity: ${Formatters.shortDate(streak.lastLearningDate)} · '
                     'Timezone ${streak.timezone}',
                     textAlign: TextAlign.center,
                     style: TextStyle(

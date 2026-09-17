@@ -507,10 +507,11 @@ class _HeroCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = dashboard.learner.displayName;
     final mastery = (dashboard.learner.overallMastery.clamp(0, 100) / 100).clamp(0.0, 1.0);
-    // 320px-class phones cannot fit avatar + identity + orb + streak chip
+    // Phones (<600) cannot fit avatar + identity + orb + streak chip
     // in one row: orb and chip move to a second row instead of squeezing
-    // the identity column into overflow. Wider phones keep the dense row.
-    final compactHero = MediaQuery.sizeOf(context).width < 360;
+    // the identity column into clipped stubs (seen at 390px: "QAReg" /
+    // "1..." / "L..."). Wider layouts keep the dense row.
+    final compactHero = MediaQuery.sizeOf(context).width < 600;
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),

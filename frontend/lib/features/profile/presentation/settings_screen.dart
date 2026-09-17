@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -273,7 +273,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 18),
           Center(
             child: Text(
-              'GameLearn AI Â· ${ref.watch(appConfigInfoProvider).env.toUpperCase()} Â· '
+              'GameLearn AI · ${ref.watch(appConfigInfoProvider).env.toUpperCase()} · '
               '${ref.watch(appConfigInfoProvider).baseUrl}',
               textAlign: TextAlign.center,
               style: TextStyle(
