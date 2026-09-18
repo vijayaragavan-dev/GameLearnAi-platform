@@ -16,10 +16,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Verifies the persistence foundation against a REAL MySQL server:
- * connectivity, JPA initialization and the complete Phase 1 migration chain.
+ * connectivity, JPA initialization and the complete migration chain.
  *
  * <p>The container starts EMPTY; Flyway must migrate it to exactly the schema
- * defined by GameLearn_AI_Database_Specification.md (20 business tables).</p>
+ * defined by the committed migrations V1 through V28 (27 business tables:
+ * the 20-table Phase 1 baseline plus units, game_results, avatars,
+ * user_avatars, user_credits, credit_ledger and subject_game_compat).</p>
  *
  * <p>Skipped automatically when no Docker daemon is available; the H2-based
  * suite covers those environments.</p>
@@ -34,7 +36,11 @@ class MySqlIntegrationTest {
             "learning_paths", "learning_path_nodes", "quizzes", "questions",
             "quiz_questions", "quiz_attempts", "question_attempts",
             "topic_mastery", "progress", "recommendations", "xp_transactions",
-            "achievements", "user_achievements", "streaks", "ai_interactions");
+            "achievements", "user_achievements", "streaks", "ai_interactions",
+            // V15 game results, V17/V18 avatar and credit ownership,
+            // V23 units, V25 subject/game compatibility.
+            "game_results", "avatars", "user_avatars", "user_credits",
+            "credit_ledger", "units", "subject_game_compat");
 
     @Container
     @ServiceConnection
@@ -61,7 +67,10 @@ class MySqlIntegrationTest {
                 "SELECT COUNT(*) FROM flyway_schema_history "
                         + "WHERE success = 1 AND installed_rank > 0",
                 Integer.class);
-        assertThat(appliedMigrations).isEqualTo(11);
+        // One history row per committed migration file V1 through V28.
+        // Keep in sync with PersistenceContextTest (H2) and the migration
+        // directory; any new Flyway version must update both.
+        assertThat(appliedMigrations).isEqualTo(28);
 
         Integer failedMigrations = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = 0",
@@ -70,7 +79,7 @@ class MySqlIntegrationTest {
     }
 
     @Test
-    void allTwentyBusinessTablesExistOnRealMySql() {
+    void allTwentySevenBusinessTablesExistOnRealMySql() {
         List<String> tables = jdbcTemplate.queryForList(
                 "SELECT table_name FROM information_schema.tables "
                         + "WHERE table_schema = DATABASE() AND table_name <> 'flyway_schema_history' "
@@ -81,13 +90,55 @@ class MySqlIntegrationTest {
 
     @Test
     void requiredForeignKeysExistOnRealMySql() {
-        Integer foreignKeys = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.table_constraints "
+        List<String> foreignKeys = jdbcTemplate.queryForList(
+                "SELECT constraint_name FROM information_schema.table_constraints "
                         + "WHERE table_schema = DATABASE() "
                         + "AND constraint_type = 'FOREIGN KEY'",
-                Integer.class);
-        // 29 approved relationships across the 20 tables (Database Specification section 27).
-        assertThat(foreignKeys).isEqualTo(29);
+                String.class);
+        // Every relationship is an explicitly named fk_ constraint, so the
+        // test pins the full set instead of a bare count: 29 approved Phase 1
+        // relationships (Database Specification section 27) plus V15 (1),
+        // V17 (1), V18 (4), V19 (1), V23 (2) and V25 (1).
+        assertThat(foreignKeys).containsExactlyInAnyOrder(
+                "fk_ai_interactions__users",
+                "fk_avatars__subjects",
+                "fk_credit_ledger__users",
+                "fk_game_results__users",
+                "fk_learner_profiles__avatars",
+                "fk_learner_profiles__subjects",
+                "fk_learner_profiles__topics",
+                "fk_learner_profiles__users",
+                "fk_learning_path_nodes__learning_paths",
+                "fk_learning_path_nodes__topics",
+                "fk_learning_paths__subjects",
+                "fk_learning_paths__users",
+                "fk_lessons__topics",
+                "fk_progress__learning_path_nodes",
+                "fk_progress__topics",
+                "fk_progress__users",
+                "fk_question_attempts__questions",
+                "fk_question_attempts__quiz_attempts",
+                "fk_questions__topics",
+                "fk_quiz_attempts__quizzes",
+                "fk_quiz_attempts__users",
+                "fk_quiz_questions__questions",
+                "fk_quiz_questions__quizzes",
+                "fk_quizzes__topics",
+                "fk_recommendations__topics",
+                "fk_recommendations__users",
+                "fk_streaks__users",
+                "fk_subject_game_compat__subjects",
+                "fk_topic_mastery__topics",
+                "fk_topic_mastery__users",
+                "fk_topics__subjects",
+                "fk_topics__units",
+                "fk_units__subjects",
+                "fk_user_achievements__achievements",
+                "fk_user_achievements__users",
+                "fk_user_avatars__avatars",
+                "fk_user_avatars__users",
+                "fk_user_credits__users",
+                "fk_xp_transactions__users");
     }
 
     @Test
@@ -107,7 +158,15 @@ class MySqlIntegrationTest {
                 "uq_topic_mastery_user_topic",
                 "uq_achievements_code",
                 "uq_user_achievements_user_achievement",
-                "uq_streaks_user_id");
+                "uq_streaks_user_id",
+                // V15 game-result idempotency, V17 avatar codes,
+                // V18 ownership, V23 units, V25 compatibility.
+                "uq_game_results_request",
+                "uq_avatars_code",
+                "uq_user_avatars_user_avatar",
+                "uq_user_credits_user",
+                "uq_units_subject_id_name",
+                "uq_subject_game_compat_subject_game");
     }
 
     @Test
@@ -140,14 +199,36 @@ class MySqlIntegrationTest {
                 "idx_recommendations_topic_id",
                 "idx_xp_transactions_user_created",
                 "idx_user_achievements_achievement",
-                "idx_ai_interactions_user_created");
+                "idx_ai_interactions_user_created",
+                // V15 game results and reference lookup, V17 avatar catalog,
+                // V18 ledgers and ownership, V19/V21 learner lookups,
+                // V23 units hierarchy, V25 compatibility matrix.
+                "idx_game_results_user_game",
+                "idx_game_results_user_played",
+                "idx_xp_transactions_user_ref",
+                "idx_avatars_rarity",
+                "idx_avatars_subject",
+                "idx_avatars_active",
+                "idx_credit_ledger_user_created",
+                "idx_credit_ledger_user_ref",
+                "idx_user_avatars_user",
+                "idx_user_avatars_avatar",
+                "idx_learner_profiles_equipped_avatar",
+                "idx_learner_profiles_total_xp",
+                "idx_users_status_created",
+                "idx_units_subject_id",
+                "idx_topics_unit_id",
+                "idx_subject_game_compat_subject",
+                "idx_subject_game_compat_game");
     }
 
     @Test
     void seedSubjectsArePresentOnRealMySql() {
         Long seededSubjects = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM subjects WHERE id LIKE '11111111-%'", Long.class);
-        assertThat(seededSubjects).isEqualTo(5);
+        // 5 Phase 1 subjects (V11) plus 6 subject worlds (V22); both batches
+        // share the deterministic 11111111- namespace.
+        assertThat(seededSubjects).isEqualTo(11);
     }
 
     @Test

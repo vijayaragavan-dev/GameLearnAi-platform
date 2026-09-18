@@ -1,0 +1,16 @@
+# GATE 4 experiment dependencies (offline, minimal, justified).
+#
+# pymysql — pure-Python MySQL driver for read-only extraction via the
+#   dedicated gamelearn_ro account (SELECT-only). No ORM, no migrations.
+# scikit-learn (+ numpy/scipy as its own dependencies) — L2 logistic
+#   regression ONLY, the single GATE 3-approved candidate, plus standard
+#   metric functions (log loss, Brier, ROC/PR-AUC).
+#
+# Explicitly NOT included: fastapi, torch, tensorflow, xgboost, lightgbm,
+# vector-DB clients, embedding libraries, langchain, llama-index, cloud
+# SDKs. Each future addition needs its own gate justification.
+#
+# Environment used for GATE 4 (already present, nothing installed by hand):
+#   scikit-learn 1.8.0, numpy 2.3.5, pymysql (pure python)
+pymysql
+scikit-learn

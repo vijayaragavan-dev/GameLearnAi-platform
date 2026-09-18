@@ -1,0 +1,112 @@
+{
+  "experiment": "rag_retrieval_lexical_baseline",
+  "corpus_source": "flyway seed SQL (offline, no database)",
+  "seed_files": [
+    "V11__seed_initial_subjects.sql",
+    "V12__seed_programming_demo_content.sql",
+    "V14__seed_remaining_subjects_demo_content.sql",
+    "V22__add_subject_worlds_batch1.sql",
+    "V24__seed_new_subjects_syllabus.sql",
+    "V27__seed_new_subjects_game_questions.sql",
+    "V28__seed_new_subjects_round2_questions.sql"
+  ],
+  "catalog_counts": {
+    "subjects": 11,
+    "units": 29,
+    "topics": 149,
+    "lessons": 15,
+    "questions": 234
+  },
+  "ingest_stats": {
+    "lessons": {
+      "documents": 30,
+      "skipped_inactive": 0,
+      "rejected": 0,
+      "rejection_reasons": []
+    },
+    "questions": {
+      "documents": 234,
+      "skipped_inactive": 0,
+      "rejected": 0,
+      "rejection_reasons": []
+    },
+    "topics": {
+      "documents": 149,
+      "skipped_inactive": 0,
+      "rejected": 0,
+      "rejection_reasons": []
+    }
+  },
+  "n_documents": 413,
+  "n_queries": 483,
+  "queries_by_mode": {
+    "stem_to_topic": 234,
+    "explanation_to_siblings": 234,
+    "summary_to_lesson": 15
+  },
+  "overall": {
+    "n_queries": 483,
+    "served_rate": 1.0,
+    "recall@1": 0.10780834072759538,
+    "recall@3": 0.32709750566893425,
+    "recall@5": 0.4717046238785369,
+    "recall@10": 0.6161885043872621,
+    "precision@1": 0.484472049689441,
+    "precision@3": 0.4623878536922015,
+    "precision@5": 0.3884057971014493,
+    "precision@10": 0.26045548654244305,
+    "mrr": 0.6660718393637648
+  },
+  "by_mode": {
+    "stem_to_topic": {
+      "n_queries": 234,
+      "served_rate": 1.0,
+      "recall@1": 0.22252747252747251,
+      "recall@3": 0.432997557997558,
+      "recall@5": 0.5427350427350427,
+      "recall@10": 0.6807081807081806,
+      "precision@1": 1.0,
+      "precision@3": 0.6566951566951567,
+      "precision@5": 0.5034188034188034,
+      "precision@10": 0.3264957264957265,
+      "mrr": 1.0
+    },
+    "explanation_to_siblings": {
+      "n_queries": 234,
+      "served_rate": 1.0,
+      "recall@1": 0.0,
+      "recall@3": 0.24216524216524216,
+      "recall@5": 0.3796296296296296,
+      "recall@10": 0.527065527065527,
+      "precision@1": 0.0,
+      "precision@3": 0.2977207977207977,
+      "precision@5": 0.28803418803418807,
+      "precision@10": 0.2047008547008547,
+      "mrr": 0.3618182743182743
+    },
+    "summary_to_lesson": {
+      "n_queries": 15,
+      "served_rate": 1.0,
+      "recall@1": 0.0,
+      "recall@3": 0.0,
+      "recall@5": 0.8,
+      "recall@10": 1.0,
+      "precision@1": 0.0,
+      "precision@3": 0.0,
+      "precision@5": 0.16000000000000003,
+      "precision@10": 0.1,
+      "mrr": 0.20314814814814816
+    }
+  },
+  "duplicates": {
+    "exact_text_groups": 0,
+    "cross_topic_groups": 0,
+    "largest_group": 0
+  },
+  "retrieval_ms_total": 1180.6,
+  "retrieval_ms_per_query": 2.44,
+  "determinism_rerun_identical": true,
+  "scope_violations": 0,
+  "relevance_method": "automatically derived from authorship (weak labels, NOT human judgments)",
+  "deployment_ready": false
+}

@@ -1,0 +1,24 @@
+# GATE 1: intentionally dependency-free.
+#
+# The architecture skeleton uses only the Python standard library
+# (dataclasses, abc, enum, unittest).  No runtime third-party dependency
+# may be added until a later gate justifies it.  In particular, do NOT add
+# here: fastapi, torch, tensorflow, sklearn, xgboost, lightgbm,
+# sentence-transformers, faiss-*, langchain, llama-index, or vector-DB
+# clients.  Model/training/retrieval dependencies arrive with the gate
+# that first implements them, each with an evaluation justification.
+#
+# GATE 22 justification (pretrained HF semantic retrieval over the Gate 21
+# corpus, 413 chunks; see mlrag/docs/RAG_HF_IMPLEMENTATION_REPORT.md):
+# local CPU-only inference with sentence-transformers + torch (exact pins
+# recorded in mlrag/artifacts/gate22_hf_index_manifest.json).  No vector
+# database, no LLM client, no GPU stack: numpy holds the normalized index
+# matrix in-process.  Still NOT added: fastapi, tensorflow, xgboost,
+# lightgbm, faiss-*, langchain, llama-index, vector-DB clients.
+numpy==2.3.5
+torch==2.10.0
+transformers==5.2.0
+tokenizers==0.22.2
+safetensors==0.7.0
+huggingface-hub==1.4.1
+sentence-transformers==5.5.1

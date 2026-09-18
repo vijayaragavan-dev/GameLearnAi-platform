@@ -21,6 +21,7 @@ import com.gamelearn.ai.gemini.GeminiPrompt;
 import com.gamelearn.ai.gemini.GeminiTransientException;
 import com.gamelearn.ai.gemini.TutorRateLimiter;
 import com.gamelearn.ai.prompts.TutorPromptBuilder;
+import com.gamelearn.ai.rag.RagGroundingService;
 import com.gamelearn.ai.validation.TutorOutputValidator;
 import com.gamelearn.ai.validation.TutorRefusalClassifier;
 import com.gamelearn.config.AiProperties;
@@ -58,6 +59,9 @@ public class AiTutorService {
     static final String CAT_DISABLED = "TUTOR_DISABLED";
     static final String CAT_RATE_LIMITED = "TUTOR_RATE_LIMITED";
     static final String CAT_POLICY_REFUSAL = "TUTOR_POLICY_REFUSAL";
+    static final String CAT_RAG_INSUFFICIENT = "TUTOR_RAG_INSUFFICIENT_EVIDENCE";
+    static final String CAT_RAG_OVER_BUDGET = "TUTOR_RAG_OVER_BUDGET";
+    static final String CAT_CITATION_UNGROUNDED = "TUTOR_CITATION_UNGROUNDED";
 
     private final UserRepository userRepository;
     private final TutorContextBuilder contextBuilder;
@@ -68,6 +72,7 @@ public class AiTutorService {
     private final AiInteractionAuditService auditService;
     private final AiProperties properties;
     private final GeminiClient geminiClient;
+    private final RagGroundingService ragGrounding;
 
     public AiTutorService(UserRepository userRepository,
                           TutorContextBuilder contextBuilder,
@@ -77,7 +82,8 @@ public class AiTutorService {
                           TutorRateLimiter rateLimiter,
                           AiInteractionAuditService auditService,
                           AiProperties properties,
-                          GeminiClient geminiClient) {
+                          GeminiClient geminiClient,
+                          RagGroundingService ragGrounding) {
         this.userRepository = userRepository;
         this.contextBuilder = contextBuilder;
         this.promptBuilder = promptBuilder;
@@ -87,6 +93,7 @@ public class AiTutorService {
         this.auditService = auditService;
         this.properties = properties;
         this.geminiClient = geminiClient;
+        this.ragGrounding = ragGrounding;
     }
 
     /**
@@ -148,7 +155,7 @@ public class AiTutorService {
         // Policy refusal: deterministic, pre-Gemini, quota-free (section 12.3).
         if (refusalClassifier.isPolicyRefusal(question)) {
             auditRejectedRow(user, context, question.length(), historyTurns.size(),
-                    CAT_POLICY_REFUSAL);
+                    CAT_POLICY_REFUSAL, promptBuilder.promptVersion(), null);
             return respond(promptBuilder.refusalTemplate(), true, false, context);
         }
 
@@ -172,6 +179,35 @@ public class AiTutorService {
                     "AI tutor limit reached. Try again later.");
         }
 
+        // Gate 23: RAG grounding (quota-admitted requests only). Disabled
+        // flag -> legacy path below runs byte-identical to before.
+        String promptVersion = promptBuilder.promptVersion();
+        RagGroundingService.GroundedEvidence rag;
+        try {
+            rag = ragGrounding.ground(question, context,
+                    RequestCorrelationFilter.currentRequestId());
+        } catch (RagGroundingService.RagFailure ragFailure) {
+            auditFailedRow(user, context, question.length(), historyTurns.size(),
+                    ragFailure.getCategory(), promptVersion, null);
+            throw unavailable("AI tutor is temporarily unavailable. Please try again shortly.");
+        }
+        if (rag.enabled()) {
+            if (rag.insufficientReason() != null) {
+                auditRejectedRow(user, context, question.length(), historyTurns.size(),
+                        CAT_RAG_INSUFFICIENT, rag.promptVersion(), rag);
+                log.info("TUT_RAG_INSUFFICIENT reason={} questionChars={}",
+                        rag.insufficientReason(), question.length());
+                return respond(promptBuilder.degradedTemplate(), false, true, context);
+            }
+            promptText = promptText + "\n" + rag.evidenceBlock();
+            if (promptText.length() > TutorPromptBuilder.RENDERED_PROMPT_BUDGET_CHARS) {
+                auditFailedRow(user, context, question.length(), historyTurns.size(),
+                        CAT_RAG_OVER_BUDGET, rag.promptVersion(), rag);
+                throw unavailable("AI tutor is temporarily unavailable. Please try again shortly.");
+            }
+            promptVersion = rag.promptVersion();
+        }
+
         // Gemini phase: exactly ONE automatic retry for transient failures.
         long startedAt = System.currentTimeMillis();
         GenerationOptions options = new GenerationOptions(
@@ -187,7 +223,7 @@ public class AiTutorService {
         for (int attempt = 1; attempt <= maxAttempts && rawResponse == null; attempt++) {
             try {
                 rawResponse = geminiClient.generate(new GeminiPrompt(promptText,
-                        promptBuilder.promptVersion(),
+                        promptVersion,
                         RequestCorrelationFilter.currentRequestId()), options);
             } catch (GeminiPermanentException permanentEx) {
                 lastCategory = permanentEx.getMessage();
@@ -206,7 +242,7 @@ public class AiTutorService {
             String category = lastCategory != null ? lastCategory
                     : AUDIT_PREFIX + "_GEMINI_UNAVAILABLE";
             auditFailedRow(user, context, question.length(), historyTurns.size(),
-                    category);
+                    category, promptVersion, rag);
             throw unavailable("AI tutor is temporarily unavailable. Please try again shortly.");
         }
 
@@ -220,17 +256,35 @@ public class AiTutorService {
             if (TutorOutputValidator.MALFORMED.equals(category)
                     || TutorOutputValidator.SCHEMA_INVALID.equals(category)) {
                 auditFailedRow(user, context, question.length(), historyTurns.size(),
-                        category);
+                        category, promptVersion, rag);
                 throw unavailable("AI tutor is temporarily unavailable. Please try again shortly.");
             }
-            auditRejectedRow(user, context, question.length(), historyTurns.size(), category);
+            auditRejectedRow(user, context, question.length(), historyTurns.size(), category,
+                    promptVersion, rag);
             log.info("TUT_REJECTED category={} questionChars={} latencyMs={}",
                     category, question.length(), latencyMs);
             return respond(promptBuilder.degradedTemplate(), false, true, context);
         }
 
+        // Gate 23: server-controlled citation attachment. A grounded answer
+        // may only cite evidence the sidecar supplied; anything else is
+        // treated exactly like unsafe output (degraded template, rejected
+        // audit row). No-op on the legacy path.
+        if (rag.enabled()) {
+            try {
+                ragGrounding.verifyCitations(validated.answer(), rag);
+            } catch (RagGroundingService.UngroundedCitation ungrounded) {
+                auditRejectedRow(user, context, question.length(), historyTurns.size(),
+                        CAT_CITATION_UNGROUNDED, promptVersion, rag);
+                log.info("TUT_REJECTED category={} questionChars={} latencyMs={}",
+                        CAT_CITATION_UNGROUNDED, question.length(), latencyMs);
+                return respond(promptBuilder.degradedTemplate(), false, true, context);
+            }
+        }
+
         auditSuccessRow(user, context, question.length(), historyTurns.size(),
-                validated.answer().length(), validated.truncated(), latencyMs);
+                validated.answer().length(), validated.truncated(), latencyMs,
+                promptVersion, rag);
         log.info("TUT_ANSWERED questionChars={} answerChars={} truncated={} latencyMs={}",
                 question.length(), validated.answer().length(), validated.truncated(),
                 latencyMs);
@@ -335,6 +389,18 @@ public class AiTutorService {
 
     private String requestContextJson(TutorContext context, int questionChars,
                                       int historyMessages) {
+        return requestContextJson(context, questionChars, historyMessages, null);
+    }
+
+    /**
+     * Gate 23: RAG operational metadata is counts/flags ONLY (chunk count,
+     * retrieval latency, grounded flag) - never query text, evidence text,
+     * citations detail, tokens or secrets. Absent entirely on the legacy
+     * path so pre-RAG audit rows are byte-identical.
+     */
+    private String requestContextJson(TutorContext context, int questionChars,
+                                      int historyMessages,
+                                      RagGroundingService.GroundedEvidence rag) {
         ObjectNode root = MAPPER.createObjectNode();
         if (context.subjectIdOrNull() != null) {
             root.put("subjectId", context.subjectIdOrNull().toString());
@@ -347,12 +413,18 @@ public class AiTutorService {
         }
         root.put("questionChars", questionChars);
         root.put("historyMessages", historyMessages);
+        if (rag != null && rag.enabled()) {
+            root.put("grounded", rag.grounded());
+            root.put("ragChunks", rag.chunkCount());
+            root.put("ragLatencyMs", (int) Math.min(Integer.MAX_VALUE, rag.latencyMs()));
+        }
         return root.toString();
     }
 
     private void auditSuccessRow(User user, TutorContext context, int questionChars,
                                  int historyMessages, int answerChars, boolean truncated,
-                                 Integer latencyMs) {
+                                 Integer latencyMs, String promptVersion,
+                                 RagGroundingService.GroundedEvidence rag) {
         try {
             ObjectNode responseJson = MAPPER.createObjectNode();
             responseJson.put("answerChars", answerChars);
@@ -360,8 +432,8 @@ public class AiTutorService {
             responseJson.put("refused", false);
             responseJson.put("degraded", false);
             auditService.recordTutor(user, properties.getGemini().getModel(),
-                    promptBuilder.promptVersion(),
-                    requestContextJson(context, questionChars, historyMessages),
+                    promptVersion,
+                    requestContextJson(context, questionChars, historyMessages, rag),
                     responseJson.toString(),
                     com.gamelearn.entity.enums.AiInteractionStatus.SUCCESS,
                     latencyMs, null);
@@ -371,12 +443,13 @@ public class AiTutorService {
     }
 
     private void auditFailedRow(User user, TutorContext context, int questionChars,
-                                int historyMessages, String category) {
+                                int historyMessages, String category, String promptVersion,
+                                RagGroundingService.GroundedEvidence rag) {
         try {
             ObjectNode responseJson = MAPPER.createObjectNode();
             responseJson.put("errorCategory", category);
-            auditService.recordTutor(user, null, promptBuilder.promptVersion(),
-                    requestContextJson(context, questionChars, historyMessages),
+            auditService.recordTutor(user, null, promptVersion,
+                    requestContextJson(context, questionChars, historyMessages, rag),
                     responseJson.toString(),
                     com.gamelearn.entity.enums.AiInteractionStatus.FAILED,
                     null, category);
@@ -386,12 +459,13 @@ public class AiTutorService {
     }
 
     private void auditRejectedRow(User user, TutorContext context, int questionChars,
-                                  int historyMessages, String category) {
+                                  int historyMessages, String category, String promptVersion,
+                                  RagGroundingService.GroundedEvidence rag) {
         try {
             ObjectNode responseJson = MAPPER.createObjectNode();
             responseJson.put("errorCategory", category);
-            auditService.recordTutor(user, null, promptBuilder.promptVersion(),
-                    requestContextJson(context, questionChars, historyMessages),
+            auditService.recordTutor(user, null, promptVersion,
+                    requestContextJson(context, questionChars, historyMessages, rag),
                     responseJson.toString(),
                     com.gamelearn.entity.enums.AiInteractionStatus.REJECTED,
                     null, category);

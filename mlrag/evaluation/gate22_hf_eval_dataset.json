@@ -1,0 +1,609 @@
+{
+  "dataset": "gate22_hf_retrieval_eval",
+  "version": "1",
+  "corpus_fingerprint": "451ddef72317c230f7f59a873e7ec8595068ae5c0277dca6bac1b900a946f2b9",
+  "corpus_size": 413,
+  "synthetic_note": "ALL queries are synthetic evaluation probes derived from corpus text; none are real learner queries and none may be used as training data.",
+  "cases": [
+    {
+      "case_id": "g22-e01",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Variables & Types — Foundations. Variables bind a name to a value, and types describe what kind of value a variable can hold.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333311#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222211",
+      "difficulty": "EASY",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333311#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e02",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Control Flow — Decisions & Loops (summary). Control Flow — Decisions & Loops Use if/else for two-way choice, match for many-way dispatch, for for counted iterations, while for sentinel loops, and guard clauses to keep the happy path flat.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333312:summary#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222212",
+      "difficulty": "EASY",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333312:summary#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e03",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Networking Fundamentals — The Connected World (summary). Networking Fundamentals — The Connected World LAN/WAN/Internet, star/mesh/bus topologies, simplex/half/full-duplex, and why protocols and layering make networks possible.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333314:summary#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111102",
+      "topic_id": "22222222-2222-2222-2222-222222222214",
+      "difficulty": "EASY",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333314:summary#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e04",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "IP Addressing & Routing — Where Packets Go (summary). IP Addressing & Routing — Where Packets Go IPv4 octets, subnet masks, CIDR, longest-prefix match, default gateways, and NAT sharing one public IP.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333316:summary#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111102",
+      "topic_id": "22222222-2222-2222-2222-222222222216",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333316:summary#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e05",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Relational Model & Keys — Structure and Constraints (summary). Relational Model & Keys — Structure and Constraints Relations/tuples/attributes, primary/foreign/candidate keys, and entity/referential/domain integrity as non-negotiable rules.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333322:summary#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111103",
+      "topic_id": "22222222-2222-2222-2222-222222222222",
+      "difficulty": "EASY",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333322:summary#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e06",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "OS Fundamentals — The Supervisor. An operating system multiplexes hardware among programs.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333331#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111104",
+      "topic_id": "22222222-2222-2222-2222-222222222231",
+      "difficulty": "EASY",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333331#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e07",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Memory Management — Isolation and Illusion. Virtual memory gives each process the illusion of a large, private address space.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333333#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111104",
+      "topic_id": "22222222-2222-2222-2222-222222222233",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333333#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e08",
+      "mode": "extractive_lesson_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Stacks & Queues — LIFO and FIFO. A stack is LIFO: push and pop at one end, perfect for call frames, undo, and bracket matching.",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333342#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111105",
+      "topic_id": "22222222-2222-2222-2222-222222222242",
+      "difficulty": "EASY",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333342#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e09",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Which declaration correctly creates an immutable integer constant?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444401#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222211",
+      "difficulty": "EASY",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444401#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e10",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "When debugging, port closed indicates failure at which layer?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444420#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111102",
+      "topic_id": "22222222-2222-2222-2222-222222222215",
+      "difficulty": "EASY",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444420#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e11",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Which is a time-sharing OS example?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444454#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111104",
+      "topic_id": "22222222-2222-2222-2222-222222222231",
+      "difficulty": "EASY",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444454#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e12",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Adjacency list space is?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444481#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111105",
+      "topic_id": "22222222-2222-2222-2222-222222222243",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444481#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e13",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "What does a class diagram show?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444501#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111107",
+      "topic_id": "22222222-2222-2222-2222-222222222270",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444501#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e14",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Which superglobal holds submitted form POST data?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444520#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111108",
+      "topic_id": "22222222-2222-2222-2222-222222222299",
+      "difficulty": "EASY",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444520#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e15",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "What is CRISP-DM?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444540#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111110",
+      "topic_id": "22222222-2222-2222-2222-222222222330",
+      "difficulty": "EASY",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444540#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e16",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Which recurrence describes merge sort?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444559#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111111",
+      "topic_id": "22222222-2222-2222-2222-222222222358",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444559#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e17",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Which List gives O(1) indexed access?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444579#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111106",
+      "topic_id": "22222222-2222-2222-2222-222222222260",
+      "difficulty": "HARD",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444579#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e18",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "Which selector targets elements by class?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444598#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111108",
+      "topic_id": "22222222-2222-2222-2222-222222222289",
+      "difficulty": "EASY",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444598#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e19",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "How is a decision tree split chosen?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444618#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111109",
+      "topic_id": "22222222-2222-2222-2222-222222222319",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444618#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e20",
+      "mode": "extractive_question_stem",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": "What does the hue encoding show?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444637#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111110",
+      "topic_id": "22222222-2222-2222-2222-222222222347",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444637#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e21",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Variables & Types Fundamentals of variable declaration, primitive types, type inference, and type safety — the ground on which all Programming missions build.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222211#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222211",
+      "difficulty": "EASY",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222211#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e22",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Trees & Graphs Binary trees, BSTs, traversals, heaps, and graph representations (adjacency list/matrix) with BFS/DFS.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222243#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111105",
+      "topic_id": "22222222-2222-2222-2222-222222222243",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222243#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e23",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Exception Handling Exception hierarchy, try catch finally, throw and throws, custom exceptions.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222258#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111106",
+      "topic_id": "22222222-2222-2222-2222-222222222258",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222258#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e24",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Component Diagrams Components, provided and required interfaces and deployment level structure.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222273#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111107",
+      "topic_id": "22222222-2222-2222-2222-222222222273",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222273#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e25",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". HTML5 Forms and Media Forms, inputs and validation, audio, video and canvas overview.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222288#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111108",
+      "topic_id": "22222222-2222-2222-2222-222222222288",
+      "difficulty": "EASY",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222288#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e26",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". React and JSX Component thinking, JSX syntax, rendering and the virtual DOM idea.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222303#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111108",
+      "topic_id": "22222222-2222-2222-2222-222222222303",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222303#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e27",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Support Vector Machines Margins, kernels and the regularization parameter.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222318#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111109",
+      "topic_id": "22222222-2222-2222-2222-222222222318",
+      "difficulty": "HARD",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222318#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e28",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Exploratory Data Analysis Summaries, distributions and outlier spotting to understand data.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222333#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111110",
+      "topic_id": "22222222-2222-2222-2222-222222222333",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222333#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e29",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". 3D and Geographic Visualization Three dimensional axes, choropleth and point map concepts.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222348#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111110",
+      "topic_id": "22222222-2222-2222-2222-222222222348",
+      "difficulty": "HARD",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222348#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "case_id": "g22-e30",
+      "mode": "extractive_topic_lead",
+      "synthetic": true,
+      "construction": "extractive: query = chunk title + first body sentence (verbatim substring); relevant = the sampled chunk itself; scope = the chunk's own subject/topic; synthetic evaluation probe",
+      "query": ". Warshall and Floyd Algorithms Transitive closure and all pairs shortest paths.",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222363#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111111",
+      "topic_id": "22222222-2222-2222-2222-222222222363",
+      "difficulty": "MEDIUM",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222363#c0",
+      "rationale": "Query is a verbatim extract of the target chunk; a correct retriever ranks the source chunk at the top within subject scope."
+    },
+    {
+      "query": "Why should I declare variables with the narrowest correct type, and when is it better to let the compiler infer the type instead?",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333311:summary#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222211",
+      "difficulty": "EASY",
+      "rationale": "Target summary chunk states: narrowest correct type, prefer inference locally, explicit at boundaries.",
+      "case_id": "g22-p01",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333311:summary#c0"
+    },
+    {
+      "query": "How does a router decide where to forward a packet, and what happens when no route in its table matches?",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333316#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111102",
+      "topic_id": "22222222-2222-2222-2222-222222222216",
+      "difficulty": "MEDIUM",
+      "rationale": "Target chunk states longest-prefix match forwarding plus drop/default-gateway fallback.",
+      "case_id": "g22-p02",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333316#c0"
+    },
+    {
+      "query": "Why is switching between threads cheaper than switching between processes, and what danger does their shared memory create?",
+      "relevant_chunk_ids": [
+        "lessons:33333333-3333-3333-3333-333333333332#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111104",
+      "topic_id": "22222222-2222-2222-2222-222222222232",
+      "difficulty": "EASY",
+      "rationale": "Target chunk states shared address space -> cheaper switches but requires synchronization against races.",
+      "case_id": "g22-p03",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk lessons:33333333-3333-3333-3333-333333333332#c0"
+    },
+    {
+      "query": "Does type inference mean my variables have no type until the program runs?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444402#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222211",
+      "difficulty": "EASY",
+      "rationale": "Target explanation states inference is compile-time deduction from the initializer, not dynamic typing.",
+      "case_id": "g22-p04",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444402#c0"
+    },
+    {
+      "query": "Which data structure does breadth-first search use to visit nodes level by level, and how does depth-first search differ?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444482#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111105",
+      "topic_id": "22222222-2222-2222-2222-222222222243",
+      "difficulty": "MEDIUM",
+      "rationale": "Target explanation states BFS level-by-level via queue and DFS via stack.",
+      "case_id": "g22-p05",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444482#c0"
+    },
+    {
+      "query": "What do you call the role that turns raw data into business decisions?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444541#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111110",
+      "topic_id": "22222222-2222-2222-2222-222222222330",
+      "difficulty": "EASY",
+      "rationale": "Target explanation states analysts turn data into decisions; distractors are unrelated roles.",
+      "case_id": "g22-p06",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444541#c0"
+    },
+    {
+      "query": "Starting from the element itself and moving outward, what are the four layers of the CSS box model in order?",
+      "relevant_chunk_ids": [
+        "questions:44444444-4444-4444-4444-444444444599#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111108",
+      "topic_id": "22222222-2222-2222-2222-222222222289",
+      "difficulty": "EASY",
+      "rationale": "Target explanation states content innermost, then padding, border, and margin.",
+      "case_id": "g22-p07",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk questions:44444444-4444-4444-4444-444444444599#c0"
+    },
+    {
+      "query": "How does a program decide what to do next using branching and loops?",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222212#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111101",
+      "topic_id": "22222222-2222-2222-2222-222222222212",
+      "difficulty": "EASY",
+      "rationale": "Target topic covers if/else branching, pattern matching, for/while iteration and early exits.",
+      "case_id": "g22-p08",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222212#c0"
+    },
+    {
+      "query": "Where do the conceptual classes and associations in a domain model come from?",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222279#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111107",
+      "topic_id": "22222222-2222-2222-2222-222222222279",
+      "difficulty": "MEDIUM",
+      "rationale": "Target topic states the domain model is derived from use cases via conceptual classes and associations.",
+      "case_id": "g22-p09",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222279#c0"
+    },
+    {
+      "query": "What mathematical rule drives weight updates while a neural network trains?",
+      "relevant_chunk_ids": [
+        "topics:22222222-2222-2222-2222-222222222328#c0"
+      ],
+      "subject_id": "11111111-1111-1111-1111-111111111109",
+      "topic_id": "22222222-2222-2222-2222-222222222328",
+      "difficulty": "HARD",
+      "rationale": "Target topic states chain-rule flow, weight updates and the training loop (backpropagation).",
+      "case_id": "g22-p10",
+      "mode": "hand_paraphrase",
+      "synthetic": true,
+      "construction": "hand-authored paraphrase: question phrased by the implementer after reading the target chunk; answerable by that chunk; synthetic evaluation probe",
+      "source": "gate21 chunk topics:22222222-2222-2222-2222-222222222328#c0"
+    }
+  ]
+}

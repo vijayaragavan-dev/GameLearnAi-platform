@@ -12,10 +12,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "gamelearn.ai")
 public class AiProperties {
-
     private final Gemini gemini = new Gemini();
+
     private final LearningPath learningPath = new LearningPath();
+
     private final Tutor tutor = new Tutor();
+
+    private final Rag rag = new Rag();
 
     public Gemini getGemini() {
         return gemini;
@@ -29,6 +32,9 @@ public class AiProperties {
         return tutor;
     }
 
+    public Rag getRag() {
+        return rag;
+    }
     public static class Gemini {
 
         /** GEMINI_API_KEY - injected from the environment only. */
@@ -301,6 +307,84 @@ public class AiProperties {
             public void setWindowMinutes(int windowMinutes) {
                 this.windowMinutes = windowMinutes;
             }
+        }
+    }
+
+    /**
+     * Gate 23: RAG evidence sidecar knobs (AI Tutor grounding). Disabled by
+     * default - when false, AI-001 behaves exactly as before (no RAG call,
+     * no prompt change, no audit change). The service token is injected
+     * from the environment only and is never logged or persisted.
+     */
+    public static class Rag {
+
+        /** Feature flag: false keeps the legacy ungrounded tutor path. */
+        private boolean enabled = false;
+        /** Localhost sidecar base URL (service boundary, never public). */
+        private String baseUrl = "http://127.0.0.1:8431";
+        /** RAG_SIDECAR_TOKEN - injected from the environment only. */
+        private String serviceToken = "";
+        private java.time.Duration connectTimeout = java.time.Duration.ofSeconds(1);
+        private java.time.Duration readTimeout = java.time.Duration.ofSeconds(5);
+        /** Top-K evidence chunks requested per tutor question. */
+        private int topK = 5;
+        /** Hard char budget for the rendered evidence block in the prompt. */
+        private int evidenceBudgetChars = 4000;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getServiceToken() {
+            return serviceToken;
+        }
+
+        public void setServiceToken(String serviceToken) {
+            this.serviceToken = serviceToken;
+        }
+
+        public java.time.Duration getConnectTimeout() {
+            return connectTimeout;
+        }
+
+        public void setConnectTimeout(java.time.Duration connectTimeout) {
+            this.connectTimeout = connectTimeout;
+        }
+
+        public java.time.Duration getReadTimeout() {
+            return readTimeout;
+        }
+
+        public void setReadTimeout(java.time.Duration readTimeout) {
+            this.readTimeout = readTimeout;
+        }
+
+        public int getTopK() {
+            return topK;
+        }
+
+        public void setTopK(int topK) {
+            this.topK = topK;
+        }
+
+        public int getEvidenceBudgetChars() {
+            return evidenceBudgetChars;
+        }
+
+        public void setEvidenceBudgetChars(int evidenceBudgetChars) {
+            this.evidenceBudgetChars = evidenceBudgetChars;
         }
     }
 }

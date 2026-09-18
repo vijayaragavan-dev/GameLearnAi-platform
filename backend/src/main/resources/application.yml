@@ -96,6 +96,17 @@ gamelearn:
       rate-limit:
         max-requests-per-hour: 20   # OT-4 - dedicated tutor bucket
         window-minutes: 60
+    rag:
+      # Gate 23: RAG evidence sidecar for AI Tutor grounding.
+      # Disabled by default: AI-001 keeps its exact legacy behavior.
+      # Token comes ONLY from the environment (RAG_SIDECAR_TOKEN).
+      enabled: false
+      base-url: ${RAG_SIDECAR_BASE_URL:http://127.0.0.1:8431}
+      service-token: ${RAG_SIDECAR_TOKEN:}
+      connect-timeout: 1s
+      read-timeout: 5s
+      top-k: 5
+      evidence-budget-chars: 4000
   gamification:
     game-result-rate-limit:
       max-submissions-per-hour: 30

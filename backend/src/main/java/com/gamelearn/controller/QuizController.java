@@ -18,6 +18,7 @@ import com.gamelearn.dto.QuizResultResponse;
 import com.gamelearn.dto.QuizSubmissionRequest;
 import com.gamelearn.service.QuizService;
 import com.gamelearn.service.QuizSubmissionService;
+import com.gamelearn.service.ThinkTimeService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -36,10 +37,13 @@ public class QuizController {
 
     private final QuizService quizService;
     private final QuizSubmissionService quizSubmissionService;
+    private final ThinkTimeService thinkTimeService;
 
-    public QuizController(QuizService quizService, QuizSubmissionService quizSubmissionService) {
+    public QuizController(QuizService quizService, QuizSubmissionService quizSubmissionService,
+            ThinkTimeService thinkTimeService) {
         this.quizService = quizService;
         this.quizSubmissionService = quizSubmissionService;
+        this.thinkTimeService = thinkTimeService;
     }
 
     @Operation(summary = "Get the active quiz of a topic",
@@ -48,9 +52,17 @@ public class QuizController {
                     + "validates topic-subject consistency when provided.")
     @GetMapping("/{topicId}")
     public QuizResponse getQuiz(
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID topicId,
             @org.springframework.web.bind.annotation.RequestParam(required = false) UUID subjectId) {
-        return quizService.getQuizForTopic(topicId, subjectId);
+        QuizResponse response = quizService.getQuizForTopic(topicId, subjectId);
+        // Server-authoritative delivery instant for future think-time
+        // measurement (Gate 14.1). Null-guarded: recording is best-effort
+        // and never affects the delivered quiz.
+        if (principal != null) {
+            thinkTimeService.recordDelivery(principal.id(), response.id());
+        }
+        return response;
     }
 
     @Operation(summary = "Submit answers and receive the evaluated result",

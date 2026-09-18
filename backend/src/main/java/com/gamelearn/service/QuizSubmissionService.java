@@ -61,6 +61,7 @@ public class QuizSubmissionService {
     private final UserRepository userRepository;
     private final AdaptiveLearningService adaptiveLearningService;
     private final GamificationService gamificationService;
+    private final ThinkTimeService thinkTimeService;
 
     public QuizSubmissionService(QuizRepository quizRepository,
                                  QuizQuestionRepository quizQuestionRepository,
@@ -69,7 +70,8 @@ public class QuizSubmissionService {
                                  QuestionAttemptRepository questionAttemptRepository,
                                  UserRepository userRepository,
                                  AdaptiveLearningService adaptiveLearningService,
-                                 GamificationService gamificationService) {
+                                 GamificationService gamificationService,
+                                 ThinkTimeService thinkTimeService) {
         this.quizRepository = quizRepository;
         this.quizQuestionRepository = quizQuestionRepository;
         this.questionRepository = questionRepository;
@@ -78,6 +80,7 @@ public class QuizSubmissionService {
         this.userRepository = userRepository;
         this.adaptiveLearningService = adaptiveLearningService;
         this.gamificationService = gamificationService;
+        this.thinkTimeService = thinkTimeService;
     }
 
     @Transactional
@@ -126,6 +129,13 @@ public class QuizSubmissionService {
         }
         Instant submittedAt = Instant.now();
 
+        // Gate 14.1 think time: elapsed since server-side quiz delivery,
+        // validated by ThinkTimeService. Empty (NULL) on any missing or
+        // anomalous boundary — scoring below is unaffected either way.
+        java.util.Optional<Integer> thinkTimeSeconds = thinkTimeService
+                .resolveElapsedSeconds(authenticatedUserId, quizId, submittedAt,
+                        quiz.getTimeLimitSeconds());
+
         BigDecimal score = BigDecimal.valueOf(correctCount * 100L)
                 .divide(BigDecimal.valueOf(evaluations.size()), 2, RoundingMode.HALF_UP);
 
@@ -149,6 +159,7 @@ public class QuizSubmissionService {
             row.setQuestion(evaluated.question());
             row.setSelectedAnswer(evaluated.selected());
             row.setCorrect(evaluated.isCorrect());
+            thinkTimeSeconds.ifPresent(row::setResponseTimeSeconds);
             questionAttemptRepository.save(row);
 
             reviews.add(new QuizResultResponse.AnswerReview(

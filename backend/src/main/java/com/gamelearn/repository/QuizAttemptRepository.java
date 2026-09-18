@@ -40,4 +40,19 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, java.u
     List<QuizAttempt> findRecentForDashboard(@Param("userId") UUID userId,
                                              @Param("status") QuizAttemptStatus status,
                                              Limit limit);
+
+    /**
+     * Gate 14.2 recommendation-outcome derivation: one learner's COMPLETED
+     * attempts on one topic with quiz and topic joined in a single query
+     * (no N+1), ordered chronologically for point-in-time windowing.
+     * Read-only derivation input; changes nothing.
+     */
+    @Query("""
+            select a from QuizAttempt a join fetch a.quiz q join fetch q.topic t
+            where a.user.id = :userId and t.id = :topicId
+            and a.status = :status
+            order by a.submittedAt asc, a.id asc""")
+    List<QuizAttempt> findCompletedForOutcome(@Param("userId") UUID userId,
+                                              @Param("topicId") UUID topicId,
+                                              @Param("status") QuizAttemptStatus status);
 }

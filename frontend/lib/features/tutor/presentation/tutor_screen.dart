@@ -133,7 +133,15 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
       final response = await ref
           .read(intelligenceRepoProvider)
           .askTutor(
-            TutorRequest(question: question, conversation: buildWindow()),
+            TutorRequest(
+              question: question,
+              // Forward the screen's entry focus so server-side RAG scoping
+              // can ground the answer; the backend validates these IDs and
+              // falls back to pointer/GENERIC focus when they are absent.
+              subjectId: widget.initialSubjectId,
+              topicId: widget.initialTopicId,
+              conversation: buildWindow(),
+            ),
           );
       if (!mounted) return;
       setState(() {
