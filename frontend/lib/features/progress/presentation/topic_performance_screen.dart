@@ -363,12 +363,13 @@ class _TopicPerformanceScreenState
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(
-                                height: 72,
+                                height: 104,
                                 width: double.infinity,
                                 child: _TopicSparkline(
                                   scores: topicQuizzes.reversed
                                       .map((q) => q.score)
                                       .toList(),
+                                  isDark: isDark,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -520,22 +521,32 @@ class _TrendChip extends StatelessWidget {
 }
 
 class _TopicSparkline extends StatelessWidget {
-  const _TopicSparkline({required this.scores});
+  const _TopicSparkline({required this.scores, required this.isDark});
 
   final List<double> scores;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-    painter: _SparklinePainter(scores: scores, color: AppColors.primaryBright),
+    painter: _SparklinePainter(
+      scores: scores,
+      color: AppColors.primaryBright,
+      isDark: isDark,
+    ),
     size: Size.infinite,
   );
 }
 
 class _SparklinePainter extends CustomPainter {
-  _SparklinePainter({required this.scores, required this.color});
+  _SparklinePainter({
+    required this.scores,
+    required this.color,
+    required this.isDark,
+  });
 
   final List<double> scores;
   final Color color;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -578,16 +589,35 @@ class _SparklinePainter extends CustomPainter {
     canvas.drawPath(path, linePaint);
     final dot = Paint()..color = color;
     final border = Paint()
-      ..color = AppColors.surface
+      ..color = isDark ? AppColors.surface : AppLightColors.surface
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
-    for (final p in points) {
+    for (var i = 0; i < points.length; i++) {
+      final p = points[i];
+      if (i == points.length - 1 && isDark) {
+        canvas.drawCircle(
+          p,
+          7,
+          Paint()
+            ..color = color.withValues(alpha: 0.30)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+        );
+      }
       canvas.drawCircle(p, 3, border);
       canvas.drawCircle(p, 2.1, dot);
+    }
+    // Truthful 0–100 grid anchors.
+    final grid = Paint()
+      ..color = AppColors.border.withValues(alpha: 0.5)
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+    for (final frac in const [0.25, 0.5, 0.75]) {
+      final y = size.height * (1 - frac);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
   }
 
   @override
   bool shouldRepaint(_SparklinePainter old) =>
-      old.scores != scores || old.color != color;
+      old.scores != scores || old.color != color || old.isDark != isDark;
 }
