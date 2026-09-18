@@ -482,6 +482,11 @@ class CinematicDialog extends StatelessWidget {
       elevation: 0,
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      buttonPadding: const EdgeInsets.symmetric(horizontal: 8),
+      actionsAlignment: MainAxisAlignment.end,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.xl),
         side: BorderSide(
@@ -504,6 +509,276 @@ class CinematicDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Premium dialog entry point — one scrim + inset language everywhere.
+///
+/// Behavior-neutral wrapper around [showDialog]; only the barrier and
+/// padding are governed so every confirm/reveal dialog feels like the
+/// same GameLearnAI product.
+Future<T?> showPremiumDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+  Color? barrierColor,
+}) {
+  return showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    barrierColor: barrierColor ?? AppColors.scrim,
+    builder: builder,
+  );
+}
+
+/// Premium dialog actions — one CTA hierarchy for every dialog.
+///
+/// [primaryLabel]/[onPrimary] is the affirming action (accent fill);
+/// [secondaryLabel]/[onSecondary] is the dismissive action (ghost).
+/// Restrained by design: no gradients inside dialogs, just a single
+/// accent fill + ghost — readable in both themes, wrap-safe on 320px.
+class PremiumDialogActions extends StatelessWidget {
+  const PremiumDialogActions({
+    super.key,
+    required this.primaryLabel,
+    required this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
+    this.accent = AppColors.primary,
+    this.destructive = false,
+  });
+
+  final String primaryLabel;
+  final VoidCallback? onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+  final Color accent;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = destructive ? AppColors.error : accent;
+    return Semantics(
+      container: true,
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (secondaryLabel != null)
+            Semantics(
+              button: true,
+              label: secondaryLabel,
+              child: GestureDetector(
+                onTap: onSecondary,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    secondaryLabel!.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Semantics(
+            button: true,
+            label: primaryLabel,
+            child: GestureDetector(
+              onTap: onPrimary,
+              child: Opacity(
+                opacity: onPrimary == null ? AppStates.disabledOpacity : 1,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: onPrimary == null
+                        ? (isDark
+                            ? AppColors.lockedSurface
+                            : AppLightColors.lockedSurface)
+                        : fill,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: onPrimary == null
+                        ? Border.all(
+                            color: isDark
+                                ? AppColors.border
+                                : AppLightColors.border,
+                          )
+                        : Border.all(
+                            color: fill.withValues(
+                                alpha: isDark ? 0.55 : 0.35),
+                          ),
+                    boxShadow: onPrimary == null
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: fill.withValues(
+                                  alpha: isDark ? 0.28 : 0.16),
+                              blurRadius: 18,
+                            ),
+                          ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    primaryLabel.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                      color: onPrimary == null
+                          ? AppColors.textDisabled
+                          : (destructive ? Colors.white : AppColors.textOnColor),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Premium bottom-sheet shell — one surface language for option sheets,
+/// filters, and confirmations presented bottom-up.
+///
+/// Behavior-neutral container: [child] renders exactly as given; only
+/// the surface (drag handle, XL top radius, accent edge) is governed.
+class PremiumSheet extends StatelessWidget {
+  const PremiumSheet({
+    super.key,
+    required this.child,
+    this.accent = AppColors.primary,
+  });
+
+  final Widget child;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xl),
+        ),
+        border: Border.all(
+          color: accent.withValues(alpha: isDark ? 0.35 : 0.22),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Semantics(
+              label: 'Sheet handle',
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.borderStrong : AppLightColors.borderStrong,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+            ),
+            Flexible(child: child),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Premium bottom-sheet entry point — governed shape + scrim.
+Future<T?> showPremiumSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  Color? barrierColor,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    barrierColor: barrierColor ?? AppColors.scrim,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+    ),
+    builder: builder,
+  );
+}
+
+/// Premium snackbar — one toast language for transient feedback.
+///
+/// Theme-aware fill, accent edge, icon + message; never a bare grey
+/// Material toast. Behavior-neutral: duration and action pass through.
+void showPremiumSnack(
+  BuildContext context,
+  String message, {
+  Color accent = AppColors.primary,
+  IconData icon = Icons.info_rounded,
+  SnackBarAction? action,
+  Duration duration = const Duration(seconds: 3),
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
+              border: Border.all(color: accent.withValues(alpha: 0.45)),
+            ),
+            child: Icon(icon, size: 15, color: accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontFamily: AppTypography.bodyFamily,
+                fontSize: 13,
+                height: 1.4,
+                color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor:
+          isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+      behavior: SnackBarBehavior.floating,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: accent.withValues(alpha: isDark ? 0.4 : 0.28)),
+      ),
+      action: action,
+      duration: duration,
+    ),
+  );
 }
 
 /// Cinematic loading state — one premium surface language for full-screen

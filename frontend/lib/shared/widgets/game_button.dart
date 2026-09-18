@@ -277,16 +277,21 @@ class GhostGameButton extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  fontFamily: AppTypography.bodyFamily,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : AppLightColors.textSecondary,
+              Flexible(
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppLightColors.textSecondary,
+                  ),
                 ),
               ),
             ],

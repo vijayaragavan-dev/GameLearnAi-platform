@@ -14,6 +14,7 @@ import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/premium_settings.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 
 /// Local preferences only (audio, haptics). Server-side settings do not
@@ -122,7 +123,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    SegmentedButton<ThemeMode>(
+                    PremiumSegmentedControl<ThemeMode>(
                       segments: const [
                         ButtonSegment<ThemeMode>(
                           value: ThemeMode.system,
@@ -146,9 +147,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             .read(themeControllerProvider.notifier)
                             .set(s.first);
                       },
-                      style: ButtonStyle(
-                        visualDensity: VisualDensity.compact,
-                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -238,35 +236,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SectionCard(
             title: 'ACCOUNT',
             children: [
-              Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                clipBehavior: Clip.antiAlias,
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.logout_rounded,
-                    size: 21,
-                    color: AppColors.error,
-                  ),
-                  title: const Text(
-                    'Sign out',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.error,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Ends this session on this device',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.textTertiary
-                          : AppLightColors.textTertiary,
-                    ),
-                  ),
-                  onTap: () => _confirmLogout(context),
-                ),
+              PremiumAccountRow(
+                icon: Icons.logout_rounded,
+                title: 'Sign out',
+                subtitle: 'Ends this session on this device',
+                danger: true,
+                semanticLabel: 'Sign out. Ends this session on this device',
+                onTap: () => _confirmLogout(context),
               ),
             ],
           ),
@@ -292,21 +268,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showPremiumDialog<bool>(
       context: context,
       builder: (dialogContext) => CinematicDialog(
         accent: AppColors.error,
         title: const Text('Sign out?'),
         content: const Text('Your progress lives safely on the servers.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('CANCEL'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('SIGN OUT'),
+          PremiumDialogActions(
+            primaryLabel: 'Sign out',
+            onPrimary: () => Navigator.of(dialogContext).pop(true),
+            secondaryLabel: 'Cancel',
+            onSecondary: () => Navigator.of(dialogContext).pop(false),
+            accent: AppColors.error,
+            destructive: true,
           ),
         ],
       ),
@@ -354,6 +329,8 @@ class SectionCard extends StatelessWidget {
   );
 }
 
+/// Legacy name kept for test compatibility — delegates to the premium
+/// settings row so the rendered UI stays in the GameLearnAI language.
 class VolumeTile extends StatelessWidget {
   const VolumeTile({
     super.key,
@@ -374,48 +351,19 @@ class VolumeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: enabled ? AppColors.secondary : (isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, fontFamily: AppTypography.bodyFamily, color: enabled ? (isDark ? AppColors.textPrimary : AppLightColors.textPrimary) : (isDark ? AppColors.textTertiary : AppLightColors.textTertiary))),
-                      Text(subtitle, style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary, fontFamily: AppTypography.bodyFamily)),
-                    ],
-                  ),
-                ),
-                Text('${(value * 100).round()}%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: enabled ? AppColors.primary : (isDark ? AppColors.textTertiary : AppLightColors.textTertiary))),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Semantics(
-              label: '$title ${(value * 100).round()} percent',
-              child: Slider(
-                value: value,
-                min: 0.0,
-                max: 1.0,
-                divisions: 20,
-                label: '${(value * 100).round()}%',
-                activeColor: AppColors.primary,
-                inactiveColor: isDark ? AppColors.border : AppLightColors.border,
-                onChanged: enabled ? onChanged : null,
-              ),
-            ),
-          ],
-        ),
-      );
+    return PremiumSliderRow(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      value: value,
+      enabled: enabled,
+      onChanged: onChanged,
+    );
   }
 }
 
+/// Legacy name kept for test compatibility — delegates to the premium
+/// settings row so the rendered UI stays in the GameLearnAI language.
 class SwitchTile extends StatelessWidget {
   const SwitchTile({
     super.key,
@@ -434,34 +382,12 @@ class SwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-    color: Colors.transparent,
-    borderRadius: BorderRadius.circular(AppRadius.lg),
-    clipBehavior: Clip.antiAlias,
-    child: SwitchListTile(
-      secondary: Icon(icon, size: 20, color: AppColors.secondary),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14.5,
-          fontWeight: FontWeight.w600,
-          fontFamily: AppTypography.bodyFamily,
-          color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 12,
-          color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
-          fontFamily: AppTypography.bodyFamily,
-        ),
-      ),
+    return PremiumSwitchRow(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
       value: value,
-      activeThumbColor: AppColors.primaryBright,
       onChanged: onChanged,
-    ),
-  );
+    );
   }
 }

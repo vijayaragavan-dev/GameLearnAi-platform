@@ -185,7 +185,7 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       _timer.resume();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(e).message)));
+      showPremiumSnack(context, describeError(e).message, accent: AppColors.error, icon: Icons.error_outline_rounded);
     }
   }
 

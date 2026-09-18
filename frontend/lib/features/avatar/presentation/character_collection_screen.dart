@@ -11,6 +11,7 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../avatar/providers/avatar_providers.dart';
@@ -218,11 +219,7 @@ class _NextUnlockCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          FilledButton(
-            onPressed: () => context.push('/profile/characters/${item.id}'),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-            child: Text(item.state == AvatarState.insufficientCredits ? 'VIEW' : 'VIEW', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-          ),
+          GameChip(label: 'VIEW', icon: Icons.visibility_rounded, onTap: () => context.push('/profile/characters/${item.id}')),
         ],
       ),
     );

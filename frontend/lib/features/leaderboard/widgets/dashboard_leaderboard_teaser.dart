@@ -6,6 +6,7 @@ import '../../../app/router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../providers/leaderboard_providers.dart';
 import 'leaderboard_avatar.dart';
@@ -44,10 +45,7 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
           children: [
             Text('Arena offline', style: AppTypography.bodySecondary(context)),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => ref.read(myPositionProvider.notifier).refreshOverall(),
-              child: const Text('RETRY'),
-            ),
+            GameChip(label: 'RETRY', icon: Icons.refresh_rounded, onTap: () => ref.read(myPositionProvider.notifier).refreshOverall()),
           ],
         ),
       );
@@ -68,10 +66,7 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
               style: AppTypography.bodySecondary(context),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => ref.read(myPositionProvider.notifier).refreshOverall(),
-              child: const Text('RETRY'),
-            ),
+            GameChip(label: 'RETRY', icon: Icons.refresh_rounded, onTap: () => ref.read(myPositionProvider.notifier).refreshOverall()),
           ],
         ),
       );
@@ -124,15 +119,7 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => context.push(Routes.arena),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  child: const Text('VIEW ARENA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-                ),
+                GameChip(label: 'VIEW ARENA', icon: Icons.emoji_events_rounded, onTap: () => context.push(Routes.arena)),
               ],
             ),
             if (top.isNotEmpty) ...[

@@ -88,12 +88,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           }
         }
         if (path.nodes.every((n) => n.status == 'COMPLETED')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'This world is complete! Explore another world or revisit topics.',
-              ),
-            ),
+          showPremiumSnack(
+            context,
+            'This world is complete! Explore another world or revisit topics.',
+            accent: AppColors.success,
+            icon: Icons.emoji_events_rounded,
           );
         }
       }

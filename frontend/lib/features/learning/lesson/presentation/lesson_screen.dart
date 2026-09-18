@@ -223,20 +223,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                                 color: AppColors.secondary,
                               ),
                             const SizedBox(width: 6),
-                            TextButton(
-                              onPressed: _openTutor,
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'FULL CHAT',
-                                style: TextStyle(fontSize: 10.5),
-                              ),
-                            ),
+                            GameChip(label: 'FULL CHAT', icon: Icons.forum_rounded, color: AppColors.secondary, onTap: _openTutor),
                           ],
                         ),
                       ),

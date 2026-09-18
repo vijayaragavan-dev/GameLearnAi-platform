@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
+import '../../../shared/widgets/premium_buttons.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../providers/avatar_providers.dart';
 import '../widgets/avatar_visual.dart';
@@ -38,7 +39,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
   }
 
   Future<void> _purchase(AvatarCollectionItem item) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showPremiumDialog<bool>(
       context: context,
       builder: (ctx) => CinematicDialog(
         accent: AppColors.xp,
@@ -54,11 +55,12 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('UNLOCK'),
+          PremiumDialogActions(
+            primaryLabel: 'Unlock',
+            onPrimary: () => Navigator.pop(ctx, true),
+            secondaryLabel: 'Cancel',
+            onSecondary: () => Navigator.pop(ctx, false),
+            accent: AppColors.xp,
           ),
         ],
       ),
@@ -72,7 +74,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       final err = describeError(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.message)));
+      showPremiumSnack(context, err.message, accent: AppColors.error, icon: Icons.error_outline_rounded);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -87,7 +89,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       final err = describeError(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.message)));
+      showPremiumSnack(context, err.message, accent: AppColors.error, icon: Icons.error_outline_rounded);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -98,18 +100,18 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
     try {
       await ref.read(profileAvatarProvider.notifier).equip(item.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${item.displayName} equipped!'), backgroundColor: AppColors.success));
+      showPremiumSnack(context, '${item.displayName} equipped!', accent: AppColors.success, icon: Icons.check_circle_rounded);
     } catch (e) {
       if (!mounted) return;
       final err = describeError(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.message)));
+      showPremiumSnack(context, err.message, accent: AppColors.error, icon: Icons.error_outline_rounded);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   void _showCelebration(AvatarCollectionItem item) {
-    showDialog(
+    showPremiumDialog(
       context: context,
       builder: (ctx) => CinematicDialog(
         accent: AppColors.xp,
@@ -126,14 +128,15 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CONTINUE')),
-          FilledButton(
-            onPressed: () {
+          PremiumDialogActions(
+            primaryLabel: 'Equip now',
+            onPrimary: () {
               Navigator.pop(ctx);
               _equip(item);
             },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('EQUIP NOW'),
+            secondaryLabel: 'Continue',
+            onSecondary: () => Navigator.pop(ctx),
+            accent: AppColors.primary,
           ),
         ],
       ),
@@ -276,34 +279,35 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                   if (_isProcessing)
                     const CinematicLoading(message: 'Updating character...')
                   else if (isEquipped)
-                    FilledButton(
-                      onPressed: null,
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(48)),
-                      child: const Text('EQUIPPED ✓', style: TextStyle(fontWeight: FontWeight.w800)),
+                    PrimaryGameButton(
+                      label: 'Equipped ✓',
+                      onTap: null,
+                      icon: Icons.check_circle_rounded,
                     )
                   else if (isOwned)
-                    FilledButton(
-                      onPressed: () => _equip(item),
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size.fromHeight(48)),
-                      child: const Text('EQUIP', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+                    PrimaryGameButton(
+                      label: 'Equip',
+                      icon: Icons.checkroom_rounded,
+                      onTap: () => _equip(item),
                     )
                   else if (isPurchasable)
-                    FilledButton(
-                      onPressed: () => _purchase(item),
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.xp, foregroundColor: Colors.black, minimumSize: const Size.fromHeight(48)),
-                      child: Text('UNLOCK FOR ${item.creditCost} CREDITS', style: const TextStyle(fontWeight: FontWeight.w800)),
+                    RewardButton(
+                      label: 'Unlock for ${item.creditCost} credits',
+                      icon: Icons.diamond_rounded,
+                      onTap: () => _purchase(item),
                     )
                   else if (isInsufficient)
-                    FilledButton(
-                      onPressed: null,
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.warning, minimumSize: const Size.fromHeight(48)),
-                      child: Text('${item.creditsShort} CREDITS NEEDED', style: const TextStyle(fontWeight: FontWeight.w800)),
+                    PrimaryGameButton(
+                      label: '${item.creditsShort} credits needed',
+                      onTap: null,
+                      icon: Icons.lock_rounded,
                     )
                   else if (isClaimable)
-                    FilledButton(
-                      onPressed: () => _claim(item),
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.success, minimumSize: const Size.fromHeight(48)),
-                      child: const Text('CLAIM CHARACTER', style: TextStyle(fontWeight: FontWeight.w800)),
+                    PrimaryGameButton(
+                      label: 'Claim character',
+                      icon: Icons.redeem_rounded,
+                      color: AppColors.success,
+                      onTap: () => _claim(item),
                     )
                   else if (isLocked)
                     Column(
@@ -315,10 +319,10 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                           child: Column(children: [const Icon(Icons.lock_rounded, color: AppColors.locked), const SizedBox(height: 4), const Text('LOCKED', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.locked)), Text('Keep learning to unlock', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))]),
                         ),
                         const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: () => context.go('/subjects'),
-                          style: FilledButton.styleFrom(backgroundColor: AppColors.primary, minimumSize: const Size.fromHeight(48)),
-                          child: const Text('CONTINUE LEARNING'),
+                        PrimaryGameButton(
+                          label: 'Continue learning',
+                          icon: Icons.school_rounded,
+                          onTap: () => context.go('/subjects'),
                         ),
                       ],
                     ),

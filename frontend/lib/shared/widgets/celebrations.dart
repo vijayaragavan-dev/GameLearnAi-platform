@@ -7,6 +7,7 @@ import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
 import 'badges.dart';
+import 'feedback.dart';
 import 'nova_companion.dart';
 import 'achievement_icon.dart';
 
@@ -231,7 +232,7 @@ class LevelUpOverlay extends StatefulWidget {
   final VoidCallback onContinue;
 
   static Future<void> show(BuildContext context, {required int newLevel}) =>
-      showDialog<void>(
+      showPremiumDialog<void>(
         context: context,
         barrierDismissible: false,
         barrierColor: AppColors.scrim,
@@ -367,7 +368,7 @@ class AchievementUnlockOverlay extends StatelessWidget {
     required String description,
     required String iconKey,
     int? xpReward,
-  }) => showDialog<void>(
+  }) => showPremiumDialog<void>(
     context: context,
     barrierDismissible: true,
     barrierColor: AppColors.scrim,

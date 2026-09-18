@@ -10,6 +10,7 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/game_visual_identity.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../game_engine/engine/game_combo.dart';
 import '../../../game_engine/engine/game_scoring.dart';
@@ -170,7 +171,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
   }
 
   void _showUnlockSequence(GameResult result) {
-    showDialog<void>(
+    showPremiumDialog<void>(
       context: context,
       barrierDismissible: false,
       barrierColor: AppColors.scrim,
@@ -213,9 +214,10 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
     final ch = _challenges[_index];
     final progress = (_index + (_showResult ? 1 : 0)) / _challenges.length;
     final isWide = MediaQuery.sizeOf(context).width > 700;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final codeBg = isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh;
     final identity = GameVisualRegistry.of(GameType.unlockCode);
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           SafeArea(
@@ -308,7 +310,7 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: AppColors.borderStrong)),
+                            decoration: BoxDecoration(color: codeBg, borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: AppColors.borderStrong)),
                             child: SelectableText(ch.codeSnippet!, style: const TextStyle(fontFamily: 'monospace', fontSize: 13, height: 1.5, color: AppColors.textPrimary)),
                           ),
                         if (ch.codeSnippet != null) const SizedBox(height: 12),
@@ -354,13 +356,13 @@ class _UnlockCodeScreenState extends ConsumerState<UnlockCodeScreen> {
                           ),
                         ],
                         const SizedBox(height: 18),
-                        FilledButton(
-                          onPressed: _selected == null || _showResult ? null : _onSubmit,
-                          style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 54), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                          child: Text(_showResult ? (_wasCorrect ? 'NEXT CHALLENGE' : (_lives <= 0 ? 'GAME OVER' : 'CONTINUE')) : 'UNLOCK FRAGMENT', style: const TextStyle(letterSpacing: 1.2, fontWeight: FontWeight.w700)),
+                        PrimaryGameButton(
+                          label: _showResult ? (_wasCorrect ? 'Next challenge' : (_lives <= 0 ? 'Game over' : 'Continue')) : 'Unlock fragment',
+                          icon: Icons.key_rounded,
+                          onTap: _selected == null || _showResult ? null : () => _onSubmit(),
                         ),
                         const SizedBox(height: 8),
-                        TextButton(onPressed: () => context.pop(), child: const Text('EXIT VAULT')),
+                        GhostGameButton(label: 'Exit vault', icon: Icons.exit_to_app_rounded, expanded: true, onTap: () => context.pop()),
                       ],
                     ),
                   ),
@@ -545,78 +547,84 @@ class _UnlockDialogState extends State<_UnlockDialog> with SingleTickerProviderS
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Dialog(
-      backgroundColor: isDark ? AppColors.surface : AppLightColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        side: BorderSide(
-          color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35),
-          width: 1.4,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedBuilder(
-              animation: _c,
-              builder: (context, _) {
-                final t = Curves.easeOutCubic.transform(_c.value);
-                return Transform.scale(scale: 0.8 + 0.2 * t, child: Opacity(opacity: t, child: Column(children: [Icon(Icons.lock_open_rounded, size: 56, color: AppColors.success), const SizedBox(height: 12), const Text('VAULT UNLOCKED!', style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.success))])));
-              },
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.success.withValues(alpha: 0.4))),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: widget.vault.fragments
-                    .map(
-                      (f) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 44,
-                        height: 44,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.surface
-                              : AppLightColors.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.success),
-                        ),
-                        child: Text(
-                          f,
-                          style: const TextStyle(
-                            fontFamily: AppTypography.displayFamily,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.success,
-                          ),
+    return CinematicDialog(
+      accent: AppColors.success,
+      title: const Text('VAULT UNLOCKED!'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _c,
+            builder: (context, _) {
+              final t = Curves.easeOutCubic.transform(_c.value);
+              return Transform.scale(
+                scale: 0.8 + 0.2 * t,
+                child: Opacity(
+                  opacity: t,
+                  child: const Column(children: [
+                    Icon(Icons.lock_open_rounded, size: 48, color: AppColors.success),
+                    SizedBox(height: 8),
+                    Text('CODE CRACKED', style: TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.success)),
+                  ]),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.success.withValues(alpha: 0.4))),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: widget.vault.fragments
+                  .map(
+                    (f) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.surface
+                            : AppLightColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.success),
+                      ),
+                      child: Text(
+                        f,
+                        style: const TextStyle(
+                          fontFamily: AppTypography.displayFamily,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
                         ),
                       ),
-                    )
-                    .toList(),
-              ),
+                    ),
+                  )
+                  .toList(),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'CODE: ${widget.vault.display}',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 2,
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.textSecondary
-                    : AppLightColors.textSecondary,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'CODE: ${widget.vault.display}',
+            style: TextStyle(
+              fontSize: 11,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w700,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppLightColors.textSecondary,
             ),
-            const SizedBox(height: 18),
-            SizedBox(width: double.infinity, child: FilledButton(onPressed: widget.onContinue, child: const Text('VIEW RESULTS'))),
-          ],
-        ),
+          ),
+        ],
       ),
+      actions: [
+        PremiumDialogActions(
+          primaryLabel: 'View results',
+          onPrimary: widget.onContinue,
+          accent: AppColors.success,
+        ),
+      ],
     );
   }
 }

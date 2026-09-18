@@ -443,18 +443,21 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                     Semantics(
                       button: true,
                       label: 'Return to dashboard',
-                      child: TextButton(
-                        onPressed: () => context.go(Routes.home),
-                        child: const Text('RETURN TO BASE'),
+                      child: GhostGameButton(
+                        label: 'Return to base',
+                        icon: Icons.home_rounded,
+                        expanded: true,
+                        onTap: () => context.go(Routes.home),
                       ),
                     ),
                     // Contextual secondary: back to arena when subject available
                     if (r.config.subjectId != null && r.config.subjectId!.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      TextButton.icon(
-                        onPressed: () => context.go(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
-                        icon: const Icon(Icons.stadium_rounded, size: 16),
-                        label: Text('BACK TO ARENA • ${r.config.subjectName ?? 'World'}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                      GhostGameButton(
+                        label: 'Back to arena • ${r.config.subjectName ?? 'World'}',
+                        icon: Icons.stadium_rounded,
+                        expanded: true,
+                        onTap: () => context.go(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
                       ),
                     ],
                   ],

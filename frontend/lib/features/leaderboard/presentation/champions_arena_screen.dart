@@ -12,6 +12,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../providers/leaderboard_providers.dart';
@@ -734,16 +735,9 @@ class _PaginationBar extends StatelessWidget {
         Expanded(child: Text('$totalPlayers champions • Page $page of $totalPages', style: AppTypography.caption(context))),
         const SizedBox(width: 12),
         if (!isLast)
-          FilledButton(
-            onPressed: onLoadMore,
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8)),
-            child: const Text('LOAD MORE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
-          )
+          GameChip(label: 'LOAD MORE', icon: Icons.expand_more_rounded, onTap: onLoadMore)
         else
-          OutlinedButton(
-            onPressed: onRefresh,
-            child: const Text('REFRESH'),
-          ),
+          GameChip(label: 'REFRESH', icon: Icons.refresh_rounded, color: AppColors.secondary, onTap: onRefresh),
       ],
     );
   }
@@ -795,10 +789,10 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 14),
-          FilledButton(
-            onPressed: () => context.go('/subjects'),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('EXPLORE WORLDS'),
+          SecondaryGameButton(
+            label: 'Explore worlds',
+            icon: Icons.public_rounded,
+            onTap: () => context.go('/subjects'),
           ),
         ],
       ),

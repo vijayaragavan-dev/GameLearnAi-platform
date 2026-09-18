@@ -18,6 +18,7 @@ import '../../../shared/widgets/adaptive_next_action.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/recommendation_card.dart'
@@ -856,7 +857,7 @@ class _AchievementProgress extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${summary.unlockedAchievements} Badges earned', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)), const SizedBox(height: 2), Text('Keep completing challenges to unlock rare achievements.', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary))])),
           const SizedBox(width: 8),
-          FilledButton(onPressed: () => context.go(Routes.achievements), style: FilledButton.styleFrom(backgroundColor: AppColors.xp, foregroundColor: Colors.black), child: const Text('VIEW')),
+          GameChip(label: 'VIEW', icon: Icons.emoji_events_rounded, color: AppColors.xp, onTap: () => context.go(Routes.achievements)),
         ]),
       ),
     ]);

@@ -20,6 +20,7 @@ import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
@@ -139,9 +140,11 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                 icon: Icons.public_off_rounded,
                 title: 'No worlds yet',
                 message: 'New worlds are being prepared. Check back soon.',
-                action: OutlinedButton(
-                  onPressed: _reload,
-                  child: const Text('REFRESH'),
+                action: SecondaryGameButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh_rounded,
+                  expanded: false,
+                  onTap: _reload,
                 ),
               );
             }
@@ -248,11 +251,13 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                               title: 'No worlds in this category',
                               message:
                                   'No "$_selectedCategory" worlds found. Try another category or view all worlds.',
-                              action: OutlinedButton(
-                                onPressed: () => setState(
+                              action: SecondaryGameButton(
+                                label: 'Show all',
+                                icon: Icons.public_rounded,
+                                expanded: false,
+                                onTap: () => setState(
                                   () => _selectedCategory = SubjectGrouping.allLabel,
                                 ),
-                                child: const Text('SHOW ALL'),
                               ),
                             )
                           else

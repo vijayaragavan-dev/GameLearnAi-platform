@@ -5,17 +5,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:gamelearn_app/core/audio/audio_manager.dart';
 import 'package:gamelearn_app/core/providers.dart';
-import 'package:gamelearn_app/core/theme/app_colors.dart';
 import 'package:gamelearn_app/features/profile/presentation/settings_screen.dart';
+import 'package:gamelearn_app/shared/widgets/premium_settings.dart';
 
 import '../helpers/fake_backend.dart';
 
 void main() {
   group('Runtime bugfix regression', () {
-    testWidgets('SwitchTile and logout ListTile have Material ancestor with transparent clip',
+    testWidgets('SwitchTile and logout row have Material ancestor with transparent clip',
         (tester) async {
-      // Pump isolated SwitchTile and ListTile as they appear inside GameCard/SectionCard.
-      // This validates the fix for DecoratedBox ink assert without needing full SettingsScreen auth.
+      // Pump isolated SwitchTile and the premium logout row as they appear
+      // inside GameCard/SectionCard. This validates the fix for DecoratedBox
+      // ink assert without needing full SettingsScreen auth. SwitchTile now
+      // renders the premium row (Switch, not SwitchListTile) and sign-out
+      // renders PremiumAccountRow — both keep the transparent Material +
+      // antiAlias clip contract.
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -28,15 +32,12 @@ void main() {
                   value: true,
                   onChanged: _noop,
                 ),
-                Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                    title: const Text('Sign out'),
-                    onTap: () {},
-                  ),
+                PremiumAccountRow(
+                  icon: Icons.logout_rounded,
+                  title: 'Sign out',
+                  subtitle: 'Ends this session on this device',
+                  danger: true,
+                  onTap: () {},
                 ),
               ],
             ),
@@ -45,27 +46,41 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final listTiles = find.byType(ListTile);
-      expect(listTiles, findsWidgets);
-      for (final e in tester.widgetList<ListTile>(listTiles)) {
-        final ctx = tester.element(find.byWidget(e));
-        final material = ctx.findAncestorWidgetOfExactType<Material>();
-        expect(material, isNotNull,
-            reason: 'ListTile "${e.title}" must have Material ancestor for ink');
-        expect(material!.color, Colors.transparent);
-        expect(material.clipBehavior, Clip.antiAlias);
-      }
+      final logoutRows = find.byType(PremiumAccountRow);
+      expect(logoutRows, findsOneWidget);
+      final rowMaterials = find.descendant(
+        of: logoutRows,
+        matching: find.byType(Material),
+      );
+      expect(rowMaterials, findsWidgets,
+          reason: 'PremiumAccountRow must bring Material for ink');
+      expect(
+        tester
+            .widgetList<Material>(rowMaterials)
+            .any((m) => m.color == Colors.transparent && m.clipBehavior == Clip.antiAlias),
+        isTrue,
+        reason: 'Row Material must be transparent + antiAlias clipped',
+      );
 
-      final switchTiles = find.byType(SwitchListTile);
-      expect(switchTiles, findsWidgets);
-      for (final e in tester.widgetList<SwitchListTile>(switchTiles)) {
+      final switches = find.byType(Switch);
+      expect(switches, findsWidgets);
+      for (final e in tester.widgetList<Switch>(switches)) {
         final ctx = tester.element(find.byWidget(e));
-        final material = ctx.findAncestorWidgetOfExactType<Material>();
-        expect(material, isNotNull,
-            reason: 'SwitchListTile "${e.title}" must have Material ancestor');
-        expect(material!.color, Colors.transparent);
-        expect(material.borderRadius, isNotNull);
-        expect(material.clipBehavior, Clip.antiAlias);
+        final materials = <Material>[];
+        ctx.visitAncestorElements((el) {
+          final w = el.widget;
+          if (w is Material) materials.add(w);
+          return true;
+        });
+        expect(materials, isNotEmpty,
+            reason: 'Switch must have Material ancestor');
+        expect(
+          materials.any((m) =>
+              m.color == Colors.transparent &&
+              m.clipBehavior == Clip.antiAlias),
+          isTrue,
+          reason: 'SwitchTile Material must be transparent + antiAlias clipped',
+        );
       }
     });
 

@@ -7,6 +7,7 @@ import '../../../core/intelligence/learner_intelligence.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
@@ -112,7 +113,7 @@ class IntelligenceSection extends ConsumerWidget {
                       ]),
                     ),
                     const SizedBox(width: 8),
-                    FilledButton(onPressed: () => _handleRecTap(context, r), style: FilledButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)), child: Text(r.actionLabel.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800))),
+                    GameChip(label: r.actionLabel.toUpperCase(), icon: Icons.play_arrow_rounded, onTap: () => _handleRecTap(context, r)),
                   ],
                 ),
               ),
@@ -136,7 +137,7 @@ class IntelligenceSection extends ConsumerWidget {
                     Text(w.topicName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
                     Text('Mastery ${w.masteryScore.round()}% • ${w.trend.isEmpty ? 'needs practice' : w.trend.toLowerCase()} • ${w.currentDifficulty}', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                   ])),
-                  TextButton(onPressed: () => context.push(Routes.tutorWithContext(topicId: w.topicId, topicName: w.topicName, focus: w.topicName)), child: const Text('TUTOR')),
+                  GameChip(label: 'TUTOR', icon: Icons.psychology_rounded, color: AppColors.secondary, onTap: () => context.push(Routes.tutorWithContext(topicId: w.topicId, topicName: w.topicName, focus: w.topicName))),
                 ]),
               ),
             ),
@@ -172,7 +173,7 @@ class IntelligenceSection extends ConsumerWidget {
                     Text(rev.topicName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
                     Text('${rev.masteryScore.round()}% • Next: ${rev.currentDifficulty}', style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                   ])),
-                  OutlinedButton(onPressed: () => context.push(Routes.tutorWithContext(topicId: rev.topicId, topicName: rev.topicName, focus: rev.topicName)), child: const Text('REVISE')),
+                  GameChip(label: 'REVISE', icon: Icons.replay_rounded, color: AppColors.warning, onTap: () => context.push(Routes.tutorWithContext(topicId: rev.topicId, topicName: rev.topicName, focus: rev.topicName))),
                 ]),
               ),
             ),
@@ -221,7 +222,7 @@ class IntelligenceSection extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(g.reason, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                     const SizedBox(height: 8),
-                    SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () => context.push(Routes.gameHub(g.topicId), extra: g.topicName), child: Text('PLAY ${g.gameType.toUpperCase()}'))),
+                    SecondaryGameButton(label: 'Play ${g.gameType}', icon: Icons.play_arrow_rounded, onTap: () => context.push(Routes.gameHub(g.topicId), extra: g.topicName)),
                   ]),
                 ),
             ],
@@ -239,7 +240,7 @@ class IntelligenceSection extends ConsumerWidget {
               Text(intel.weakTopics.isNotEmpty ? 'Get help with ${intel.weakTopics.first.topicName} — contextual guidance ready' : 'Get hints, explanations, or a study plan', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
             ])),
             const SizedBox(width: 10),
-            FilledButton(onPressed: () => context.push(Routes.tutorWithContext(topicId: intel.weakTopics.isNotEmpty ? intel.weakTopics.first.topicId : null, topicName: intel.weakTopics.isNotEmpty ? intel.weakTopics.first.topicName : null, focus: intel.weakTopics.isNotEmpty ? intel.weakTopics.first.topicName : null)), style: FilledButton.styleFrom(backgroundColor: AppColors.secondary), child: const Text('OPEN')),
+            GameChip(label: 'OPEN', icon: Icons.psychology_rounded, color: AppColors.secondary, onTap: () => context.push(Routes.tutorWithContext(topicId: intel.weakTopics.isNotEmpty ? intel.weakTopics.first.topicId : null, topicName: intel.weakTopics.isNotEmpty ? intel.weakTopics.first.topicName : null, focus: intel.weakTopics.isNotEmpty ? intel.weakTopics.first.topicName : null))),
           ]),
         ),
       ],

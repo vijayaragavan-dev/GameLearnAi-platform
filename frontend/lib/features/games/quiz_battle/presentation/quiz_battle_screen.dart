@@ -263,7 +263,7 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
       if (!mounted) return;
       setState(() => _submitting = false);
       final err = describeError(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.message)));
+      showPremiumSnack(context, err.message, accent: AppColors.error, icon: Icons.error_outline_rounded);
       _questionTimer.resume();
     }
   }

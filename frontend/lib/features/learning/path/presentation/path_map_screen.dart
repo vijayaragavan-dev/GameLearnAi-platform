@@ -64,12 +64,11 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
   void _openTopic(PathNode node) {
     if (node.status == 'LOCKED') {
       ref.read(hapticsProvider).error();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '"${node.topicName}" unlocks at ${node.requiredMastery.toStringAsFixed(0)}% mastery. Keep conquering missions!',
-          ),
-        ),
+      showPremiumSnack(
+        context,
+        '"${node.topicName}" unlocks at ${node.requiredMastery.toStringAsFixed(0)}% mastery. Keep conquering missions!',
+        accent: AppColors.locked,
+        icon: Icons.lock_rounded,
       );
       return;
     }
