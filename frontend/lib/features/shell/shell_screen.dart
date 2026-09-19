@@ -140,11 +140,13 @@ class _ShellBackground extends StatelessWidget {
   }
 }
 
-/// Premium bottom bar — glass HUD with the signature central
-/// LEARN · PLAY · GROW orb (Nova Tutor shortcut).
+/// Premium command dock — floating game-HUD bar with the signature
+/// central LEARN · PLAY · GROW orb (Nova Tutor shortcut).
 ///
 /// Layout: Home · Worlds · [ORB] · Stats · Profile. The orb pushes the
-/// existing Tutor route; all tab destinations are unchanged.
+/// existing Tutor route; all tab destinations are unchanged. Floating
+/// treatment (margins + full radius + glow) separates the dock from
+/// page content; content lists already reserve bottom clearance.
 class _PremiumBottomBar extends ConsumerWidget {
   const _PremiumBottomBar({required this.index});
   final int index;
@@ -158,69 +160,89 @@ class _PremiumBottomBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tabs = ShellScreen._tabs;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
-    // Fully opaque: extendBody lets list content scroll beneath the bar and
-    // a translucent fill ghosts list text ("Programming", "NEW") through
-    // the nav labels on narrow phones. Opaque keeps the HUD readable.
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        border: Border(
-          top: BorderSide(
-            color: isDark
-                ? AppColors.primary.withValues(alpha: 0.28)
-                : AppLightColors.border,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
-          ),
-          if (isDark)
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.10),
-              blurRadius: 28,
-              offset: const Offset(0, -2),
-            ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 78,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(child: _NavItem(
-                selected: index == 0,
-                tab: tabs[0],
-                onTap: () => _go(context, ref, tabs[0].$1),
-              )),
-              Expanded(child: _NavItem(
-                selected: index == 1,
-                tab: tabs[1],
-                onTap: () => _go(context, ref, tabs[1].$1),
-              )),
-              // Signature center orb — Nova Tutor shortcut.
-              _LearnPlayGrowOrb(
-                onTap: () {
-                  ref.read(hapticsProvider).select();
-                  context.push(Routes.tutor);
-                },
+    // Floating dock: detached from screen edges, centered with a
+    // controlled max width so it never sprawls on wide compact windows.
+    return SafeArea(
+      top: false,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          AppColors.primaryDeep.withValues(alpha: 0.22),
+                          AppColors.surface,
+                          AppColors.surfaceElevated,
+                        ]
+                      : [
+                          Colors.white,
+                          AppLightColors.surface,
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.primary.withValues(alpha: 0.32)
+                      : AppLightColors.borderStrong,
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
+                    blurRadius: 24,
+                    offset: const Offset(0, -8),
+                  ),
+                  BoxShadow(
+                    color: AppColors.primary
+                        .withValues(alpha: isDark ? 0.14 : 0.08),
+                    blurRadius: 28,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
               ),
-              Expanded(child: _NavItem(
-                selected: index == 2,
-                tab: tabs[2],
-                onTap: () => _go(context, ref, tabs[2].$1),
-              )),
-              Expanded(child: _NavItem(
-                selected: index == 3,
-                tab: tabs[3],
-                onTap: () => _go(context, ref, tabs[3].$1),
-              )),
-            ],
+              child: SizedBox(
+                height: 78,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: _NavItem(
+                      selected: index == 0,
+                      tab: tabs[0],
+                      onTap: () => _go(context, ref, tabs[0].$1),
+                    )),
+                    Expanded(child: _NavItem(
+                      selected: index == 1,
+                      tab: tabs[1],
+                      onTap: () => _go(context, ref, tabs[1].$1),
+                    )),
+                    // Signature center orb — Nova Tutor shortcut.
+                    _LearnPlayGrowOrb(
+                      onTap: () {
+                        ref.read(hapticsProvider).select();
+                        context.push(Routes.tutor);
+                      },
+                    ),
+                    Expanded(child: _NavItem(
+                      selected: index == 2,
+                      tab: tabs[2],
+                      onTap: () => _go(context, ref, tabs[2].$1),
+                    )),
+                    Expanded(child: _NavItem(
+                      selected: index == 3,
+                      tab: tabs[3],
+                      onTap: () => _go(context, ref, tabs[3].$1),
+                    )),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -228,7 +250,7 @@ class _PremiumBottomBar extends ConsumerWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   const _NavItem({
     required this.selected,
     required this.tab,
@@ -240,79 +262,105 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
+    final selected = widget.selected;
+    final tab = widget.tab;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Unselected uses secondary (not tertiary) so quiet labels keep
+    // WCAG-friendly contrast on the dock surface in both themes.
+    final quiet =
+        isDark ? AppColors.textSecondary : AppLightColors.textSecondary;
+    final loud =
+        isDark ? AppColors.primaryBright : AppColors.primary;
     return Semantics(
       button: true,
       selected: selected,
       label: '${tab.$4} tab',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: selected ? null : onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.fast,
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: selected ? null : widget.onTap,
+        child: AnimatedScale(
+          scale: _down ? 0.93 : 1.0,
+          duration:
+              AppMotion.durFor(context, AppMotion.press),
           curve: AppMotion.easeOut,
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.09)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: selected
-                ? Border.all(
-                    color: AppColors.primary.withValues(
-                      alpha: isDark ? 0.28 : 0.18,
+          child: AnimatedContainer(
+            duration:
+                AppMotion.durFor(context, AppMotion.fast),
+            curve: AppMotion.easeOut,
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: selected
+                  ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.primary.withValues(
+                            alpha: isDark ? 0.26 : 0.16),
+                        AppColors.primary.withValues(
+                            alpha: isDark ? 0.10 : 0.06),
+                      ],
+                    )
+                  : null,
+              color: selected ? null : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              border: selected
+                  ? Border.all(
+                      color: AppColors.primary.withValues(
+                        alpha: isDark ? 0.42 : 0.30,
+                      ),
+                    )
+                  : null,
+            ),
+            child: AnimatedScale(
+              scale: selected ? 1.04 : 1.0,
+              duration:
+                  AppMotion.durFor(context, AppMotion.fast),
+              curve: AppMotion.spring,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: selected
+                        ? BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: AppShadows.glow(
+                              AppColors.primary,
+                              alpha: isDark ? 0.30 : 0.16,
+                            ),
+                          )
+                        : null,
+                    child: Icon(
+                      selected ? tab.$3 : tab.$2,
+                      size: 23,
+                      color: selected ? loud : quiet,
                     ),
-                  )
-                : null,
-          ),
-          child: AnimatedScale(
-            scale: selected ? 1.04 : 1.0,
-            duration: AppMotion.fast,
-            curve: AppMotion.spring,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: selected
-                      ? BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: AppShadows.glow(
-                            AppColors.primary,
-                            alpha: isDark ? 0.25 : 0.12,
-                          ),
-                        )
-                      : null,
-                  child: Icon(
-                    selected ? tab.$3 : tab.$2,
-                    size: 23,
-                    color: selected
-                        ? (isDark
-                              ? AppColors.primaryBright
-                              : AppColors.primary)
-                        : (isDark
-                              ? AppColors.textTertiary
-                              : AppLightColors.textTertiary),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  tab.$4.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.3,
-                    color: selected
-                        ? (isDark
-                              ? AppColors.primaryBright
-                              : AppColors.primary)
-                        : (isDark
-                              ? AppColors.textTertiary
-                              : AppLightColors.textTertiary),
+                  const SizedBox(height: 3),
+                  Text(
+                    tab.$4.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.3,
+                      color: selected ? loud : quiet,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -323,9 +371,16 @@ class _NavItem extends StatelessWidget {
 
 /// Signature central orb — gradient LEARN · PLAY · GROW action.
 /// Navigates to the Nova Tutor companion route.
-class _LearnPlayGrowOrb extends StatelessWidget {
+class _LearnPlayGrowOrb extends StatefulWidget {
   const _LearnPlayGrowOrb({required this.onTap});
   final VoidCallback onTap;
+
+  @override
+  State<_LearnPlayGrowOrb> createState() => _LearnPlayGrowOrbState();
+}
+
+class _LearnPlayGrowOrbState extends State<_LearnPlayGrowOrb> {
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
@@ -335,53 +390,76 @@ class _LearnPlayGrowOrb extends StatelessWidget {
       label: 'Learn Play Grow — open Nova Tutor',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          width: 86,
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 62,
-                height: 62,
-                margin: const EdgeInsets.only(bottom: 2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppGradients.brand,
-                  border: Border.all(
-                    color: Colors.white.withValues(
-                      alpha: isDark ? 0.28 : 0.0,
-                    ),
-                    width: 1.6,
-                  ),
-                  boxShadow: isDark
-                      ? AppShadows.glow(AppColors.primary, alpha: 0.55)
-                      : AppShadows.elevated(alpha: 0.12),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.sports_esports_rounded,
-                      size: 22,
-                      color: Colors.white,
-                    ),
-                    Text(
-                      'LEARN\nPLAY\nGROW',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 6.5,
-                        height: 1.25,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: Colors.white,
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _down ? 0.90 : 1.0,
+          duration: AppMotion.durFor(context, AppMotion.press),
+          curve: AppMotion.easeOut,
+          child: Container(
+            width: 86,
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  margin: const EdgeInsets.only(bottom: 2),
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.secondary.withValues(
+                        alpha: isDark ? 0.40 : 0.28,
                       ),
+                      width: 1.4,
                     ),
-                  ],
+                    boxShadow: isDark
+                        ? AppShadows.glow(AppColors.secondary, alpha: 0.28)
+                        : null,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.brand,
+                      border: Border.all(
+                        color: Colors.white.withValues(
+                          alpha: isDark ? 0.28 : 0.0,
+                        ),
+                        width: 1.6,
+                      ),
+                      boxShadow: isDark
+                          ? AppShadows.glow(AppColors.primary, alpha: 0.55)
+                          : AppShadows.elevated(alpha: 0.12),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.sports_esports_rounded,
+                          size: 22,
+                          color: Colors.white,
+                        ),
+                        Text(
+                          'LEARN\nPLAY\nGROW',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 6.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
