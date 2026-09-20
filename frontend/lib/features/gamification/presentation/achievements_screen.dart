@@ -15,6 +15,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/achievement_icon.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/feedback.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 
 /// GAM-002 trophy room: unlocked badges glow, locked stay dark.
@@ -187,13 +188,11 @@ class _BadgeCellState extends State<_BadgeCell>
     final a = widget.achievement;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return Semantics(
-      button: true,
-      label:
+    return Pressable(
+      onTap: widget.onTap,
+      semanticsLabel:
           '${a.name}, ${a.isUnlocked ? 'unlocked' : 'locked, ${a.xpReward} XP reward'}',
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedBuilder(
+      child: AnimatedBuilder(
           animation: _glow,
           builder: (context, child) {
             final t = reduce ? 0.5 : Curves.easeInOut.transform(_glow.value);
@@ -296,7 +295,6 @@ class _BadgeCellState extends State<_BadgeCell>
             );
           },
         ),
-      ),
-    );
+      );
   }
 }

@@ -236,6 +236,8 @@ class SkeletonAchievementGrid extends StatelessWidget {
 
 /// Full-screen centered error state with Nova and optional retry.
 /// Constrained on wide screens to avoid stretched centered text.
+/// Fades+rises once on appearance so loading→error swaps feel
+/// continuous instead of abrupt (instant under reduced motion).
 class ErrorState extends StatelessWidget {
   const ErrorState({
     super.key,
@@ -254,9 +256,10 @@ class ErrorState extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 520),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: _StateEntrance(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             const NovaErrorOrb(),
             const SizedBox(height: 20),
             Text(
@@ -309,7 +312,34 @@ class ErrorState extends StatelessWidget {
         ),
       ),
     ),
+    ),
   );
+}
+
+/// One-shot entrance fade+rise for swapped-in state content
+/// (loading→error/empty). Plays once per element creation; instant
+/// under reduced motion. Never loops, never blocks input.
+class _StateEntrance extends StatelessWidget {
+  const _StateEntrance({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: AppMotion.durFor(context, AppMotion.fade),
+      curve: AppMotion.easeOut,
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, 8 * (1 - t)),
+          child: child,
+        ),
+      ),
+      child: child,
+    );
+  }
 }
 
 // Local import-free mini orb for the error state to avoid circular imports.
@@ -358,7 +388,8 @@ class EmptyState extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 520),
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
+        child: _StateEntrance(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -387,6 +418,7 @@ class EmptyState extends StatelessWidget {
             ),
             if (action != null) ...[const SizedBox(height: 20), action!],
           ],
+          ),
         ),
       ),
     ),
@@ -846,8 +878,8 @@ class CinematicLoading extends StatelessWidget {
           ],
         ),
       ),
-      ),
-    );
+    ),
+  );
   }
 }
 

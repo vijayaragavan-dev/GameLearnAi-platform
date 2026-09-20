@@ -169,7 +169,7 @@ class QuestionProgress extends StatelessWidget {
         final isCurrent = i == current;
         return Expanded(
           child: AnimatedContainer(
-            duration: AppMotion.normal,
+            duration: AppMotion.durFor(context, AppMotion.normal),
             curve: AppMotion.easeOut,
             height: 4,
             margin: EdgeInsets.only(right: i == total - 1 ? 0 : 6),

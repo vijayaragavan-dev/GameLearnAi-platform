@@ -191,7 +191,7 @@ class PathNodeIndicator extends StatelessWidget {
       child: GestureDetector(
         onTap: s == 'LOCKED' ? null : onTap,
         child: AnimatedContainer(
-          duration: AppMotion.normal,
+          duration: AppMotion.durFor(context, AppMotion.normal),
           curve: AppMotion.easeOut,
           width: size,
           height: size,

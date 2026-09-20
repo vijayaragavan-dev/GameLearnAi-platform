@@ -13,6 +13,7 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../shared/widgets/badges.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
+import '../../../../shared/widgets/pressable.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 
 /// LESSON-001 training room. Content is rendered verbatim from the backend.
@@ -176,8 +177,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                     ),
                     const SizedBox(height: 12),
                     // Nova inline hint (Screen-AI-002).
-                    GestureDetector(
+                    Pressable(
                       onTap: () => _askNovaHint(lesson),
+                      semanticsLabel: 'Ask Nova for a hint',
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,

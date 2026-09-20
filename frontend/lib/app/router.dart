@@ -145,6 +145,9 @@ CustomTransitionPage<void> _page({
   transitionDuration: duration ?? AppMotion.normal,
   reverseTransitionDuration: AppMotion.fast,
   transitionsBuilder: (context, animation, secondary, child) {
+    // Reduced motion: navigate instantly — no slide/fade. Behavior
+    // (routes, guards, context) is unchanged, only motion is skipped.
+    if (AppMotion.reducedMotion(context)) return child;
     final curved = CurvedAnimation(parent: animation, curve: AppMotion.easeOut);
     Widget content = FadeTransition(opacity: curved, child: child);
     if (scaleIn) {

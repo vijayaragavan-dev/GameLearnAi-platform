@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import 'cinematic_scenery.dart';
 
@@ -340,11 +341,11 @@ class _InteractiveSurfaceState extends State<InteractiveSurface> {
         onTapCancel: () => setState(() => _pressed = false),
         child: AnimatedScale(
           scale: _pressed ? AppStates.pressedScale : 1.0,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.durFor(context, AppMotion.press),
+          curve: AppMotion.easeOut,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
+            duration: AppMotion.durFor(context, AppMotion.fast),
+            curve: AppMotion.easeOut,
             padding: widget.padding,
             decoration: BoxDecoration(
               color: scheme.surface,

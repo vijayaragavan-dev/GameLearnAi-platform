@@ -15,6 +15,7 @@ import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
@@ -733,13 +734,11 @@ class _TopicRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: GestureDetector(
+      child: Pressable(
         onTap: onTap,
-        child: Semantics(
-          button: true,
-          label: '${node.topicName}, ${node.status.toLowerCase()}, tap to open',
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        semanticsLabel: '${node.topicName}, ${node.status.toLowerCase()}, tap to open',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -762,8 +761,7 @@ class _TopicRow extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

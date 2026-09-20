@@ -22,6 +22,7 @@ import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../domain/canonical_worlds.dart' show WorldCatalog;
@@ -360,8 +361,9 @@ class _FeaturedWorldCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final identity = SubjectVisualRegistry.fromIconKey(subject.iconKey);
     final accent = identity.accent;
-    return GestureDetector(
+    return Pressable(
       onTap: onEnter,
+      semanticsLabel: 'Enter world ${subject.name}',
       child: FeaturedSurface(
         accent: accent,
         padding: EdgeInsets.zero,
@@ -532,7 +534,7 @@ class _WorldCTA extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (primary) {
-      return GestureDetector(
+      return Pressable(
         onTap: onTap,
         child: Container(
           height: 48,
@@ -572,7 +574,7 @@ class _WorldCTA extends StatelessWidget {
         ),
       );
     }
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         height: 48,
@@ -647,8 +649,9 @@ class _RecommendedWorldStrip extends StatelessWidget {
       children: [
         Text('RECOMMENDED FOR YOU', style: AppTypography.overline(context).copyWith(color: AppColors.secondary)),
         const SizedBox(height: 8),
-        GestureDetector(
+        Pressable(
           onTap: () => onEnter(subject),
+          semanticsLabel: 'Continue with ${subject.name}',
           child: GameIdentitySurface(
             accent: AppColors.secondary,
             padding: const EdgeInsets.all(14),
@@ -830,16 +833,14 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                         label: '${widget.subject.name} world artwork',
                       ),
                     ),
-                  Semantics(
-                    button: true,
-                    label: 'Scan ${widget.subject.name} knowledge',
-                    child: GestureDetector(
-                      onTap: widget.onScan,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
+                  Pressable(
+                    onTap: widget.onScan,
+                    semanticsLabel: 'Scan ${widget.subject.name} knowledge',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
                         decoration: BoxDecoration(
                           color: _tint.withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(20),
@@ -865,7 +866,6 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                         ),
                       ),
                     ),
-                  ),
                   const SizedBox(width: 6),
                   Icon(
                     Icons.arrow_forward_ios_rounded,

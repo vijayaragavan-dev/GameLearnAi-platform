@@ -31,7 +31,8 @@ class _PressableScaleState extends ConsumerState<PressableScale> {
 
   @override
   Widget build(BuildContext context) {
-    final scale = _down ? 0.97 : 1.0;
+    final reduce = AppMotion.reducedMotion(context);
+    final scale = !reduce && _down ? 0.97 : 1.0;
     return GestureDetector(
       onTapDown: (_) => setState(() => _down = true),
       onTapCancel: () => setState(() => _down = false),
@@ -44,7 +45,7 @@ class _PressableScaleState extends ConsumerState<PressableScale> {
           : null,
       child: AnimatedScale(
         scale: scale,
-        duration: AppMotion.fast,
+        duration: AppMotion.durFor(context, AppMotion.fast),
         curve: AppMotion.easeOut,
         child: widget.child,
       ),

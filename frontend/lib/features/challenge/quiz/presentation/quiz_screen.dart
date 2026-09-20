@@ -14,6 +14,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/badges.dart';
 import '../../../../shared/widgets/feedback.dart';
+import '../../../../shared/widgets/pressable.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../app/router.dart';
 import '../../../../shared/widgets/nova_companion.dart';
@@ -272,13 +273,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                   ),
                                 ),
                               const SizedBox(height: 14),
-                              GestureDetector(
+                              Pressable(
                                 onTap: () {
                                   ref
                                       .read(audioManagerProvider)
                                       .play(Sfx.buttonTap);
                                   context.push(Routes.tutor);
                                 },
+                                semanticsLabel: 'Ask Nova Tutor for a hint',
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,

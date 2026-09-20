@@ -19,6 +19,7 @@ import '../../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/nova_companion.dart';
+import '../../../../shared/widgets/pressable.dart';
 
 /// TOPIC-001 mission briefing — cinematic edition.
 ///
@@ -337,23 +338,20 @@ class _GameArenaCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Semantics(
-      button: true,
-      label: 'Open Game Arena for ${topic.name}',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
-          context.push(
-            Routes.gameHub(
-              topic.id,
-              subjectId: topic.subjectId,
-              subjectName: topic.subjectName,
-            ),
-            extra: topic.name,
-          );
-        },
-        child: Container(
+    return Pressable(
+      onTap: () {
+        ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
+        context.push(
+          Routes.gameHub(
+            topic.id,
+            subjectId: topic.subjectId,
+            subjectName: topic.subjectName,
+          ),
+          extra: topic.name,
+        );
+      },
+      semanticsLabel: 'Open Game Arena for ${topic.name}',
+      child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -430,8 +428,7 @@ class _GameArenaCard extends ConsumerWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
+          ),
+        );
   }
 }

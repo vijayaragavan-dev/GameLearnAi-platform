@@ -18,6 +18,7 @@ import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../../shared/widgets/xp_bar.dart' show XPBar;
@@ -223,8 +224,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: GestureDetector(
+                                child: Pressable(
                                   onTap: () => context.go(Routes.streak),
+                                  semanticsLabel:
+                                      'Streak ${summary.currentStreakDays} days. Open streak details',
                                   child: StatCard(label: 'STREAK', value: '${summary.currentStreakDays}', sub: 'days', tint: AppColors.streak),
                                 ),
                               ),
@@ -234,8 +237,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: GestureDetector(
+                                child: Pressable(
                                   onTap: () => context.go(Routes.achievements),
+                                  semanticsLabel:
+                                      'Badges ${summary.unlockedAchievements} unlocked. Open trophy room',
                                   child: StatCard(label: 'BADGES', value: '${summary.unlockedAchievements}', tint: AppColors.secondary),
                                 ),
                               ),

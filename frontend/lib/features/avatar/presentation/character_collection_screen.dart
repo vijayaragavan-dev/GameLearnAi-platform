@@ -12,6 +12,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../avatar/providers/avatar_providers.dart';
@@ -304,12 +305,10 @@ class _CharacterCard extends StatelessWidget {
       'rare' => AppColors.secondary,
       _ => isDark ? AppColors.border : AppLightColors.border,
     };
-    Widget card = Semantics(
-      label: '${item.displayName}, ${item.rarity}, ${item.state.name}',
-      button: true,
-      child: GestureDetector(
-        onTap: () => context.push('/profile/characters/${item.id}'),
-        child: Container(
+    Widget card = Pressable(
+      onTap: () => context.push('/profile/characters/${item.id}'),
+      semanticsLabel: '${item.displayName}, ${item.rarity}, ${item.state.name}',
+      child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
@@ -352,8 +351,7 @@ class _CharacterCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
     if (reduce) return card;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),

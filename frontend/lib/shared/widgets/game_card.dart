@@ -185,10 +185,10 @@ class _InteractiveCardState extends State<InteractiveCard> {
           onTapCancel: () => setState(() => _pressed = false),
           child: AnimatedScale(
             scale: _pressed ? AppStates.pressedScale : 1.0,
-            duration: AppMotion.fast,
+            duration: AppMotion.durFor(context, AppMotion.fast),
             curve: AppMotion.easeOut,
             child: AnimatedContainer(
-              duration: AppMotion.fast,
+              duration: AppMotion.durFor(context, AppMotion.fast),
               curve: AppMotion.easeOut,
               padding: widget.padding,
               decoration: BoxDecoration(

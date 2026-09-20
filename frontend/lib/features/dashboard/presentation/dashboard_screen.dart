@@ -28,6 +28,7 @@ import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_surfaces.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/premium_buttons.dart';
@@ -984,7 +985,7 @@ class _SubjectsSection extends ConsumerWidget {
             final assessed = dashboard.assessment.assessedSubjects.any((a) => a.subjectId == s.id);
             final identity = SubjectVisualRegistry.fromIconKey(s.iconKey);
             final accent = identity.accent;
-            return GestureDetector(
+            return Pressable(
               onTap: () {
                 // World landing preserves backend subjectId (Phase 6).
                 final name = Uri.encodeComponent(s.name);
@@ -1281,7 +1282,7 @@ class _GameZoneSection extends StatelessWidget {
             runSpacing: 10,
             children: featuredTypes.map((type) {
               final identity = GameVisualRegistry.of(type);
-              return GestureDetector(
+              return Pressable(
                 onTap: () {
                   if (topicId == null || topicId.isEmpty) {
                     context.go(Routes.subjects);
@@ -1731,7 +1732,7 @@ class MasteryStrip extends StatelessWidget {
         };
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
+          child: Pressable(
             onTap: () => context.push(Routes.topicPerformance(t.topicId)),
             child: GameCard(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1796,7 +1797,7 @@ class _RecentlyLearnedStrip extends StatelessWidget {
         children: slice.map((s) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
+            child: Pressable(
               onTap: () {
                 final name = Uri.encodeComponent(s.subjectName);
                 context.go(
@@ -1864,14 +1865,14 @@ class _RecentlyLearnedStrip extends StatelessWidget {
         children: slice.map((q) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () => context.push(Routes.topic(q.topicId)),
-              child: GameCard(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                child: Row(
+          child: Pressable(
+            onTap: () => context.push(Routes.topic(q.topicId)),
+            child: GameCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              child: Row(
                   children: [
                     Container(
                       width: 32,
@@ -1932,7 +1933,7 @@ class _RecentlyLearnedStrip extends StatelessWidget {
           };
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
+            child: Pressable(
               onTap: () => context.push(Routes.topicPerformance(t.topicId)),
               child: GameCard(
                 padding: const EdgeInsets.symmetric(
@@ -2009,7 +2010,7 @@ class _MasteredStrip extends StatelessWidget {
       children: mastered.map((t) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
+          child: Pressable(
             onTap: () => context.push(Routes.topicPerformance(t.topicId)),
             child: GameCard(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2117,7 +2118,7 @@ class _NewWorldsStripState extends ConsumerState<_NewWorldsStrip> {
           children: newSubjects.map((s) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: GestureDetector(
+              child: Pressable(
                 onTap: () {
                   final name = Uri.encodeComponent(s.name);
                   context.go('/${Routes.path(s.id).substring(1)}?name=$name');
@@ -2205,7 +2206,7 @@ class RecentBattles extends StatelessWidget {
                 : AppColors.error;
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
+          child: Pressable(
             onTap: () => context.push(Routes.topic(q.topicId)),
             child: GameCard(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

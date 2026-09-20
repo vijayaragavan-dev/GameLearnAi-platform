@@ -19,6 +19,7 @@ import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../subjects/domain/canonical_worlds.dart' show WorldCatalog;
 import '../../subjects/domain/world_context.dart' show subjectByIdProvider;
@@ -565,13 +566,10 @@ class _SuggestedActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Semantics(
-      button: true,
-      label: 'Ask Nova: $label',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
+    return Pressable(
+      onTap: onTap,
+      semanticsLabel: 'Ask Nova: $label',
+      child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark
@@ -613,8 +611,7 @@ class _SuggestedActionCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -793,34 +790,31 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Semantics(
-      button: true,
-      label: busy ? 'Sending' : 'Send message',
-      child: GestureDetector(
-        onTap: busy ? null : onTap,
-        child: Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: busy
-                ? null
-                : const LinearGradient(
-                    colors: [AppColors.secondaryDeep, AppColors.secondary],
-                  ),
-            color: busy ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh) : null,
-          ),
-          child: busy
-              ? const Padding(
-                  padding: EdgeInsets.all(13),
-                  child: CircularProgressIndicator(strokeWidth: 2.2),
-                )
-              : const Icon(
-                  Icons.send_rounded,
-                  size: 19,
-                  color: AppColors.textOnColor,
+    return Pressable(
+      onTap: busy ? null : onTap,
+      semanticsLabel: busy ? 'Sending' : 'Send message',
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: busy
+              ? null
+              : const LinearGradient(
+                  colors: [AppColors.secondaryDeep, AppColors.secondary],
                 ),
+          color: busy ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh) : null,
         ),
+        child: busy
+            ? const Padding(
+                padding: EdgeInsets.all(13),
+                child: CircularProgressIndicator(strokeWidth: 2.2),
+              )
+            : const Icon(
+                Icons.send_rounded,
+                size: 19,
+                color: AppColors.textOnColor,
+              ),
       ),
     );
   }
