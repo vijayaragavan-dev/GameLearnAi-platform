@@ -182,7 +182,7 @@ class ApiSecurityHardeningBatch3Test extends AbstractCoreApiTest {
                 "SELECT version FROM flyway_schema_history WHERE success = TRUE AND installed_rank > 0 "
                         + "ORDER BY installed_rank",
                 String.class);
-        assertThat(versions).hasSize(34);
+        assertThat(versions).hasSize(35);
         for (int i = 0; i < versions.size(); i++) {
             assertThat(versions.get(i)).isEqualTo(String.valueOf(i + 1));
         }

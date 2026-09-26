@@ -179,11 +179,12 @@ class RealmApiTest extends AbstractCoreApiTest {
         var gameTypes = objectMapper.readTree(games).findValuesAsText("gameType");
         assertThat(gameTypes).containsExactlyInAnyOrder("quiz_battle", "speed_run");
 
-        // Topic listing for the aptitude subject resolves real skill topics.
+        // Topic listing for the aptitude subject resolves real skill topics:
+        // 6 original skills + 22 Logical Reasoning imports (V35).
         List<Topic> topics = topicRepository.findAll().stream()
                 .filter(t -> t.getSubject().getId().equals(aptitude.getId()))
                 .toList();
-        assertThat(topics).hasSize(6);
+        assertThat(topics).hasSize(28);
         Topic percentages = topics.stream()
                 .filter(t -> "Percentages".equals(t.getName()))
                 .findFirst()
@@ -205,7 +206,8 @@ class RealmApiTest extends AbstractCoreApiTest {
         var topicNames = objectMapper.readTree(content).findValuesAsText("topicName");
         assertThat(topicNames).contains("Percentages");
 
-        // Seeded question rows exist for every aptitude topic: 6 topics x 3.
+        // Seeded question rows exist for every aptitude topic: 6 original
+        // topics x 3 plus 22 LR topics x 15 (V35).
         var aptitudeTopicIds = topicRepository.findAll().stream()
                 .filter(t -> t.getSubject().getId().equals(
                         subjectRepository.findAll().stream()
@@ -216,7 +218,7 @@ class RealmApiTest extends AbstractCoreApiTest {
         long aptitudeQuestions = questionRepository.findAll().stream()
                 .filter(q -> aptitudeTopicIds.contains(q.getTopic().getId()))
                 .count();
-        assertThat(aptitudeQuestions).isEqualTo(18);
+        assertThat(aptitudeQuestions).isEqualTo(348);
     }
 
     @Test
