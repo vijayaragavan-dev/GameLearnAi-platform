@@ -78,6 +78,27 @@ class ApiClient {
               .timeout(effectiveTimeout);
   }).then((value) => expectBody ? value : <String, dynamic>{});
 
+  /// Idempotent writes (e.g. learning-progress upsert). Mirrors [postJson]
+  /// exactly: same headers, bearer handling, timeout and error normalization.
+  Future<Map<String, dynamic>> putJson(
+    String path,
+    Object? body, {
+    bool expectBody = true,
+    Duration? timeout,
+  }) => _runJson('PUT', path, () {
+    final uri = AppConfig.resolve(path);
+    final effectiveTimeout = timeout ?? _timeout;
+    return body == null
+        ? _client.put(uri, headers: _headers()).timeout(effectiveTimeout)
+        : _client
+              .put(
+                uri,
+                headers: _headers(jsonBody: true),
+                body: jsonEncode(body),
+              )
+              .timeout(effectiveTimeout);
+  }).then((value) => expectBody ? value : <String, dynamic>{});
+
   Future<List<dynamic>> getList(
     String path, {
     Map<String, String>? query,

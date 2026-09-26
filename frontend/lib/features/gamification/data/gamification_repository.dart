@@ -43,6 +43,17 @@ class GamificationRepository {
   Future<TopicProgress> progressForTopic(String topicId) async =>
       TopicProgress.fromJson(await _client.getJson('/api/v1/progress/$topicId'));
 
+  /// Explicit topic-completion upsert (Phase QA-6C). Canonical completion
+  /// only — COMPLETED / 100; the backend derives the learner from auth and
+  /// remains authoritative. Learning state only: never XP, mastery, streak.
+  Future<TopicProgress> markTopicComplete(String topicId) async =>
+      TopicProgress.fromJson(
+        await _client.putJson('/api/v1/progress/$topicId', {
+          'status': 'COMPLETED',
+          'completionPercentage': 100,
+        }),
+      );
+
   /// PROG-101: submit a game result (idempotent, client UUID guarantees no double-award)
   Future<GameResultSubmissionResponse> submitGameResult(
       GameResultSubmission submission) async {

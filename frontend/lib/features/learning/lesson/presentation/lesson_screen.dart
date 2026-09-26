@@ -6,7 +6,9 @@ import '../../../../app/router.dart';
 import '../../../../core/audio/audio_manager.dart' show Sfx;
 import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/content_models.dart';
+import '../../../../core/models/gamification_models.dart';
 import '../../../../core/models/tutor_models.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_styles.dart';
@@ -28,20 +30,64 @@ class LessonScreen extends ConsumerStatefulWidget {
 
 class _LessonScreenState extends ConsumerState<LessonScreen> {
   late Future<Lesson> _future;
+  late Future<TopicProgress?> _progressFuture;
   bool _hintExpanded = false;
   bool _hintLoading = false;
   String? _hintText;
   String? _hintError;
+  bool _marking = false;
+  String? _progressError;
 
   @override
   void initState() {
     super.initState();
     _future = ref.read(contentRepoProvider).lesson(widget.topicId);
+    _progressFuture = _loadProgress();
+  }
+
+  /// Existing topic progress, if any. Absent progress (backend 404) is a
+  /// normal incomplete state — never an error, never a write.
+  Future<TopicProgress?> _loadProgress() async {
+    try {
+      return await ref.read(gamificationRepoProvider).progressForTopic(widget.topicId);
+    } on NotFoundException {
+      return null;
+    }
   }
 
   void _retry() => setState(() {
     _future = ref.read(contentRepoProvider).lesson(widget.topicId);
+    _progressFuture = _loadProgress();
   });
+
+  /// Explicit learner completion only: exactly one PUT, backend-authoritative.
+  /// No optimistic local state, no XP/mastery/streak involvement.
+  Future<void> _markComplete() async {
+    if (_marking) return;
+    setState(() {
+      _marking = true;
+      _progressError = null;
+    });
+    ref.read(audioManagerProvider).play(Sfx.buttonTap);
+    try {
+      await ref.read(gamificationRepoProvider).markTopicComplete(widget.topicId);
+      if (!mounted) return;
+      ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
+      setState(() {
+        _marking = false;
+        // Re-read authoritative state; consumers (topic performance, path,
+        // syllabus) read server state on open, so no other invalidation
+        // is required.
+        _progressFuture = _loadProgress();
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _marking = false;
+        _progressError = describeError(e).message;
+      });
+    }
+  }
 
   Future<void> _askNovaHint(Lesson lesson) async {
     if (_hintLoading) return;
@@ -382,6 +428,50 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
                         ),
                       ),
                     ],
+                    // Explicit topic completion (Phase QA-6C). Generic and
+                    // backend-authoritative: opening or reading never completes.
+                    const SizedBox(height: 20),
+                    FutureBuilder<TopicProgress?>(
+                      future: _progressFuture,
+                      builder: (context, progressSnap) {
+                        if (progressSnap.connectionState != ConnectionState.done &&
+                            !progressSnap.hasData) {
+                          return const SizedBox.shrink();
+                        }
+                        final completed =
+                            progressSnap.data?.status == 'COMPLETED';
+                        if (completed) {
+                          return SecondaryGameButton(
+                            label: 'Completed',
+                            icon: Icons.check_circle_rounded,
+                            onTap: null,
+                          );
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PrimaryGameButton(
+                              label: 'Mark Complete',
+                              icon: Icons.check_circle_outline_rounded,
+                              busy: _marking,
+                              onTap: _marking ? null : _markComplete,
+                            ),
+                            if (_progressError != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _progressError!,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: AppColors.error,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
