@@ -19,6 +19,7 @@ import 'package:gamelearn_app/features/game_engine/models/game_content_models.da
 import 'package:gamelearn_app/features/gamification/providers/game_result_submitter.dart';
 import 'package:gamelearn_app/features/game_engine/models/game_content_models.dart';
 import 'package:gamelearn_app/features/gamification/providers/game_result_submitter.dart';
+import 'package:gamelearn_app/features/game_engine/widgets/practice_unavailable.dart';
 import 'package:gamelearn_app/features/games/quiz_battle/presentation/quiz_battle_screen.dart';
 import 'package:gamelearn_app/features/games/speed_run/presentation/speed_run_screen.dart';
 import 'package:gamelearn_app/features/realms/data/realm_models.dart';
@@ -656,10 +657,12 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      // 404 Quiz rows → honest ErrorState (ErrorState, never game
-      // content, never a crash). EmptyState covers the zero-question
-      // case; both are honest by construction.
-      expect(find.byType(ErrorState), findsOneWidget);
+      // 404 Quiz rows → truthful PracticeUnavailable state (never game
+      // content, never a crash, never a generic error). EmptyState covers
+      // the zero-question case; both are honest by construction.
+      expect(find.byType(PracticeUnavailable), findsOneWidget);
+      expect(find.text('Practice unavailable'), findsOneWidget);
+      expect(find.byType(ErrorState), findsNothing);
       expect(find.text('No questions'), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -706,7 +709,9 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(ErrorState), findsOneWidget);
+      expect(find.byType(PracticeUnavailable), findsOneWidget);
+      expect(find.text('Practice unavailable'), findsOneWidget);
+      expect(find.byType(ErrorState), findsNothing);
       expect(find.text('No questions'), findsNothing);
       expect(tester.takeException(), isNull);
     });

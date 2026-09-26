@@ -22,6 +22,7 @@ import '../../../game_engine/models/game_content_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/widgets/practice_unavailable.dart';
 
 /// Speed Run: rapid-fire quiz with tight global countdown, streak & speed bonuses.
 class SpeedRunScreen extends ConsumerStatefulWidget {
@@ -207,6 +208,18 @@ class _SpeedRunScreenState extends ConsumerState<SpeedRunScreen> {
           return Scaffold(appBar: AppBar(title: const Text('SPEED RUN')), body: const Center(child: CircularProgressIndicator()));
         }
         if (snap.hasError) {
+          // No playable quiz for this topic (backend QUIZ-001 404):
+          // truthful unavailable state, never a generic error or fallback.
+          if (snap.error is NotFoundException) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('SPEED RUN')),
+              body: PracticeUnavailable(
+                topicId: widget.topicId,
+                subjectId: widget.subjectId,
+                topicName: widget.topicName,
+              ),
+            );
+          }
           final err = describeError(snap.error!);
           return Scaffold(appBar: AppBar(title: const Text('SPEED RUN')), body: ErrorState(title: err.title, message: err.message, onRetry: () => setState(() => _future = _load())));
         }

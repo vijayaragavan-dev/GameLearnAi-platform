@@ -11,6 +11,7 @@ import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../game_engine/widgets/practice_unavailable.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/badges.dart';
 import '../../../../shared/widgets/feedback.dart';
@@ -114,6 +115,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             );
           }
           if (snap.hasError) {
+            // No playable quiz for this topic (backend QUIZ-001 404):
+            // truthful unavailable state, never a generic error. Any other
+            // failure keeps the existing error handling below.
+            if (snap.error is NotFoundException) {
+              return Stack(
+                children: [
+                  const Positioned.fill(child: AtmosphericBackground()),
+                  PracticeUnavailable(topicId: widget.topicId),
+                ],
+              );
+            }
             final err = describeError(snap.error!);
             return Stack(
               children: [

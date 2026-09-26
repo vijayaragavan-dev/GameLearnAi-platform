@@ -27,6 +27,7 @@ import '../../../game_engine/models/game_content_models.dart';
 import '../../../game_engine/utils/difficulty_utils.dart';
 import '../../../game_engine/widgets/game_scaffold.dart';
 import '../../../game_engine/widgets/game_result_screen.dart';
+import '../../../game_engine/widgets/practice_unavailable.dart';
 
 /// Quiz Battle: timed, combo-driven quiz experience reusing QUIZ-001/002.
 /// Features: countdown per question, score, combo, correct/incorrect feedback,
@@ -292,6 +293,18 @@ class _QuizBattleScreenState extends ConsumerState<QuizBattleScreen> with Single
           return Scaffold(appBar: AppBar(title: const Text('QUIZ BATTLE')), body: const Center(child: CircularProgressIndicator()));
         }
         if (snap.hasError) {
+          // No playable quiz for this topic (backend QUIZ-001 404):
+          // truthful unavailable state, never a generic error or fallback.
+          if (snap.error is NotFoundException) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('QUIZ BATTLE')),
+              body: PracticeUnavailable(
+                topicId: widget.topicId,
+                subjectId: widget.subjectId,
+                topicName: widget.topicName,
+              ),
+            );
+          }
           final err = describeError(snap.error!);
           return Scaffold(appBar: AppBar(title: const Text('QUIZ BATTLE')), body: ErrorState(title: err.title, message: err.message, onRetry: () => setState(() => _future = _load())));
         }
