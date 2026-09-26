@@ -9,6 +9,7 @@ class Subject {
     required this.iconKey,
     required this.isActive,
     required this.displayOrder,
+    this.realmKey,
   });
 
   final String id;
@@ -17,6 +18,9 @@ class Subject {
   final String iconKey;
   final bool isActive;
   final int displayOrder;
+  /// Owning realm's stable key (REALM-001, additive). Null for legacy
+  /// payloads predating the realm contract; never used as display text.
+  final String? realmKey;
 
   factory Subject.fromJson(Map<String, dynamic> json) => Subject(
     id: uuidOf(json['id'], 'Subject.id'),
@@ -25,6 +29,7 @@ class Subject {
     iconKey: json['iconKey'] as String? ?? '',
     isActive: json['isActive'] as bool? ?? true,
     displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
+    realmKey: json['realmKey'] as String?,
   );
 }
 

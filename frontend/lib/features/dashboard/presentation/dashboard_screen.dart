@@ -21,6 +21,7 @@ import '../../../core/theme/game_visual_identity.dart';
 import '../../../core/theme/subject_visual_identity.dart';
 import '../../../core/utils/formatters.dart';
 import '../../leaderboard/widgets/dashboard_leaderboard_teaser.dart';
+import '../../realms/domain/learning_realm.dart';
 import '../../../shared/widgets/achievement_icon.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/badges.dart';
@@ -251,6 +252,9 @@ class _DashboardBody extends StatelessWidget {
     final d = dashboard;
     final isWide = MediaQuery.sizeOf(context).width >= AppBreakpoints.medium;
     final isExpanded = MediaQuery.sizeOf(context).width >= AppBreakpoints.expanded;
+    // Remaining realms beyond Computer Science, derived from the single
+    // authoritative LearningRealmCatalog — never hard-coded.
+    final remainingRealms = LearningRealmCatalog.comingSoonCount;
     var i = 0;
     // Use SingleChildScrollView + Column so all dashboard sections are built
     // eagerly for tester finders (ListView lazily builds off-screen slivers).
@@ -295,6 +299,68 @@ class _DashboardBody extends StatelessWidget {
         // 4. SUBJECTS — real catalog, adaptive grid
         _staggered(i++, const SectionHeader(title: 'Worlds')),
         _staggered(i++, _SubjectsSection(dashboard: d)),
+        const SizedBox(height: 8),
+
+        // 4b. LEARNING REALMS — top-level domain selection above worlds.
+        // Additive entry only; recommendations and game logic untouched.
+        _staggered(i++, const SectionHeader(title: 'Learning realms')),
+        _staggered(
+          i++,
+          Pressable(
+            onTap: () => context.push(Routes.realms),
+            semanticsLabel:
+                'Open learning realms. Computer Science is open, $remainingRealms future realms coming soon',
+            child: GameCard(
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.brand,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.memory_rounded,
+                      size: 22,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'COMPUTER SCIENCE + $remainingRealms MORE',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Enter your realm — new domains on the horizon',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.primaryBright,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: 8),
 
         // Also keep existing adaptive insights where they add value, now inside journey/quests
