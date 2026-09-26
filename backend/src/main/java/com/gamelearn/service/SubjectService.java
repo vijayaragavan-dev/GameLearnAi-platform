@@ -48,7 +48,8 @@ public class SubjectService {
     }
 
     private SubjectResponse toResponse(Subject subject) {
+        String realmKey = subject.getRealm() != null ? subject.getRealm().getRealmKey() : null;
         return new SubjectResponse(subject.getId(), subject.getName(), subject.getDescription(),
-                subject.getIconKey(), subject.isActive(), subject.getDisplayOrder());
+                subject.getIconKey(), subject.isActive(), subject.getDisplayOrder(), realmKey);
     }
 }

@@ -8,4 +8,6 @@ public interface SubjectRepository extends JpaRepository<Subject, java.util.UUID
 
     java.util.List<Subject> findByActiveTrueOrderByDisplayOrderAscIdAsc();
 
+    java.util.List<Subject> findByRealmIdAndActiveTrueOrderByDisplayOrderAscIdAsc(java.util.UUID realmId);
+
 }

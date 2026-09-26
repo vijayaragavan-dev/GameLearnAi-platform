@@ -119,9 +119,10 @@ class ApiSecurityHardeningBatch3Test extends AbstractCoreApiTest {
 
     @Test
     void compatCatalogHasIntegrity() {
-        // Exactly the 95 seeded mappings, all canonical on both axes.
+        // Exactly the 95 seeded mappings plus the 2 Aptitude mappings
+        // (V33), all canonical on both axes.
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM subject_game_compat",
-                Integer.class)).isEqualTo(95);
+                Integer.class)).isEqualTo(97);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM subject_game_compat WHERE game_type NOT IN "
                         + "('quiz_battle','memory_match','drag_drop','speed_run','debug_arena',"
@@ -136,7 +137,7 @@ class ApiSecurityHardeningBatch3Test extends AbstractCoreApiTest {
                         + "'11111111-1111-1111-1111-111111111105','11111111-1111-1111-1111-111111111106',"
                         + "'11111111-1111-1111-1111-111111111107','11111111-1111-1111-1111-111111111108',"
                         + "'11111111-1111-1111-1111-111111111109','11111111-1111-1111-1111-111111111110',"
-                        + "'11111111-1111-1111-1111-111111111111')",
+                        + "'11111111-1111-1111-1111-111111111111','55555555-5555-5555-5555-555555555501')",
                 Integer.class)).isEqualTo(0);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM subject_game_compat WHERE rationale IS NULL OR rationale = ''",
@@ -181,7 +182,7 @@ class ApiSecurityHardeningBatch3Test extends AbstractCoreApiTest {
                 "SELECT version FROM flyway_schema_history WHERE success = TRUE AND installed_rank > 0 "
                         + "ORDER BY installed_rank",
                 String.class);
-        assertThat(versions).hasSize(28);
+        assertThat(versions).hasSize(34);
         for (int i = 0; i < versions.size(); i++) {
             assertThat(versions.get(i)).isEqualTo(String.valueOf(i + 1));
         }

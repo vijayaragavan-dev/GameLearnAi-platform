@@ -99,8 +99,9 @@ class ContentCompletenessBatch10Test extends AbstractCoreApiTest {
     @Test
     void compatReconciliationStaysTruthful() throws Exception {
         String[] learner = registerLearner("recon10");
+        // 95 seeded mappings plus the 2 Aptitude mappings (V33).
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM subject_game_compat",
-                Integer.class)).isEqualTo(95);
+                Integer.class)).isEqualTo(97);
         for (String subjectId : List.of(
                 "11111111-1111-1111-1111-111111111101",
                 "11111111-1111-1111-1111-111111111102",
@@ -112,7 +113,9 @@ class ContentCompletenessBatch10Test extends AbstractCoreApiTest {
                 "11111111-1111-1111-1111-111111111108",
                 "11111111-1111-1111-1111-111111111109",
                 "11111111-1111-1111-1111-111111111110",
-                "11111111-1111-1111-1111-111111111111")) {
+                "11111111-1111-1111-1111-111111111111",
+                // Aptitude (REALM-001): its seeded compat games must be playable.
+                "55555555-5555-5555-5555-555555555501")) {
             String body = mockMvc.perform(get("/api/v1/subjects/" + subjectId + "/games")
                             .header("Authorization", bearer(learner[0])))
                     .andExpect(status().isOk())

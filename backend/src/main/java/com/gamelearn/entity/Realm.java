@@ -2,25 +2,24 @@ package com.gamelearn.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+/**
+ * Top-level learning domain (Phase: multi-realm foundation).
+ *
+ * <p>A realm groups subjects. Computer Science is the only realm with a
+ * fully implemented learning structure today; every other realm row (if
+ * ever seeded) is an explicit placeholder until its content contract
+ * exists. Realm keys are stable, unique, machine-readable identifiers
+ * (UPPER_SNAKE, matching the frontend {@code RealmId} contract) and
+ * MUST never be renamed after creation.
+ */
 @Entity
-@Table(name = "subjects")
-public class Subject extends BaseEntity {
+@Table(name = "realms")
+public class Realm extends BaseEntity {
 
-    /**
-     * Owning learning realm. Nullable for migration safety: rows created
-     * before the realm foundation carry NULL and are treated as legacy
-     * Computer Science content by seed backfill (V30 associates every
-     * pre-existing subject with the Computer Science realm). New
-     * realm-scoped content MUST set an explicit realm.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "realm_id")
-    private Realm realm;
+    @Column(name = "realm_key", nullable = false, unique = true, length = 60)
+    private String realmKey;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
@@ -36,6 +35,14 @@ public class Subject extends BaseEntity {
 
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
+
+    public String getRealmKey() {
+        return realmKey;
+    }
+
+    public void setRealmKey(String realmKey) {
+        this.realmKey = realmKey;
+    }
 
     public String getName() {
         return name;
@@ -75,13 +82,5 @@ public class Subject extends BaseEntity {
 
     public void setDisplayOrder(int displayOrder) {
         this.displayOrder = displayOrder;
-    }
-
-    public Realm getRealm() {
-        return realm;
-    }
-
-    public void setRealm(Realm realm) {
-        this.realm = realm;
     }
 }
