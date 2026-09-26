@@ -180,11 +180,12 @@ class RealmApiTest extends AbstractCoreApiTest {
         assertThat(gameTypes).containsExactlyInAnyOrder("quiz_battle", "speed_run");
 
         // Topic listing for the aptitude subject resolves real skill topics:
-        // 6 original skills + 22 Logical Reasoning imports (V35).
+        // 6 original skills + 22 Logical Reasoning imports (V35)
+        // + 34 Quantitative Aptitude imports (V36).
         List<Topic> topics = topicRepository.findAll().stream()
                 .filter(t -> t.getSubject().getId().equals(aptitude.getId()))
                 .toList();
-        assertThat(topics).hasSize(28);
+        assertThat(topics).hasSize(62);
         Topic percentages = topics.stream()
                 .filter(t -> "Percentages".equals(t.getName()))
                 .findFirst()

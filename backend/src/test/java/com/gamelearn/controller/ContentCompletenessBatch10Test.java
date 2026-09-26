@@ -240,8 +240,9 @@ class ContentCompletenessBatch10Test extends AbstractCoreApiTest {
                         + "'55555555-5555-5555-5555-555555555511' AND id <= "
                         + "'55555555-5555-5555-5555-555555555543'",
                 Integer.class)).isEqualTo(15);
+        // Legacy lesson count plus 34 Quantitative Aptitude concept lessons (V36).
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM lessons", Integer.class))
-                .isEqualTo(15);
+                .isEqualTo(49);
         // Legacy quiz delivery still serves real options (H2 unwrap preserved).
         mockMvc.perform(get("/api/v1/quiz/22222222-2222-2222-2222-222222222211")
                         .header("Authorization", bearer(learner[0])))
