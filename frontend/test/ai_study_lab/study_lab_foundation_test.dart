@@ -15,6 +15,7 @@ import 'package:gamelearn_app/core/providers.dart';
 import 'package:gamelearn_app/features/ai_study_lab/data/study_lab_repository.dart';
 import 'package:gamelearn_app/features/ai_study_lab/domain/study_document.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/ai_study_lab_screen.dart';
+import 'package:gamelearn_app/features/ai_study_lab/presentation/document_practice_screen.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/document_tutor_screen.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/document_workspace_screen.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/widgets/upload_sheet.dart';
@@ -153,6 +154,12 @@ GoRouter _workspaceRouter(String initialLocation) => GoRouter(
     GoRoute(
       path: '/ai-study-lab/document/:documentId/tutor',
       builder: (_, s) => DocumentTutorScreen(
+        documentId: s.pathParameters['documentId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/ai-study-lab/document/:documentId/practice',
+      builder: (_, s) => DocumentPracticeScreen(
         documentId: s.pathParameters['documentId']!,
       ),
     ),
@@ -344,7 +351,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('locked practice explains honestly; Ask Nova opens tutor',
+    testWidgets('locked study explains honestly; Ask Nova opens tutor',
         (tester) async {
       final repo = _FixtureLabRepository(const [_readyDoc]);
       final router = _workspaceRouter(
@@ -355,17 +362,16 @@ void main() {
       await _pump(tester);
 
       await tester.ensureVisible(
-        find.text('No practice generated yet').first,
+        find.text('Study', skipOffstage: false).first,
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('No practice generated yet').first);
+      await tester.tap(find.text('Study', skipOffstage: false).first);
       await _pump(tester);
       expect(
-        find.textContaining('Nothing is faked', skipOffstage: false),
+        find.text('Study mode — Coming next', skipOffstage: false),
         findsOneWidget,
       );
-      expect(find.text('NOVA'), findsNothing);
       await tester.tap(find.text('GOT IT'));
       await _pump(tester);
 

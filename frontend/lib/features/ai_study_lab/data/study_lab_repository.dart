@@ -1,4 +1,5 @@
 import '../domain/study_document.dart';
+import '../domain/study_practice.dart';
 import '../domain/study_tutor.dart';
 import '../domain/study_upload.dart';
 
@@ -56,6 +57,33 @@ abstract class StudyLabRepository {
     required String documentId,
     required String question,
   });
+
+  /// Generate an AI practice set for a document (RAG-FE-4 boundary).
+  ///
+  /// [setup] carries frontend preferences only (count/difficulty);
+  /// mapping to backend values happens in the real implementation.
+  /// Returns [PracticeUnavailable] when no service is connected,
+  /// [PracticeEmpty] when generation genuinely yields zero questions,
+  /// [PracticeGenerationFailure] on genuine errors, and
+  /// [PracticeSetReady] ONLY from a real backend-backed implementation.
+  /// Never throws for these expected service states.
+  Future<PracticeGenerationResult> generateDocumentPractice({
+    required String documentId,
+    required PracticeSetup setup,
+  });
+
+  /// Evaluate one submitted practice answer (RAG-FE-4 boundary).
+  ///
+  /// Returns [PracticeEvaluated] ONLY from a real backend-backed
+  /// implementation, [PracticeEvaluationUnavailable] when no service
+  /// is connected, [PracticeEvaluationFailure] on genuine errors.
+  /// Learning evaluation only: never XP, mastery, streak, or game
+  /// results — this system never touches gamification.
+  Future<PracticeEvaluationResult> evaluatePracticeAnswer({
+    required String documentId,
+    required String questionId,
+    required String selectedAnswer,
+  });
 }
 
 /// RAG-FE-1 placeholder: no document service exists yet.
@@ -89,4 +117,25 @@ class EmptyStudyLabRepository implements StudyLabRepository {
     required String documentId,
     required String question,
   }) async => const TutorUnavailable('Document AI is not connected yet.');
+
+  /// No practice service exists: explicit unavailable result (never a
+  /// fabricated set, never thrown). The setup screen maps this to its
+  /// honest unavailable state with retry/back actions.
+  @override
+  Future<PracticeGenerationResult> generateDocumentPractice({
+    required String documentId,
+    required PracticeSetup setup,
+  }) async => const PracticeUnavailable('AI practice is not connected yet.');
+
+  /// No evaluation service exists: explicit unavailable result (never
+  /// a fabricated verdict, never thrown). The question screen keeps
+  /// the selection and explains honestly instead.
+  @override
+  Future<PracticeEvaluationResult> evaluatePracticeAnswer({
+    required String documentId,
+    required String questionId,
+    required String selectedAnswer,
+  }) async => const PracticeEvaluationUnavailable(
+    "Practice evaluation isn't connected yet.",
+  );
 }

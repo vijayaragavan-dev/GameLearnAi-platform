@@ -435,11 +435,10 @@ class _ActionsColumn extends StatelessWidget {
         const SizedBox(height: 12),
         WorkspaceActionCard(
           action: StudyLabAction.practice,
-          available: false,
-          onTap: () => onLocked(
-            'No practice generated yet',
-            'Practice drills appear here once your document is '
-                'processed. Nothing is faked meanwhile.',
+          available: true,
+          // Real destination: the AI-generated practice experience.
+          onTap: () => context.push(
+            Routes.aiStudyPractice(document.id),
           ),
           unavailableLabel: 'No practice generated yet',
         ),
