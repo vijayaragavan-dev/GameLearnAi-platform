@@ -17,6 +17,7 @@ dependencies:
   shared_preferences: ^2.5.3
   audioplayers: ^6.5.0
   flutter_svg: ^2.0.15
+  file_picker: ^13.1.0
 
 dev_dependencies:
   flutter_test:

@@ -220,7 +220,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('UPLOAD DOCUMENT').first);
       await _pump(tester);
-      expect(find.text('Upload study material'), findsOneWidget);
+      expect(find.text('Upload your study material'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
 
@@ -457,13 +457,12 @@ void main() {
       await _setSize(tester, 390, 844);
       await pumpSheet(tester, null);
 
-      expect(find.text('Upload study material'), findsOneWidget);
+      expect(find.text('Upload your study material'), findsWidgets);
       expect(find.text('PDF', skipOffstage: false), findsWidgets);
-      expect(find.text('DOCX'), findsOneWidget);
-      expect(find.text('TXT'), findsOneWidget);
+      expect(find.text('More formats coming'), findsOneWidget);
       expect(
         find.textContaining('stay on this device', skipOffstage: false),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('CANCEL'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -475,7 +474,7 @@ void main() {
 
       await tester.tap(find.text('CANCEL'));
       await _pump(tester);
-      expect(find.text('Upload study material'), findsNothing);
+      expect(find.text('Upload your study material'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -490,11 +489,11 @@ void main() {
       );
 
       expect(find.text('algebra-notes.pdf'), findsOneWidget);
-      await tester.tap(find.byTooltip('Remove selected file'));
+      await tester.tap(find.byTooltip('Remove selected document'));
       await _pump(tester);
       expect(find.text('algebra-notes.pdf'), findsNothing);
       // Sheet stays open for choosing again — nothing uploaded.
-      expect(find.text('Upload study material'), findsOneWidget);
+      expect(find.text('Upload your study material'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
   });
@@ -545,6 +544,21 @@ void main() {
       await pumpLab(tester, 1440, 900, ThemeMode.light);
       expect(find.text('AI STUDY LAB'), findsWidgets);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('360/430/1024/1280 widths render without overflow',
+        (tester) async {
+      for (final size in const [
+        Size(360, 740),
+        Size(430, 932),
+        Size(1024, 768),
+        Size(1280, 800),
+      ]) {
+        await pumpLab(tester, size.width, size.height, ThemeMode.dark);
+        expect(find.text('AI STUDY LAB'), findsWidgets);
+        expect(find.text('Your Study Lab is empty'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
     });
   });
 }

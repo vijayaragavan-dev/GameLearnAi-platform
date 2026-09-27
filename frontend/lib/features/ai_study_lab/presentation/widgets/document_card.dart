@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../shared/widgets/game_card.dart';
+import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/pressable.dart';
 import '../../domain/study_document.dart';
 
@@ -149,29 +150,37 @@ class DocumentTopicChip extends StatelessWidget {
   }
 }
 
-/// Reusable study-document card. Tapping opens the workspace for
-/// [document]; non-ready documents still open it so the workspace can
-/// explain their state honestly (processing/failed/unavailable).
+/// Reusable study-document card.
+///
+/// [onOpen] is null for documents that cannot be opened yet
+/// (processing): the card renders non-interactive with honest status
+/// instead of navigating. [onRetry] offers a parent-owned reload for
+/// failed documents; without it, failed cards show the failure message
+/// with no fake retry endpoint.
 class DocumentCard extends StatelessWidget {
   const DocumentCard({
     super.key,
     required this.document,
-    required this.onOpen,
+    this.onOpen,
     this.onMenu,
+    this.onRetry,
   });
 
   final StudyDocument document;
-  final VoidCallback onOpen;
+  final VoidCallback? onOpen;
   final VoidCallback? onMenu;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final doc = document;
+    final openable = onOpen != null;
     return Pressable(
       onTap: onOpen,
       semanticsLabel:
-          'Open document ${doc.title}, ${doc.fileType.extensionLabel}, ${doc.status.name}',
+          'Document ${doc.title}, ${doc.fileType.extensionLabel}, ${doc.status.name}'
+          '${openable ? '' : ', not openable yet'}',
       child: GameCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,6 +248,30 @@ class DocumentCard extends StatelessWidget {
             if (doc.progressFraction != null) ...[
               const SizedBox(height: 10),
               DocumentProgressBar(fraction: doc.progressFraction!),
+            ],
+            if (doc.status == DocumentStatus.failed) ...[
+              const SizedBox(height: 10),
+              Text(
+                doc.failureMessage ?? 'Processing hit a snag.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppLightColors.textSecondary,
+                ),
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GameChip(
+                    label: 'RETRY',
+                    icon: Icons.refresh_rounded,
+                    color: AppColors.secondary,
+                    onTap: onRetry!,
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 10),
             DocumentTopicChip(topicCount: doc.topicCount),

@@ -198,12 +198,21 @@ class _AiStudyLabScreenState extends ConsumerState<AiStudyLabScreen> {
                                 for (final doc in docs)
                                   DocumentCard(
                                     document: doc,
-                                    onOpen: () {
-                                      _tap();
-                                      context.push(
-                                        Routes.aiStudyDocument(doc.id),
-                                      );
-                                    },
+                                    // Processing documents are not openable
+                                    // yet; failed ones offer an honest
+                                    // reload instead of a fake retry.
+                                    onOpen: doc.isProcessing
+                                        ? null
+                                        : () {
+                                            _tap();
+                                            context.push(
+                                              Routes.aiStudyDocument(doc.id),
+                                            );
+                                          },
+                                    onRetry: doc.status ==
+                                            DocumentStatus.failed
+                                        ? _retry
+                                        : null,
                                   ),
                               ],
                             ),

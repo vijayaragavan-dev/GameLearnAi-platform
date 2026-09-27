@@ -1,4 +1,5 @@
 import '../domain/study_document.dart';
+import '../domain/study_upload.dart';
 
 /// Document-library data seam for the AI Study Lab (RAG-FE-1).
 ///
@@ -30,6 +31,16 @@ abstract class StudyLabRepository {
     }
     return null;
   }
+
+  /// Attempt an explicit document upload (RAG-FE-2 backend boundary).
+  ///
+  /// Returns [UploadUnavailable] when no upload service is connected,
+  /// [UploadFailure] when the attempt genuinely failed, and
+  /// [UploadSuccess] ONLY from a real backend-backed implementation
+  /// carrying the authoritative document. Never throws for these
+  /// expected service states; transport-level errors follow the
+  /// existing app-wide exception patterns.
+  Future<UploadResult> uploadDocument(PickedStudyFile file);
 }
 
 /// RAG-FE-1 placeholder: no document service exists yet.
@@ -47,4 +58,11 @@ class EmptyStudyLabRepository implements StudyLabRepository {
 
   @override
   Future<StudyDocument?> documentById(String id) async => null;
+
+  /// No upload service exists: explicit unavailable result (never a
+  /// fabricated success, never thrown). The sheet maps this to its
+  /// honest unavailable state with Try Again / Cancel.
+  @override
+  Future<UploadResult> uploadDocument(PickedStudyFile file) async =>
+      const UploadUnavailable('Document services are currently unavailable.');
 }
