@@ -15,6 +15,7 @@ import 'package:gamelearn_app/core/providers.dart';
 import 'package:gamelearn_app/features/ai_study_lab/data/study_lab_repository.dart';
 import 'package:gamelearn_app/features/ai_study_lab/domain/study_document.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/ai_study_lab_screen.dart';
+import 'package:gamelearn_app/features/ai_study_lab/presentation/document_tutor_screen.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/document_workspace_screen.dart';
 import 'package:gamelearn_app/features/ai_study_lab/presentation/widgets/upload_sheet.dart';
 
@@ -146,6 +147,12 @@ GoRouter _workspaceRouter(String initialLocation) => GoRouter(
     GoRoute(
       path: '/ai-study-lab/document/:documentId',
       builder: (_, s) => DocumentWorkspaceScreen(
+        documentId: s.pathParameters['documentId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/ai-study-lab/document/:documentId/tutor',
+      builder: (_, s) => DocumentTutorScreen(
         documentId: s.pathParameters['documentId']!,
       ),
     ),
@@ -337,7 +344,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('locked action explains honestly, offers real Nova',
+    testWidgets('locked practice explains honestly; Ask Nova opens tutor',
         (tester) async {
       final repo = _FixtureLabRepository(const [_readyDoc]);
       final router = _workspaceRouter(
@@ -362,7 +369,7 @@ void main() {
       await tester.tap(find.text('GOT IT'));
       await _pump(tester);
 
-      // Ask Nova card offers the real tutor as the honest alternative.
+      // Ask Nova card navigates to the document-grounded tutor.
       await tester.ensureVisible(
         find.text('Ask Nova', skipOffstage: false).last,
       );
@@ -370,10 +377,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Ask Nova', skipOffstage: false).last);
       await _pump(tester);
-      expect(find.text('Document answers — Coming next'), findsOneWidget);
-      await tester.tap(find.text('OPEN NOVA NOW'));
-      await _pump(tester);
-      expect(find.text('NOVA'), findsOneWidget);
+      expect(find.text('NOVA TUTOR'), findsWidgets);
+      expect(
+        find.text('Studying: Quantum Notes', skipOffstage: false),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 

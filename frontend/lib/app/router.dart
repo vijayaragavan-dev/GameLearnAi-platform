@@ -54,6 +54,7 @@ import '../features/realms/presentation/realm_landing_screen.dart';
 import '../features/realms/presentation/realms_screen.dart';
 import '../features/ai_study_lab/presentation/ai_study_lab_screen.dart';
 import '../features/ai_study_lab/presentation/document_workspace_screen.dart';
+import '../features/ai_study_lab/presentation/document_tutor_screen.dart';
 import '../features/avatar/presentation/character_collection_screen.dart';
 import '../features/avatar/presentation/character_detail_screen.dart';
 
@@ -86,6 +87,8 @@ abstract final class Routes {
   static const aiStudyLab = '/ai-study-lab';
   static String aiStudyDocument(String documentId) =>
       '/ai-study-lab/document/$documentId';
+  static String aiStudyTutor(String documentId) =>
+      '/ai-study-lab/document/$documentId/tutor';
   // DEV ONLY — not in production nav
   static const designShowcase = '/design-showcase';
 
@@ -659,6 +662,16 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
         path: '/ai-study-lab/document/:documentId',
         pageBuilder: (_, s) => _page(
           child: DocumentWorkspaceScreen(
+            documentId: s.pathParameters['documentId']!,
+          ),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: '/ai-study-lab/document/:documentId/tutor',
+        pageBuilder: (_, s) => _page(
+          child: DocumentTutorScreen(
             documentId: s.pathParameters['documentId']!,
           ),
           state: s,

@@ -1,4 +1,5 @@
 import '../domain/study_document.dart';
+import '../domain/study_tutor.dart';
 import '../domain/study_upload.dart';
 
 /// Document-library data seam for the AI Study Lab (RAG-FE-1).
@@ -41,6 +42,20 @@ abstract class StudyLabRepository {
   /// expected service states; transport-level errors follow the
   /// existing app-wide exception patterns.
   Future<UploadResult> uploadDocument(PickedStudyFile file);
+
+  /// Ask Nova about a document (RAG-FE-3 backend boundary).
+  ///
+  /// [question] is the learner's verbatim text (already trimmed and
+  /// length-checked by the UI). Returns [TutorUnavailable] when no
+  /// document-AI service is connected, [TutorNoAnswer] when retrieval
+  /// genuinely found nothing, [TutorFailure] on genuine errors, and
+  /// [TutorAnswer] ONLY from a real backend-backed implementation.
+  /// Never throws for these expected service states; transport-level
+  /// errors follow the existing app-wide exception patterns.
+  Future<TutorAskResult> askDocumentQuestion({
+    required String documentId,
+    required String question,
+  });
 }
 
 /// RAG-FE-1 placeholder: no document service exists yet.
@@ -65,4 +80,13 @@ class EmptyStudyLabRepository implements StudyLabRepository {
   @override
   Future<UploadResult> uploadDocument(PickedStudyFile file) async =>
       const UploadUnavailable('Document services are currently unavailable.');
+
+  /// No document-AI service exists: explicit unavailable result (never
+  /// a fabricated answer, never thrown). The tutor maps this to its
+  /// honest unavailable notice with retry affordance.
+  @override
+  Future<TutorAskResult> askDocumentQuestion({
+    required String documentId,
+    required String question,
+  }) async => const TutorUnavailable('Document AI is not connected yet.');
 }

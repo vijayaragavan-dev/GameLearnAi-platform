@@ -425,13 +425,10 @@ class _ActionsColumn extends StatelessWidget {
         const SizedBox(height: 12),
         WorkspaceActionCard(
           action: StudyLabAction.askNova,
-          available: false,
-          onTap: () => onLocked(
-            'Document answers — Coming next',
-            'Nova will answer from this document once the Study Lab '
-                'service arrives.',
-            actionLabel: 'Open Nova now',
-            onAction: () => context.push(Routes.tutor),
+          available: true,
+          // Real destination: the document-grounded Nova tutor.
+          onTap: () => context.push(
+            Routes.aiStudyTutor(document.id),
           ),
           unavailableLabel: 'Coming next',
         ),
