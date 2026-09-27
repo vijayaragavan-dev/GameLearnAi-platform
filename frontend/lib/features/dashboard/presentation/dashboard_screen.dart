@@ -363,6 +363,68 @@ class _DashboardBody extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
+        // 4c. AI STUDY LAB — document workspace entry above worlds.
+        // Additive entry only; recommendations and game logic untouched.
+        _staggered(i++, const SectionHeader(title: 'AI Study Lab')),
+        _staggered(
+          i++,
+          Pressable(
+            onTap: () => context.push(Routes.aiStudyLab),
+            semanticsLabel:
+                'Open AI Study Lab. Turn your documents into an interactive learning experience',
+            child: GameCard(
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.novaCore(),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.science_rounded,
+                      size: 22,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AI STUDY LAB',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Upload documents — study your way',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.secondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
         // Also keep existing adaptive insights where they add value, now inside journey/quests
         // Nova recommends — truthful, backend-driven
         if (d.recommendations.isNotEmpty) ...[

@@ -18,6 +18,7 @@ import '../features/leaderboard/data/leaderboard_repository.dart';
 import '../features/avatar/data/avatar_repository.dart';
 import '../features/game_engine/data/game_content_repository.dart';
 import '../features/realms/data/realm_repository.dart';
+import '../features/ai_study_lab/data/study_lab_repository.dart';
 
 /// Overridden in main() once SharedPreferences loads.
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -86,6 +87,14 @@ final gameContentRepoProvider = Provider<GameContentRepository>(
 
 final realmRepoProvider = Provider<RealmRepository>(
   (ref) => RealmRepository(ref.watch(apiClientProvider)),
+);
+
+/// AI Study Lab document library. RAG-FE-1 placeholder binding: honestly
+/// empty until the MlRag service contract lands (see
+/// [EmptyStudyLabRepository]). Rebinding to the real implementation is
+/// the only change required — no screen code changes.
+final studyLabRepoProvider = Provider<StudyLabRepository>(
+  (ref) => const EmptyStudyLabRepository(),
 );
 
 // ---- System services ----------------------------------------------------

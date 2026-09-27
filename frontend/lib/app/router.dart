@@ -52,6 +52,8 @@ import '../features/design_showcase/design_showcase_screen.dart';
 import '../features/leaderboard/presentation/champions_arena_screen.dart';
 import '../features/realms/presentation/realm_landing_screen.dart';
 import '../features/realms/presentation/realms_screen.dart';
+import '../features/ai_study_lab/presentation/ai_study_lab_screen.dart';
+import '../features/ai_study_lab/presentation/document_workspace_screen.dart';
 import '../features/avatar/presentation/character_collection_screen.dart';
 import '../features/avatar/presentation/character_detail_screen.dart';
 
@@ -81,6 +83,9 @@ abstract final class Routes {
   static const arena = '/arena';
   static const realms = '/realms';
   static String realm(String realmKey) => '/realm/$realmKey';
+  static const aiStudyLab = '/ai-study-lab';
+  static String aiStudyDocument(String documentId) =>
+      '/ai-study-lab/document/$documentId';
   // DEV ONLY — not in production nav
   static const designShowcase = '/design-showcase';
 
@@ -637,6 +642,24 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (_, s) => _page(
           child: RealmLandingScreen(
             realmKey: s.pathParameters['realmKey']!,
+          ),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: Routes.aiStudyLab,
+        pageBuilder: (_, s) => _page(
+          child: const AiStudyLabScreen(),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: '/ai-study-lab/document/:documentId',
+        pageBuilder: (_, s) => _page(
+          child: DocumentWorkspaceScreen(
+            documentId: s.pathParameters['documentId']!,
           ),
           state: s,
           begin: const Offset(0, 0.06),
