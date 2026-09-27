@@ -9,6 +9,7 @@ import '../../avatar/providers/avatar_providers.dart';
 import '../../challenge/assessment/providers/assessment_provider.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../gamification/providers/game_results_provider.dart';
+import '../../gamification/providers/topic_progress_provider.dart';
 import '../../leaderboard/providers/leaderboard_providers.dart';
 import '../../learning/path/providers/path_provider.dart';
 import '../../subjects/domain/world_context.dart'
@@ -205,6 +206,7 @@ class SessionController extends Notifier<SessionState> {
     ref.invalidate(myPositionProvider);
     ref.invalidate(dashboardLeaderboardProvider);
     ref.invalidate(gameResultsProvider);
+    ref.invalidate(topicProgressProvider);
     ref.invalidate(subjectsProvider);
     ref.invalidate(subjectByIdProvider);
     ref.invalidate(worldForSubjectIdProvider);

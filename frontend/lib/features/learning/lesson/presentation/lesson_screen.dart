@@ -12,6 +12,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../gamification/providers/topic_progress_provider.dart';
 import '../../../../shared/widgets/badges.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
@@ -73,6 +74,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen> {
       await ref.read(gamificationRepoProvider).markTopicComplete(widget.topicId);
       if (!mounted) return;
       ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
+      // Shared progress map refresh so surrounding topic lists reflect the
+      // new state; the server remains authoritative (local re-read below).
+      ref.invalidate(topicProgressProvider);
       setState(() {
         _marking = false;
         // Re-read authoritative state; consumers (topic performance, path,

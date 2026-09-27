@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/content_models.dart';
+import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
@@ -21,6 +22,7 @@ import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../game_engine/providers/game_content_providers.dart';
+import '../../gamification/providers/topic_progress_provider.dart';
 import '../data/realm_models.dart';
 
 /// Generic realm landing — one screen for every non-CS realm identity.
@@ -387,9 +389,23 @@ class _SubjectTopicsState extends ConsumerState<_SubjectTopics> {
     );
   });
 
+  /// Backend topicId-keyed completion — never name, order, or display
+  /// text, so similarly named topics can never cross-match. Null map
+  /// (loading or failed progress fetch) means unknown: rows render
+  /// exactly as without progress, never a claimed completion.
+  static bool _isCompleted(Map<String, TopicProgress>? byTopic, String id) =>
+      byTopic?[id]?.status == 'COMPLETED';
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Single shared collection fetch (ONE request for the whole list);
+    // rows below only map by topicId. Loading/error degrades to the
+    // progress-unaware rendering — learning content stays usable.
+    final progressByTopic = ref.watch(topicProgressProvider).maybeWhen(
+      data: (map) => map,
+      orElse: () => null,
+    );
     return GameChallengeSurface(
       accent: widget.accent,
       title: 'SKILLS & TOPICS',
@@ -464,7 +480,8 @@ class _SubjectTopicsState extends ConsumerState<_SubjectTopics> {
                     onTap: () =>
                         context.push(Routes.topic(node.topicId)),
                     semanticsLabel:
-                        'Open topic ${node.topicName}, ${node.status}',
+                        'Open topic ${node.topicName}, ${node.status}'
+                        '${_isCompleted(progressByTopic, node.topicId) ? ', completed' : ''}',
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -538,6 +555,17 @@ class _SubjectTopicsState extends ConsumerState<_SubjectTopics> {
                             ),
                           ),
                           const SizedBox(width: 8),
+                          // Backend-verified completion only (never claimed
+                          // while progress is loading or failed to load).
+                          if (_isCompleted(progressByTopic, node.topicId))
+                            const Padding(
+                              padding: EdgeInsets.only(right: 2),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                size: 18,
+                                color: AppColors.success,
+                              ),
+                            ),
                           Icon(
                             Icons.chevron_right_rounded,
                             size: 18,
