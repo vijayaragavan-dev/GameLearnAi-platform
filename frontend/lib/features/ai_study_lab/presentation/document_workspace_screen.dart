@@ -445,10 +445,10 @@ class _ActionsColumn extends StatelessWidget {
         const SizedBox(height: 12),
         WorkspaceActionCard(
           action: StudyLabAction.play,
-          available: false,
-          onTap: () => onLocked(
-            'Play — Coming next',
-            'Document-powered games unlock with the Study Lab service.',
+          available: true,
+          // Real destination: the RAG game selection experience.
+          onTap: () => context.push(
+            Routes.aiStudyPlay(document.id),
           ),
           unavailableLabel: 'Coming next',
         ),
