@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,10 +102,24 @@ class _UploadSheetState extends ConsumerState<UploadSheet> {
         });
         return;
       }
+      Uint8List bytes;
+      try {
+        bytes = await platformFile.readAsBytes();
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _selected = null;
+          _phase = _SheetPhase.idle;
+          _error = "We couldn't read this file. Please choose another PDF.";
+        });
+        return;
+      }
+      if (!mounted) return;
       setState(() {
         _selected = PickedStudyFile(
           name: platformFile.name,
           sizeBytes: platformFile.lengthSync(),
+          bytes: bytes,
         );
         _phase = _SheetPhase.ready;
       });

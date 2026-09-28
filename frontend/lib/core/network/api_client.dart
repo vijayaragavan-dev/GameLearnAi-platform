@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../config/app_config.dart';
 import 'api_exception.dart';
@@ -41,6 +42,11 @@ class ApiClient {
     if (jsonBody) h['Content-Type'] = 'application/json';
     final token = _tokenProvider?.call();
     if (token != null && token.isNotEmpty) h['Authorization'] = 'Bearer $token';
+    // Free-tier ngrok tunnels gate browser traffic behind a warning page;
+    // this header tells ngrok the request is programmatic API traffic.
+    // Harmless for non-ngrok hosts; applied centrally so no repository
+    // needs to know about tunnel transports.
+    h['ngrok-skip-browser-warning'] = 'true';
     return h;
   }
 
@@ -77,6 +83,36 @@ class ApiClient {
               )
               .timeout(effectiveTimeout);
   }).then((value) => expectBody ? value : <String, dynamic>{});
+
+  /// Multipart file upload (e.g. PDF documents). Mirrors [postJson]:
+  /// same headers, bearer handling, timeout and error normalization.
+  /// The file part carries [filename] and [contentType]; the backend
+  /// derives everything else server-side (never trust client paths).
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String fileField,
+    required String filename,
+    required String contentType,
+    required List<int> bytes,
+    Duration? timeout,
+  }) => _runJson('POST', path, () async {
+    final request = http.MultipartRequest('POST', AppConfig.resolve(path));
+    request.headers.addAll(_headers());
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        fileField,
+        bytes,
+        filename: filename,
+        contentType: MediaType.parse(contentType),
+      ),
+    );
+    // MultipartRequest has no client-bound send: route explicitly
+    // through the injected client (mockable, timeout-consistent).
+    final streamed = await _client
+        .send(request)
+        .timeout(timeout ?? _timeout);
+    return http.Response.fromStream(streamed);
+  });
 
   /// Idempotent writes (e.g. learning-progress upsert). Mirrors [postJson]
   /// exactly: same headers, bearer handling, timeout and error normalization.

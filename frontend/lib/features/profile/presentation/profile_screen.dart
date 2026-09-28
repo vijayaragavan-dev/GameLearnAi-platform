@@ -22,6 +22,7 @@ import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../../shared/widgets/xp_bar.dart' show XPBar;
+import '../../shell/shell_dock_insets.dart';
 import '../../avatar/providers/avatar_providers.dart';
 import '../../avatar/widgets/avatar_visual.dart';
 
@@ -105,8 +106,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 }
                 final (profile, summary) = snap.data!;
                 final atMax = summary.atMaxLevel;
+                // Shell dock clearance: derived (ShellDockMetrics).
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    ShellDockMetrics.bottomClearance(context),
+                  ),
                   children: [
                     ResponsiveCenter(
                       child: Column(

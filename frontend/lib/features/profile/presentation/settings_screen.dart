@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -247,6 +249,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
           const SizedBox(height: 18),
+          SectionCard(
+            title: 'APPLICATION',
+            children: [
+              PremiumAccountRow(
+                icon: Icons.exit_to_app_rounded,
+                title: 'Exit app',
+                subtitle: 'Close GameLearn AI on this device',
+                semanticLabel: 'Exit app. Close GameLearn AI on this device',
+                onTap: () => _confirmExit(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
           Center(
             child: Text(
               'GameLearn AI · ${ref.watch(appConfigInfoProvider).env.toUpperCase()} · '
@@ -294,6 +309,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         context.go(Routes.login);
       }
     }
+  }
+
+  /// Deliberate Exit — NOT logout. Never clears JWT, credentials,
+  /// preferences, progress, cache, or backend state.
+  Future<void> _confirmExit(BuildContext context) async {
+    final confirmed = await showPremiumDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CinematicDialog(
+        accent: AppColors.primary,
+        title: const Text('Exit GameLearn AI?'),
+        content: const Text(
+          'Are you sure you want to close the application?',
+        ),
+        actions: [
+          PremiumDialogActions(
+            primaryLabel: 'Exit',
+            onPrimary: () => Navigator.of(dialogContext).pop(true),
+            secondaryLabel: 'Cancel',
+            onSecondary: () => Navigator.of(dialogContext).pop(false),
+            accent: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    if (kIsWeb) {
+      // Browsers forbid programmatic tab close — stay honest, keep the
+      // app intact, and let the user close the tab/window themselves.
+      if (!context.mounted) return;
+      await showPremiumDialog<void>(
+        context: context,
+        builder: (infoContext) => CinematicDialog(
+          accent: AppColors.primary,
+          title: const Text('Close this tab to exit'),
+          content: const Text(
+            'Your browser keeps tab closing in your hands. '
+            'You can safely close this tab or window — '
+            'your progress stays saved.',
+          ),
+          actions: [
+            PremiumDialogActions(
+              primaryLabel: 'Got it',
+              onPrimary: () => Navigator.of(infoContext).pop(),
+              accent: AppColors.primary,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    await SystemNavigator.pop();
   }
 }
 

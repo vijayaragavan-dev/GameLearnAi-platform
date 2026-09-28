@@ -122,7 +122,14 @@ public class TutorOutputValidator {
         return answer;
     }
 
-    private void scanSafety(String answer) {
+    /**
+     * Phase I reuse: the S-1..S-4 deterministic safety scans, shared with
+     * document-answer validation (same fail-closed direction; document
+     * answers simply never contain tutor markers in the first place).
+     *
+     * @throws TutorOutputRejection on any safety finding (category set)
+     */
+    public static void scanSafety(String answer) {
         if (CONTROL_AND_ZERO_WIDTH.matcher(answer).find()) {
             throw new TutorOutputRejection(UNSAFE);
         }

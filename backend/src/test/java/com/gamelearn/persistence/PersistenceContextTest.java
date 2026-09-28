@@ -124,10 +124,11 @@ class PersistenceContextTest {
     void completeFlywayChainIsApplied() {
         // installed_rank > 0 excludes Flyway's internal
         // "<< Flyway Schema History table created >>" marker row (rank -1).
+        // V1-V38: bump the expected count whenever a new migration is added.
         Integer appliedMigrations = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND installed_rank > 0",
                 Integer.class);
-        assertThat(appliedMigrations).isEqualTo(37);
+        assertThat(appliedMigrations).isEqualTo(38);
     }
 
     @Test

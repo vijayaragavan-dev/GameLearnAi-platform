@@ -123,7 +123,11 @@ Future<ProviderScope> _scopedAppAsync(
   return ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWith((ref) => prefs),
-      if (repo != null) studyLabRepoProvider.overrideWith((ref) => repo),
+      // Default to the honest-empty repository (production binding is
+      // now the real API implementation, which must never be hit here).
+      studyLabRepoProvider.overrideWith(
+        (ref) => repo ?? const EmptyStudyLabRepository(),
+      ),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -524,6 +528,11 @@ void main() {
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            studyLabRepoProvider.overrideWith(
+              (ref) => const EmptyStudyLabRepository(),
+            ),
+          ],
           child: MaterialApp.router(
             routerConfig: _router(),
             theme: ThemeData.light(),

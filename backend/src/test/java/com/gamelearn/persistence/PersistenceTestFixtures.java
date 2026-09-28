@@ -17,6 +17,8 @@ import com.gamelearn.entity.Streak;
 import com.gamelearn.entity.Subject;
 import com.gamelearn.entity.Topic;
 import com.gamelearn.entity.TopicMastery;
+import com.gamelearn.entity.UserDocument;
+import com.gamelearn.entity.enums.DocumentStatus;
 import com.gamelearn.entity.User;
 import com.gamelearn.entity.UserAchievement;
 import com.gamelearn.entity.XpTransaction;
@@ -222,6 +224,16 @@ public final class PersistenceTestFixtures {
 
     public static Instant now() {
         return Instant.now();
+    }
+
+    public static UserDocument userDocument(User user) {
+        UserDocument document = new UserDocument();
+        document.setUser(user);
+        document.setFilename("notes-" + java.util.UUID.randomUUID() + ".pdf");
+        document.setContentType("application/pdf");
+        document.setByteSize(1024);
+        document.setStatus(DocumentStatus.UPLOADED);
+        return document;
     }
 
     public static BigDecimal score(int value) {

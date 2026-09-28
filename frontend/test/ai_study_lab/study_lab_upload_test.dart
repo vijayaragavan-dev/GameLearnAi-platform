@@ -144,7 +144,14 @@ Future<ProviderScope> _scopedSheet(Widget child) async {
   SharedPreferences.setMockInitialValues(const {});
   final prefs = await SharedPreferences.getInstance();
   return ProviderScope(
-    overrides: [sharedPreferencesProvider.overrideWith((ref) => prefs)],
+    overrides: [
+      sharedPreferencesProvider.overrideWith((ref) => prefs),
+      // Production binding is now the real API implementation: pin the
+      // honest-empty default here so no test performs real HTTP.
+      studyLabRepoProvider.overrideWith(
+        (ref) => const EmptyStudyLabRepository(),
+      ),
+    ],
     child: MaterialApp(home: Scaffold(body: child)),
   );
 }
@@ -516,7 +523,12 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWith((ref) => prefs)],
+          overrides: [
+            sharedPreferencesProvider.overrideWith((ref) => prefs),
+            studyLabRepoProvider.overrideWith(
+              (ref) => const EmptyStudyLabRepository(),
+            ),
+          ],
           child: MaterialApp(
             theme: ThemeData.light(),
             darkTheme: ThemeData.dark(),

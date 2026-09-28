@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_breakpoints.dart';
+import 'shell_dock_insets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_motion.dart';
@@ -146,7 +147,13 @@ class _ShellBackground extends StatelessWidget {
 /// Layout: Home · Worlds · [ORB] · Stats · Profile. The orb pushes the
 /// existing Tutor route; all tab destinations are unchanged. Floating
 /// treatment (margins + full radius + glow) separates the dock from
-/// page content; content lists already reserve bottom clearance.
+/// page content.
+///
+/// Viewport anchoring: this widget is ONLY ever installed as the shell
+/// [Scaffold.bottomNavigationBar] (compact widths). It is never placed
+/// inside scrollable page content, so it cannot scroll with content or
+/// shift with content length. Shell pages reserve
+/// [ShellDockMetrics.bottomClearance] so content never hides underneath.
 class _PremiumBottomBar extends ConsumerWidget {
   const _PremiumBottomBar({required this.index});
   final int index;
@@ -162,13 +169,26 @@ class _PremiumBottomBar extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Floating dock: detached from screen edges, centered with a
     // controlled max width so it never sprawls on wide compact windows.
+    // heightFactor: Center must NOT expand vertically inside
+    // bottomNavigationBar — an expanding Center takes the bar's full loose
+    // max height and vertically centers the dock in the viewport middle.
+    // heightFactor 1.0 wraps the bar to the dock height so Scaffold anchors
+    // it to the viewport bottom; width still expands for horizontal centering.
     return SafeArea(
       top: false,
       child: Center(
+        heightFactor: 1.0,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
+          constraints: const BoxConstraints(
+            maxWidth: ShellDockMetrics.dockMaxWidth,
+          ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              ShellDockMetrics.dockHorizontalMargin,
+              0,
+              ShellDockMetrics.dockHorizontalMargin,
+              ShellDockMetrics.dockBottomMargin,
+            ),
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -208,7 +228,7 @@ class _PremiumBottomBar extends ConsumerWidget {
                 ],
               ),
               child: SizedBox(
-                height: 78,
+                height: ShellDockMetrics.dockHeight,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

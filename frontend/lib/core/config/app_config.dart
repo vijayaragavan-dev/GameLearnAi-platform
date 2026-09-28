@@ -16,6 +16,13 @@ abstract final class AppConfig {
     defaultValue: 'dev',
   );
 
-  static Uri resolve(String path, {Map<String, String>? query}) =>
-      Uri.parse('$apiBaseUrl$path').replace(queryParameters: query);
+  static Uri resolve(String path, {Map<String, String>? query}) {
+    // Dart-define values may or may not end with '/'; repository paths
+    // always start with '/'. Normalize so resolution never yields '//'.
+    var base = apiBaseUrl;
+    while (base.endsWith('/')) {
+      base = base.substring(0, base.length - 1);
+    }
+    return Uri.parse('$base$path').replace(queryParameters: query);
+  }
 }

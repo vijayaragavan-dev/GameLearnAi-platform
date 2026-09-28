@@ -9,6 +9,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
 import '../../subjects/domain/world_context.dart';
+import '../../shell/shell_dock_insets.dart';
 import '../widgets/intelligence_section.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
@@ -115,18 +116,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final state = ref.watch(dashboardProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ref.read(audioManagerProvider).play(Sfx.buttonTap);
-          ref.read(hapticsProvider).tap();
-          context.push(Routes.tutor);
-        },
-        backgroundColor: isDark ? AppColors.secondaryDeep : AppColors.secondary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-        label: const Text(
-          'NOVA',
-          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2),
+      // Nova floats in the Scaffold FAB slot (viewport-anchored, never in
+      // scroll content). The dock-aware bottom padding lifts it exactly
+      // above the viewport-anchored command dock: dock + SafeArea + gap,
+      // minus the slot's own margin. Zero on rail layouts (no bottom dock).
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: ShellDockMetrics.novaLift(context),
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            ref.read(audioManagerProvider).play(Sfx.buttonTap);
+            ref.read(hapticsProvider).tap();
+            context.push(Routes.tutor);
+          },
+          backgroundColor:
+              isDark ? AppColors.secondaryDeep : AppColors.secondary,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+          label: const Text(
+            'NOVA',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2),
+          ),
         ),
       ),
       body: Stack(
@@ -259,11 +271,17 @@ class _DashboardBody extends StatelessWidget {
     // Use SingleChildScrollView + Column so all dashboard sections are built
     // eagerly for tester finders (ListView lazily builds off-screen slivers).
     // Wrapped in ResponsiveCenter for desktop max-width + atmospheric depth.
+    // Bottom clearance is derived from the viewport-anchored shell dock
+    // (height + margin + SafeArea + gap) so the last section never hides
+    // underneath the dock on any device. See ShellDockMetrics.
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: ResponsiveCenter(
         child: Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 110),
+          padding: EdgeInsets.only(
+            top: 12,
+            bottom: ShellDockMetrics.bottomClearance(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

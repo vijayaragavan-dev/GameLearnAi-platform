@@ -5,6 +5,13 @@ spring:
     name: gamelearn-backend
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  servlet:
+    multipart:
+      # Backstop ABOVE the application max-bytes limit (5 MiB): the
+      # application validation triggers first with field-level errors;
+      # this only stops abuse that bypasses it (mapped to 413).
+      max-file-size: 6MB
+      max-request-size: 6MB
   jpa:
     # Schema ownership belongs to Flyway; Hibernate must never create or
     # alter tables silently.
@@ -95,6 +102,54 @@ gamelearn:
         backoff-base: 2s        # exponential with +/-25% jitter
       rate-limit:
         max-requests-per-hour: 20   # OT-4 - dedicated tutor bucket
+        window-minutes: 60
+    rag:
+      # Gate 23: RAG evidence sidecar for AI Tutor grounding.
+      # Disabled by default: AI-001 keeps its exact legacy behavior.
+      # Token comes ONLY from the environment (RAG_SIDECAR_TOKEN).
+      enabled: false
+      base-url: ${RAG_SIDECAR_BASE_URL:http://127.0.0.1:8431}
+      service-token: ${RAG_SIDECAR_TOKEN:}
+      connect-timeout: 1s
+      read-timeout: 5s
+      top-k: 5
+      evidence-budget-chars: 4000
+    documents:
+      # USER-DOC RAG Phase C: local PDF upload/ingestion. Storage root
+      # defaults to ~/.gamelearn/documents (outside the repository);
+      # override per machine via GAMELEARN_DOCUMENTS_STORAGE_ROOT.
+      # Size/page/text ceilings are enforced by the application BEFORE
+      # expensive parsing (the sidecar carries matching backstops).
+      storage-root: ${GAMELEARN_DOCUMENTS_STORAGE_ROOT:${user.home}/.gamelearn/documents}
+      max-bytes: 5242880
+      max-pages: 50
+      max-chars-per-page: 20000
+      max-total-chars: 200000
+      connect-timeout: 1s
+      extract-timeout: 30s
+      # Phase F: localhost Qdrant for user-document vectors (Phase A
+      # infrastructure). Localhost-only; timeouts reuse the budgets above.
+      qdrant-base-url: ${QDRANT_BASE_URL:http://127.0.0.1:6333}
+      # Phase G: owner-scoped retrieval. topK is bounded client input;
+      # min-score is an UNCALIBRATED candidate filter (default off) —
+      # candidate selection only, never grounding acceptance.
+      retrieval-top-k-default: 5
+      retrieval-top-k-max: 10
+      retrieval-max-query-chars: 1000
+      retrieval-min-score: 0.0
+      retrieval-max-evidence: 20
+      # Phase I: user-document Q&A (POST /api/v1/documents/ask). Disabled
+      # by default; only this endpoint reads the flag.
+      document-rag-enabled: ${GAMELEARN_AI_DOCUMENT_RAG_ENABLED:false}
+      ask-max-question-chars: 1000
+      ask-temperature: 0.3
+      ask-max-output-tokens: 1024
+      ask-deadline: 20s
+      ask-rate-limit:
+        max-asks-per-hour: 20
+        window-minutes: 60
+      rate-limit:
+        max-uploads-per-hour: 10
         window-minutes: 60
   gamification:
     game-result-rate-limit:

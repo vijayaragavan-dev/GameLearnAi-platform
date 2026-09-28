@@ -1,20 +1,23 @@
 import 'study_document.dart';
 
-/// A locally picked file awaiting upload (RAG-FE-2).
+/// A locally picked file awaiting upload.
 ///
 /// Presentation-layer value only: name + byte size as reported by the
-/// platform picker. No bytes are stored here and nothing is transmitted;
-/// the byte transfer arrives with the real MlRag upload contract.
-/// Local filesystem paths are deliberately NOT captured — they must
-/// never reach the UI.
+/// platform picker, plus the bytes themselves once the real upload
+/// contract is connected. Local filesystem paths are deliberately NOT
+/// captured — they must never reach the UI.
 class PickedStudyFile {
-  const PickedStudyFile({required this.name, required this.sizeBytes});
+  const PickedStudyFile({required this.name, required this.sizeBytes, this.bytes});
 
   final String name;
 
   /// Byte size as reported by the picker; null when the platform
   /// did not report one (display shows no size, never a guess).
   final int? sizeBytes;
+
+  /// File bytes for upload. Null for fixture/test-only selections
+  /// (which never reach the repository upload path).
+  final List<int>? bytes;
 
   DocumentFileType get inferredType {
     final lower = name.toLowerCase();

@@ -140,4 +140,57 @@ public class AiInteractionAuditService {
     public static String rejectedResponseJson(String errorCategory) {
         return "{\"errorCategory\":\"" + errorCategory + "\"}";
     }
+
+    // ------------------------------------------------------------------
+    // USER-DOC RAG Phase I - type=DOCUMENT_QA rows (sanitized counts only)
+    // ------------------------------------------------------------------
+
+    /**
+     * One sanitized DOCUMENT_QA row per accepted ask request. Payloads are
+     * counts/categories ONLY - never the question, evidence, answer text,
+     * citations detail, prompts or model internals.
+     */
+    public AiInteraction recordDocumentQa(User user, String modelName, String promptVersion,
+                                         String sanitizedRequestContextJson,
+                                         String sanitizedResponseJson,
+                                         AiInteractionStatus status, Integer latencyMs,
+                                         String errorCode) {
+        AiInteraction interaction = new AiInteraction();
+        interaction.setUser(user);
+        interaction.setInteractionType(AiInteractionType.DOCUMENT_QA);
+        interaction.setModelName(modelName);
+        interaction.setPromptVersion(promptVersion);
+        interaction.setRequestContextJson(sanitizedRequestContextJson);
+        interaction.setResponseJson(sanitizedResponseJson);
+        interaction.setStatus(status);
+        interaction.setLatencyMs(latencyMs);
+        interaction.setErrorCode(errorCode);
+        return aiInteractionRepository.save(interaction);
+    }
+
+    /**
+     * Independent DOCUMENT_QA failure row: history survives even when
+     * nothing else persists. Audit loss is logged and never changes the
+     * learner outcome.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordDocumentQaFailureIndependently(User user, String promptVersion,
+                                                     String sanitizedRequestContextJson,
+                                                     String errorCode) {
+        try {
+            AiInteraction interaction = new AiInteraction();
+            interaction.setUser(user);
+            interaction.setInteractionType(AiInteractionType.DOCUMENT_QA);
+            interaction.setModelName(null);
+            interaction.setPromptVersion(promptVersion);
+            interaction.setRequestContextJson(sanitizedRequestContextJson);
+            interaction.setResponseJson("{\"errorCategory\":\"" + errorCode + "\"}");
+            interaction.setStatus(AiInteractionStatus.FAILED);
+            interaction.setLatencyMs(null);
+            interaction.setErrorCode(errorCode);
+            aiInteractionRepository.save(interaction);
+        } catch (RuntimeException ex) {
+            log.warn("Failed to persist independent document-QA audit row: {}", ex.getMessage());
+        }
+    }
 }

@@ -137,11 +137,15 @@ void main() {
             .allMatches(xml)
             .map((m) => m.group(1)!.trim())
             .toList();
+        // The RFC1918 entry tracks the current laptop LAN IP used for
+        // physical-device validation builds (injected via --dart-define,
+        // never hardcoded in Dart). Refresh together with
+        // network_security_config.xml when the laptop moves networks.
         const permitted = {
           '10.0.2.2',
           'localhost',
           '127.0.0.1',
-          '10.163.124.39',
+          '10.225.211.39',
         };
         for (final host in allowedHosts) {
           expect(permitted.contains(host), isTrue,

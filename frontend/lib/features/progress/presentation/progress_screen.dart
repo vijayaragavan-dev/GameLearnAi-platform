@@ -26,6 +26,7 @@ import '../../../shared/widgets/xp_bar.dart';
 import '../../../shared/widgets/recommendation_card.dart'
     show SectionHeader, DifficultyPill;
 import '../../../shared/widgets/stat_card.dart';
+import '../../shell/shell_dock_insets.dart';
 
 /// Mastery filter — presentational only, never recomputes mastery.
 enum MasteryFilter { all, strong, developing, needsPractice }
@@ -151,12 +152,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 return Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: contentMax),
+                    // Shell dock clearance: derived (ShellDockMetrics).
                     child: SingleChildScrollView(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPad,
                         8,
                         horizontalPad,
-                        110,
+                        ShellDockMetrics.bottomClearance(context),
                       ),
                       child: Column(
                         children: [

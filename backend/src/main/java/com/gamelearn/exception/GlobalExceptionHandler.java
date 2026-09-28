@@ -16,6 +16,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -139,6 +142,39 @@ public class GlobalExceptionHandler {
         return build(ErrorCode.DATA_CONFLICT.getHttpStatus(),
                 ErrorCode.DATA_CONFLICT.name(),
                 "The request conflicts with existing data",
+                request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex,
+                                                            HttpServletRequest request) {
+        // Spring multipart backstop (above the application max-bytes limit,
+        // which triggers first with field-level errors). Never leaks paths.
+        log.warn("Upload exceeded multipart limit on {} {}",
+                request.getMethod(), request.getRequestURI());
+        return build(ErrorCode.PAYLOAD_TOO_LARGE.getHttpStatus(),
+                ErrorCode.PAYLOAD_TOO_LARGE.name(),
+                "Uploaded file exceeds the maximum allowed size",
+                request);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex,
+                                                           HttpServletRequest request) {
+        return build(ErrorCode.MALFORMED_REQUEST.getHttpStatus(),
+                ErrorCode.MALFORMED_REQUEST.name(),
+                "Missing required part: " + ex.getRequestPartName(),
+                request);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleMultipart(MultipartException ex,
+                                                         HttpServletRequest request) {
+        log.warn("Malformed multipart request on {} {}",
+                request.getMethod(), request.getRequestURI());
+        return build(ErrorCode.MALFORMED_REQUEST.getHttpStatus(),
+                ErrorCode.MALFORMED_REQUEST.name(),
+                "Malformed multipart request",
                 request);
     }
 

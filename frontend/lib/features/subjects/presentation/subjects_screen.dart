@@ -9,6 +9,7 @@ import '../../../core/models/content_models.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
+import '../../shell/shell_dock_insets.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
@@ -181,8 +182,13 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                     child: SafeArea(
                       top: true,
                       bottom: false,
+                      // Shell dock clearance: derived from dock geometry +
+                      // SafeArea + gap (ShellDockMetrics), never a magic pad.
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 110),
+                        padding: EdgeInsets.only(
+                          top: 8,
+                          bottom: ShellDockMetrics.bottomClearance(context),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
