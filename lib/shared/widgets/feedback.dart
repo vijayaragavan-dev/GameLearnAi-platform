@@ -1,0 +1,892 @@
+import 'package:flutter/material.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_motion.dart';
+import '../../core/theme/app_styles.dart';
+import '../../core/theme/app_typography.dart';
+
+/// Shimmering placeholder block.
+class SkeletonBlock extends StatefulWidget {
+  const SkeletonBlock({
+    super.key,
+    this.width,
+    required this.height,
+    this.radius = AppRadius.md,
+  });
+
+  final double? width;
+  final double height;
+  final double radius;
+
+  @override
+  State<SkeletonBlock> createState() => _SkeletonBlockState();
+}
+
+class _SkeletonBlockState extends State<SkeletonBlock>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: AppMotion.feature)
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      if (_controller.isAnimating) _controller.stop();
+    } else {
+      if (!_controller.isAnimating) _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh;
+    final highlight =
+        isDark ? AppColors.borderStrong : AppLightColors.borderStrong;
+    if (reduce) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(widget.radius),
+          color: base.withValues(alpha: 0.55),
+        ),
+      );
+    }
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value;
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.radius),
+            gradient: LinearGradient(
+              begin: Alignment(-1 + 2 * t, 0),
+              end: Alignment(0 + 2 * t, 0),
+              colors: [
+                base.withValues(alpha: 0.55),
+                highlight.withValues(alpha: 0.75),
+                base.withValues(alpha: 0.55),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Card-shaped loading placeholder.
+class SkeletonCard extends StatelessWidget {
+  const SkeletonCard({super.key, this.height = 120});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppLightColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const SkeletonBlock(width: 44, height: 44, radius: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBlock(
+                      width: MediaQuery.sizeOf(context).width * 0.4,
+                      height: 14,
+                    ),
+                    const SizedBox(height: 8),
+                    const SkeletonBlock(width: 90, height: 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const SkeletonBlock(height: 34),
+        ],
+      ),
+    );
+  }
+
+}
+
+class SkeletonList extends StatelessWidget {
+  const SkeletonList({super.key, this.itemCount = 3, this.itemHeight = 120});
+
+  final int itemCount;
+  final double itemHeight;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: List.generate(
+      itemCount,
+      (_) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: SkeletonCard(height: itemHeight),
+      ),
+    ),
+  );
+}
+
+/// Dashboard-shaped skeleton honoring the DASH-001 section layout.
+class SkeletonDashboard extends StatelessWidget {
+  const SkeletonDashboard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(20),
+      children: [
+        Row(
+          children: [
+            const SkeletonBlock(width: 56, height: 56, radius: 28),
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonBlock(
+                  width: MediaQuery.sizeOf(context).width * 0.45,
+                  height: 18,
+                ),
+                const SizedBox(height: 8),
+                const SkeletonBlock(width: 110, height: 12),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        const SkeletonCard(height: 130),
+        const SizedBox(height: 16),
+        const SkeletonCard(height: 150),
+        const SizedBox(height: 16),
+        const SkeletonCard(height: 90),
+      ],
+    );
+  }
+}
+
+class SkeletonPath extends StatelessWidget {
+  const SkeletonPath({super.key});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        4,
+        (i) => Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: 26,
+            horizontal: 40 + (i % 2) * 60,
+          ),
+          child: const SkeletonBlock(width: 72, height: 72, radius: 36),
+        ),
+      ),
+    ),
+  );
+}
+
+class SkeletonAchievementGrid extends StatelessWidget {
+  const SkeletonAchievementGrid({super.key});
+
+  @override
+  Widget build(BuildContext context) => GridView.count(
+    crossAxisCount: 2,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    mainAxisSpacing: 14,
+    crossAxisSpacing: 14,
+    childAspectRatio: 0.95,
+    children: List.generate(6, (_) => const SkeletonCard()),
+  );
+}
+
+/// Full-screen centered error state with Nova and optional retry.
+/// Constrained on wide screens to avoid stretched centered text.
+class ErrorState extends StatelessWidget {
+  const ErrorState({
+    super.key,
+    required this.title,
+    required this.message,
+    this.onRetry,
+  });
+
+  final String title;
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const NovaErrorOrb(),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: AppTypography.h2(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: AppTypography.bodySecondary(context),
+              textAlign: TextAlign.center,
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 24),
+              Semantics(
+                button: true,
+                label: 'Try again',
+                child: Builder(
+                  builder: (context) {
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+                    return OutlinedButton.icon(
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('TRY AGAIN'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.lg),
+                        ),
+                        side: BorderSide(
+                          color: AppColors.secondary.withValues(
+                            alpha: isDark ? 0.55 : 0.45,
+                          ),
+                          width: 1.2,
+                        ),
+                        foregroundColor: AppColors.secondary,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// Local import-free mini orb for the error state to avoid circular imports.
+class NovaErrorOrb extends StatelessWidget {
+  const NovaErrorOrb({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 64,
+    height: 64,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: AppColors.error.withValues(alpha: 0.15),
+      border: Border.all(color: AppColors.error.withValues(alpha: 0.6)),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.error.withValues(alpha: 0.25),
+          blurRadius: 24,
+        ),
+      ],
+    ),
+    child: const Icon(Icons.auto_awesome, color: AppColors.error, size: 26),
+  );
+}
+
+/// Empty state with icon + message. Constrained on wide screens.
+class EmptyState extends StatelessWidget {
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.1),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: isDark ? AppColors.primaryBright : AppColors.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(title, style: AppTypography.h2(context), textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: AppTypography.bodySecondary(context),
+              textAlign: TextAlign.center,
+            ),
+            if (action != null) ...[const SizedBox(height: 20), action!],
+          ],
+        ),
+      ),
+    ),
+  );
+  }
+}
+
+/// Slim connectivity banner pinned above content when offline.
+class OfflineBanner extends StatelessWidget {
+  const OfflineBanner({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: AppColors.warning.withValues(alpha: 0.14),
+    child: SafeArea(
+      top: false,
+      bottom: false,
+      child: InkWell(
+        onTap: onRetry,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.wifi_off_rounded,
+                size: 15,
+                color: AppColors.warning,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "You're offline - showing cached state",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: onRetry,
+                child: Text(
+                  'RETRY',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Cinematic dialog shell — one premium surface language for confirm and
+/// reveal dialogs (avatar purchase/unlock, sign-out, …).
+///
+/// Behavior-neutral: [title], [content] and [actions] render exactly as
+/// given; only the surface is cinematic (theme-aware fill, XL radius,
+/// accent edge, soft glow). Keeps dialogs inside the GameLearnAI visual
+/// universe instead of default Material styling.
+class CinematicDialog extends StatelessWidget {
+  const CinematicDialog({
+    super.key,
+    required this.title,
+    this.content,
+    this.actions = const <Widget>[],
+    this.accent = AppColors.primary,
+  });
+
+  final Widget title;
+  final Widget? content;
+  final List<Widget> actions;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AlertDialog(
+      title: title,
+      content: content,
+      actions: actions,
+      backgroundColor: isDark
+          ? AppColors.surfaceElevated
+          : AppLightColors.surface,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      buttonPadding: const EdgeInsets.symmetric(horizontal: 8),
+      actionsAlignment: MainAxisAlignment.end,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(
+          color: accent.withValues(alpha: isDark ? 0.45 : 0.3),
+          width: 1.4,
+        ),
+      ),
+      titleTextStyle: TextStyle(
+        fontFamily: AppTypography.displayFamily,
+        fontSize: 17,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.4,
+        color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+      ),
+      contentTextStyle: TextStyle(
+        fontFamily: AppTypography.bodyFamily,
+        fontSize: 13.5,
+        height: 1.5,
+        color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// Premium dialog entry point — one scrim + inset language everywhere.
+///
+/// Behavior-neutral wrapper around [showDialog]; only the barrier and
+/// padding are governed so every confirm/reveal dialog feels like the
+/// same GameLearnAI product.
+Future<T?> showPremiumDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+  Color? barrierColor,
+}) {
+  return showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    barrierColor: barrierColor ?? AppColors.scrim,
+    builder: builder,
+  );
+}
+
+/// Premium dialog actions — one CTA hierarchy for every dialog.
+///
+/// [primaryLabel]/[onPrimary] is the affirming action (accent fill);
+/// [secondaryLabel]/[onSecondary] is the dismissive action (ghost).
+/// Restrained by design: no gradients inside dialogs, just a single
+/// accent fill + ghost — readable in both themes, wrap-safe on 320px.
+class PremiumDialogActions extends StatelessWidget {
+  const PremiumDialogActions({
+    super.key,
+    required this.primaryLabel,
+    required this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
+    this.accent = AppColors.primary,
+    this.destructive = false,
+  });
+
+  final String primaryLabel;
+  final VoidCallback? onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+  final Color accent;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = destructive ? AppColors.error : accent;
+    return Semantics(
+      container: true,
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (secondaryLabel != null)
+            Semantics(
+              button: true,
+              label: secondaryLabel,
+              child: GestureDetector(
+                onTap: onSecondary,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    secondaryLabel!.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppLightColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Semantics(
+            button: true,
+            label: primaryLabel,
+            child: GestureDetector(
+              onTap: onPrimary,
+              child: Opacity(
+                opacity: onPrimary == null ? AppStates.disabledOpacity : 1,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: onPrimary == null
+                        ? (isDark
+                            ? AppColors.lockedSurface
+                            : AppLightColors.lockedSurface)
+                        : fill,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: onPrimary == null
+                        ? Border.all(
+                            color: isDark
+                                ? AppColors.border
+                                : AppLightColors.border,
+                          )
+                        : Border.all(
+                            color: fill.withValues(
+                                alpha: isDark ? 0.55 : 0.35),
+                          ),
+                    boxShadow: onPrimary == null
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: fill.withValues(
+                                  alpha: isDark ? 0.28 : 0.16),
+                              blurRadius: 18,
+                            ),
+                          ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    primaryLabel.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                      color: onPrimary == null
+                          ? AppColors.textDisabled
+                          : (destructive ? Colors.white : AppColors.textOnColor),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Premium bottom-sheet shell — one surface language for option sheets,
+/// filters, and confirmations presented bottom-up.
+///
+/// Behavior-neutral container: [child] renders exactly as given; only
+/// the surface (drag handle, XL top radius, accent edge) is governed.
+class PremiumSheet extends StatelessWidget {
+  const PremiumSheet({
+    super.key,
+    required this.child,
+    this.accent = AppColors.primary,
+  });
+
+  final Widget child;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xl),
+        ),
+        border: Border.all(
+          color: accent.withValues(alpha: isDark ? 0.35 : 0.22),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Semantics(
+              label: 'Sheet handle',
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.borderStrong : AppLightColors.borderStrong,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+            ),
+            Flexible(child: child),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Premium bottom-sheet entry point — governed shape + scrim.
+Future<T?> showPremiumSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  Color? barrierColor,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    barrierColor: barrierColor ?? AppColors.scrim,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+    ),
+    builder: builder,
+  );
+}
+
+/// Premium snackbar — one toast language for transient feedback.
+///
+/// Theme-aware fill, accent edge, icon + message; never a bare grey
+/// Material toast. Behavior-neutral: duration and action pass through.
+void showPremiumSnack(
+  BuildContext context,
+  String message, {
+  Color accent = AppColors.primary,
+  IconData icon = Icons.info_rounded,
+  SnackBarAction? action,
+  Duration duration = const Duration(seconds: 3),
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
+              border: Border.all(color: accent.withValues(alpha: 0.45)),
+            ),
+            child: Icon(icon, size: 15, color: accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontFamily: AppTypography.bodyFamily,
+                fontSize: 13,
+                height: 1.4,
+                color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor:
+          isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+      behavior: SnackBarBehavior.floating,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: accent.withValues(alpha: isDark ? 0.4 : 0.28)),
+      ),
+      action: action,
+      duration: duration,
+    ),
+  );
+}
+
+/// Cinematic loading state — one premium surface language for full-screen
+/// waits (quiz/scan/topic/character loads, game banks, …).
+///
+/// Behavior-neutral: shows an accent-ringed spinner with an honest [message].
+/// Theme-aware ink and surfaces keep waits inside the GameLearnAI visual
+/// universe instead of a bare Material spinner.
+class CinematicLoading extends StatelessWidget {
+  const CinematicLoading({super.key, this.message, this.accent});
+
+  final String? message;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final glow = accent ?? AppColors.primary;
+    return Semantics(
+      label: message ?? 'Loading',
+      child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: glow.withValues(alpha: isDark ? 0.12 : 0.08),
+                border: Border.all(
+                  color: glow.withValues(alpha: isDark ? 0.45 : 0.35),
+                  width: 1.4,
+                ),
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: glow.withValues(alpha: 0.22),
+                          blurRadius: 22,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(strokeWidth: 2.6),
+              ),
+            ),
+            if (message != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppLightColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+/// Compact inline empty note used inside cards/sections.
+class EmptyMiniCard extends StatelessWidget {
+  const EmptyMiniCard({super.key, required this.text, this.icon, this.action});
+
+  final String text;
+  final IconData? icon;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppLightColors.border,
+        ),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+          const SizedBox(height: 6),
+        ],
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12.5,
+            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+          ),
+        ),
+        if (action != null) ...[const SizedBox(height: 10), action!],
+      ]),
+    );
+  }
+}

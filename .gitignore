@@ -1,0 +1,26 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Platform build artifacts
+android/.gradle/
+ios/Pods/
+windows/flutter/ephemeral/
+
+# Secrets - never commit environment configuration with real credentials
+.env
+.env.*
+!.env.example
+
+# OS
+Thumbs.db
+.DS_Store
