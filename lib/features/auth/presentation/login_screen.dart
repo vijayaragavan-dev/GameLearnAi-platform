@@ -3,18 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
-import '../../../core/models/auth_models.dart';
-import '../../../core/providers.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neo_brutalism.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
-import '../../../shared/widgets/brutal_widgets.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
-import '../../../shared/widgets/nova_companion.dart';
 import '../providers/session_controller.dart';
 
 /// AUTH-001. Cinematic GameLearnAI login — Nova storytelling hero, premium
@@ -122,50 +118,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // ── Brand + Nova storytelling hero ──
+                          // ── Studora Brand Logo ──
                           const Center(child: BrandWordmark()),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const NovaAvatar(size: 48),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: isDark
-                                    ? Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 11,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.surfaceElevated.withValues(
-                                            alpha: 0.85,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.lg,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.secondary.withValues(
-                                              alpha: 0.45,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Hey Player! 👋 Ready to continue your journey?',
-                                          style: TextStyle(
-                                            fontSize: 13.5,
-                                            height: 1.45,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      )
-                                    : const SpeechBalloon(
-                                        text: 'Hey Player! 👋 Ready to continue your journey?',
-                                        backgroundColor: Colors.white,
-                                      ),
-                              ),
-                            ],
+                          const SizedBox(height: 16),
+                          Center(
+                            child: Image.asset(
+                              'assets/images/studora_logo.jpg',
+                              width: 160,
+                              height: 160,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           // ── Neo-Brutalist Segmented Mode Selector Switch ──

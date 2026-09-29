@@ -1607,7 +1607,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           PressableScale(
-            onTap: () => context.go(Routes.subjects),
+            onTap: () => context.push(Routes.subjects),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(

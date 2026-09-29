@@ -158,7 +158,6 @@ class _CollectionHeader extends StatelessWidget {
   final int credits;
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.all(16),

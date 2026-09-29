@@ -4,10 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../core/providers.dart';
 import '../providers/session_controller.dart';
-import '../../../shared/widgets/nova_companion.dart';
 
 /// Boot sequence: brand reveal + session restoration.
 class SplashScreen extends ConsumerStatefulWidget {
@@ -79,6 +77,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     ref.watch(sessionProvider); // react to phase changes
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    final logoWidget = Image.asset(
+      'assets/images/studora_logo.jpg',
+      width: 200,
+      height: 200,
+      fit: BoxFit.contain,
+    );
+
+    final loadingIndicator = SizedBox(
+      width: 26,
+      height: 26,
+      child: CircularProgressIndicator(
+        strokeWidth: 2.2,
+        color: AppColors.primaryBright.withValues(alpha: 0.8),
+      ),
+    );
+
     if (reduce) {
       return Scaffold(
         body: DecoratedBox(
@@ -89,42 +104,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const NovaCompanion(size: 110, mood: NovaMood.idle),
-                const SizedBox(height: 30),
-                const Text(
-                  'GAMELEARN',
-                  style: TextStyle(
-                    fontFamily: AppTypography.displayFamily,
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 8,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppGradientsExt.cyan.createShader(bounds),
-                  child: const Text(
-                    'AI',
-                    style: TextStyle(
-                      fontFamily: AppTypography.displayFamily,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 42),
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    color: AppColors.primaryBright.withValues(alpha: 0.8),
-                  ),
-                ),
+                logoWidget,
+                const SizedBox(height: 40),
+                loadingIndicator,
               ],
             ),
           ),
@@ -144,46 +126,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               return Opacity(
                 opacity: t.clamp(0.0, 1.0),
                 child: Transform.scale(
-                  scale: 0.9 + 0.1 * t,
+                  scale: 0.85 + 0.15 * t,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const NovaCompanion(size: 110, mood: NovaMood.idle),
-                      const SizedBox(height: 30),
-                      const Text(
-                        'GAMELEARN',
-                        style: TextStyle(
-                          fontFamily: AppTypography.displayFamily,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 8,
-                          color: AppColors.textPrimary,
-                        ),
+                      // Studora brand logo
+                      Image.asset(
+                        'assets/images/studora_logo.jpg',
+                        width: 220,
+                        height: 220,
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 6),
-                      ShaderMask(
-                        shaderCallback: (bounds) =>
-                            AppGradientsExt.cyan.createShader(bounds),
-                        child: const Text(
-                          'AI',
-                          style: TextStyle(
-                            fontFamily: AppTypography.displayFamily,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 42),
-                      SizedBox(
-                        width: 26,
-                        height: 26,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          color: AppColors.primaryBright.withValues(alpha: 0.8),
-                        ),
-                      ),
+                      const SizedBox(height: 40),
+                      loadingIndicator,
                     ],
                   ),
                 ),

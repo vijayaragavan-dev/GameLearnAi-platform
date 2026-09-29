@@ -5,14 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neo_brutalism.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
-import '../../../shared/widgets/brutal_widgets.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
-import '../../../shared/widgets/nova_companion.dart';
 import '../providers/session_controller.dart';
 
 /// AUTH-002. Cinematic player-creation screen — same visual family as login.
@@ -99,48 +96,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const Center(child: BrandWordmark()),
-                          const SizedBox(height: 18),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const NovaAvatar(size: 64),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: isDark
-                                    ? Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 11,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.surfaceElevated.withValues(
-                                            alpha: 0.85,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.lg,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.secondary.withValues(
-                                              alpha: 0.45,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Level 1 starts now. Pick your player name!',
-                                          style: TextStyle(
-                                            fontSize: 13.5,
-                                            height: 1.45,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      )
-                                    : const SpeechBalloon(
-                                        text: 'Level 1 starts now. Pick your player name! 🌟',
-                                        backgroundColor: Colors.white,
-                                      ),
-                              ),
-                            ],
+                          const SizedBox(height: 16),
+                          // ── Studora Brand Logo ──
+                          Center(
+                            child: Image.asset(
+                              'assets/images/studora_logo.jpg',
+                              width: 180,
+                              height: 180,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           // ── Neo-Brutalist Segmented Mode Selector Switch ──

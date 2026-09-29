@@ -52,6 +52,7 @@ import '../features/design_showcase/design_showcase_screen.dart';
 import '../features/leaderboard/presentation/champions_arena_screen.dart';
 import '../features/avatar/presentation/character_collection_screen.dart';
 import '../features/avatar/presentation/character_detail_screen.dart';
+import '../features/avatar/presentation/admin_character_studio_screen.dart';
 
 /// Route builder helpers keep navigation strings in one place.
 abstract final class Routes {
@@ -77,6 +78,7 @@ abstract final class Routes {
   static const streak = '/streak';
   static const settings = '/settings';
   static const arena = '/arena';
+  static const adminCharacters = '/admin/characters';
   // DEV ONLY — not in production nav
   static const designShowcase = '/design-showcase';
 
@@ -629,6 +631,14 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/characters/:avatarId',
         pageBuilder: (_, s) => _page(
           child: CharacterDetailScreen(avatarId: s.pathParameters['avatarId']!),
+          state: s,
+          begin: const Offset(0, 0.06),
+        ),
+      ),
+      GoRoute(
+        path: Routes.adminCharacters,
+        pageBuilder: (_, s) => _page(
+          child: const AdminCharacterStudioScreen(),
           state: s,
           begin: const Offset(0, 0.06),
         ),

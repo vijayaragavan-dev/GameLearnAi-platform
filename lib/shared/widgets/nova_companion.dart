@@ -1,218 +1,53 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/models/mascot_character.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/neo_brutalism.dart';
+import '../../features/avatar/providers/active_mascot_provider.dart';
+import '../../features/avatar/widgets/cartoon_mascot_view.dart';
 
-/// NOVA - the GameLearn AI companion. A holographic energy orb.
+/// NOVA - the GameLearn AI companion. 2D Cartoon Learning Companion.
 enum NovaMood { idle, thinking, speaking, celebrating, encouraging, error }
 
-class NovaCompanion extends StatefulWidget {
+class NovaCompanion extends ConsumerWidget {
   const NovaCompanion({super.key, this.size = 64, this.mood = NovaMood.idle});
 
   final double size;
   final NovaMood mood;
 
   @override
-  State<NovaCompanion> createState() => _NovaCompanionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeMascot = ref.watch(activeMascotProvider);
+    final mascotMood = switch (mood) {
+      NovaMood.celebrating => MascotMood.celebrating,
+      NovaMood.thinking => MascotMood.thinking,
+      NovaMood.speaking || NovaMood.encouraging => MascotMood.waving,
+      NovaMood.error => MascotMood.focused,
+      NovaMood.idle => MascotMood.idle,
+    };
 
-class _NovaCompanionState extends State<NovaCompanion>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2600),
-    )..repeat();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduce) {
-      if (_controller.isAnimating) _controller.stop();
-    } else {
-      if (!_controller.isAnimating) _controller.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(NovaCompanion old) {
-    super.didUpdateWidget(old);
-    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return;
-    // React to mood transitions with a tempo shift.
-    switch (widget.mood) {
-      case NovaMood.celebrating || NovaMood.speaking:
-        _controller.duration = const Duration(milliseconds: 900);
-      case NovaMood.thinking:
-        _controller.duration = const Duration(milliseconds: 1400);
-      case NovaMood.error:
-        _controller.duration = const Duration(milliseconds: 1800);
-      case NovaMood.idle || NovaMood.encouraging:
-        _controller.duration = const Duration(milliseconds: 2600);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Color get _tint => switch (widget.mood) {
-    NovaMood.error => AppColors.error,
-    NovaMood.celebrating => AppColors.xp,
-    NovaMood.encouraging => AppColors.success,
-    _ => AppColors.secondary,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduce) {
-      return SizedBox(
-        width: widget.size,
-        height: widget.size,
-        child: CustomPaint(
-          painter: _NovaPainter(progress: 0.0, mood: widget.mood, tint: _tint),
-        ),
-      );
-    }
-    return RepaintBoundary(
-      child: SizedBox(
-        width: widget.size,
-        height: widget.size,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) => CustomPaint(
-            painter: _NovaPainter(
-              progress: _controller.value,
-              mood: widget.mood,
-              tint: _tint,
-            ),
-          ),
-        ),
-      ),
+    return CartoonMascotView(
+      character: activeMascot.character,
+      accessory: activeMascot.accessory,
+      mood: mascotMood,
+      size: size,
     );
   }
 }
 
-class _NovaPainter extends CustomPainter {
-  const _NovaPainter({
-    required this.progress,
-    required this.mood,
-    required this.tint,
-  });
-
-  final double progress;
-  final NovaMood mood;
-  final Color tint;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.32;
-
-    // Outer halo rings.
-    for (var i = 0; i < 2; i++) {
-      final phase = (progress + i * 0.5) % 1.0;
-      final ringRadius =
-          radius *
-          (1.15 + phase * 0.55) *
-          (mood == NovaMood.thinking ? 1.15 : 1);
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.012 * (1 - phase)
-        ..color = tint.withValues(alpha: (0.5 * (1 - phase)).clamp(0.0, 1.0));
-      canvas.drawCircle(center, ringRadius, paint);
-    }
-
-    // Thinking orbit particles.
-    if (mood == NovaMood.thinking) {
-      final dotPaint = Paint()..color = AppColors.secondary;
-      for (var i = 0; i < 3; i++) {
-        final angle = progress * 2 * math.pi + i * 2.0944;
-        final pos = Offset(
-          center.dx + radius * 1.35 * math.cos(angle),
-          center.dy + radius * 1.35 * math.sin(angle),
-        );
-        canvas.drawCircle(pos, size.width * 0.02, dotPaint);
-      }
-    }
-
-    // Core.
-    final pulse =
-        1.0 +
-        0.05 *
-            math.sin(progress * 2 * math.pi * (mood == NovaMood.idle ? 1 : 2));
-    final corePaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.95),
-          tint,
-          tint.withValues(alpha: 0.25),
-        ],
-        stops: const [0.0, 0.45, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius * pulse, corePaint);
-
-    // Inner highlight.
-    final highlight = Paint()
-      ..color = Colors.white.withValues(alpha: 0.85)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    canvas.drawCircle(
-      center.translate(-radius * 0.28, -radius * 0.32),
-      radius * 0.16,
-      highlight,
-    );
-
-    // Celebratory sparks.
-    if (mood == NovaMood.celebrating) {
-      final spark = Paint()..color = AppColors.xp;
-      for (var i = 0; i < 6; i++) {
-        final angle = i * 1.0472;
-        final dist = radius * (1.5 + 0.3 * math.sin(progress * 6.283 + i));
-        canvas.drawCircle(
-          center.translate(dist * math.cos(angle), dist * math.sin(angle)),
-          size.width * 0.018,
-          spark,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_NovaPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.mood != mood ||
-      oldDelegate.tint != tint;
-}
-
-/// NOVA avatar — the real Nova robot character art
-/// (`assets/characters/nova_spark.svg`) presented as a cinematic focal
-/// point: glow ring, halo, optional status dot.
-///
-/// Static and animation-free by design, so it is safe on every screen
-/// (including animation-sensitive ones like Settings). For the ambient
-/// animated orb, use [NovaCompanion] instead. Decorative art is merged
-/// into one semantic node describing Nova.
-class NovaAvatar extends StatelessWidget {
+/// NOVA avatar — 2D Cartoon Learning Companion Art
+/// Presents the player's active companion with glow ring, halo, and status dot.
+class NovaAvatar extends ConsumerWidget {
   const NovaAvatar({
     super.key,
     this.size = 72,
     this.ringColor = AppColors.secondary,
     this.showHalo = true,
     this.statusDot,
-    this.semanticsLabel = 'Nova, AI learning companion',
+    this.semanticsLabel = 'Your AI learning companion',
   });
 
   final double size;
@@ -224,8 +59,10 @@ class NovaAvatar extends StatelessWidget {
   final String semanticsLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeMascot = ref.watch(activeMascotProvider);
+
     return Semantics(
       label: semanticsLabel,
       image: true,
@@ -258,7 +95,7 @@ class NovaAvatar extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isDark
                     ? AppColors.surfaceElevated
-                    : AppLightColors.surface,
+                    : activeMascot.character.bellyColor,
                 border: Border.all(
                   color: isDark ? ringColor.withValues(alpha: 0.65) : NeoBrutalColors.ink,
                   width: isDark ? 2 : 2.5,
@@ -266,14 +103,13 @@ class NovaAvatar extends StatelessWidget {
                 boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
               ),
               clipBehavior: Clip.antiAlias,
-              child: SvgPicture.asset(
-                'assets/characters/nova_spark.svg',
-                fit: BoxFit.cover,
-                placeholderBuilder: (_) => Icon(
-                  Icons.smart_toy_outlined,
-                  size: size * 0.4,
-                  color: ringColor,
-                ),
+              alignment: Alignment.center,
+              child: CartoonMascotView(
+                character: activeMascot.character,
+                accessory: activeMascot.accessory,
+                mood: MascotMood.idle,
+                size: size * 0.82,
+                isAnimated: false,
               ),
             ),
             if (statusDot != null)

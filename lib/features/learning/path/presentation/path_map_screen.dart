@@ -23,6 +23,7 @@ import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/progression_widgets.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../subjects/domain/world_context.dart' show subjectByIdProvider;
 import '../providers/path_provider.dart';
 
 /// Premium personalized adventure — World → Personalized Journey → Nodes → Current Mission.
@@ -78,9 +79,12 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
     context.push(Routes.topic(node.topicId));
   }
 
-  SubjectVisualIdentity _identity() {
-    if (widget.subjectName.trim().isNotEmpty) {
-      return SubjectVisualRegistry.fromName(widget.subjectName);
+  static final _uuidPattern = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+  static bool _isUuid(String s) => _uuidPattern.hasMatch(s.trim());
+
+  SubjectVisualIdentity _identity(String effectiveName) {
+    if (effectiveName.trim().isNotEmpty && !_isUuid(effectiveName)) {
+      return SubjectVisualRegistry.fromName(effectiveName);
     }
     return SubjectVisualRegistry.fallback;
   }
@@ -89,7 +93,11 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(pathProvider(widget.subjectId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final identity = _identity();
+    final subject = ref.watch(subjectByIdProvider(widget.subjectId));
+    final resolvedSubjectName = (widget.subjectName.trim().isNotEmpty && !_isUuid(widget.subjectName))
+        ? widget.subjectName.trim()
+        : (subject?.name ?? '');
+    final identity = _identity(resolvedSubjectName);
     return Scaffold(
       body: Stack(
         children: [
@@ -129,12 +137,12 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
             child: Column(
               children: [
                 _AdventureAppBar(
-                  subjectName: widget.subjectName,
+                  subjectName: resolvedSubjectName,
                   subjectId: widget.subjectId,
                   identity: identity,
                   onBack: () => context.canPop() ? context.pop() : context.go(Routes.home),
                 ),
-                Expanded(child: _buildBody(state, isDark, identity)),
+                Expanded(child: _buildBody(state, isDark, identity, resolvedSubjectName)),
               ],
             ),
           ),
@@ -143,7 +151,7 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
     );
   }
 
-  Widget _buildBody(PathState state, bool isDark, SubjectVisualIdentity identity) {
+  Widget _buildBody(PathState state, bool isDark, SubjectVisualIdentity identity, String resolvedSubjectName) {
     if (state.showLoading) {
       return const Center(child: SkeletonPath());
     }
@@ -179,101 +187,46 @@ class _PathMapScreenState extends ConsumerState<PathMapScreen> {
       color: identity.accent,
       backgroundColor: isDark ? AppColors.surfaceElevated : Colors.white,
       onRefresh: () => ref.read(pathProvider(widget.subjectId).notifier).load(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isTablet = constraints.maxWidth >= AppBreakpoints.medium;
-          if (isTablet) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-              child: ResponsiveCenter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _WorldJourneyHero(path: path, subjectName: widget.subjectName, identity: identity),
-                    const SizedBox(height: 14),
-                    if (current != null)
-                      _CurrentMissionSpotlight(
-                        node: current,
-                        path: path,
-                        identity: identity,
-                        aiMetadata: state.aiMetadata,
-                        onTap: () => _openTopic(current),
-                        isLast: current.sequenceNumber == path.nodes.length,
-                      )
-                    else
-                      _WorldCompleteSpotlight(path: path, identity: identity),
-                    const SizedBox(height: 14),
-                    _JourneyLegend(path: path, identity: identity),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: _calcTrailHeight(path.nodes.length),
-                      child: AdventureTrail(
-                        path: path,
-                        aiMetadata: state.aiMetadata,
-                        onNodeTap: _openTopic,
-                        identity: identity,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _TopicList(path: path, onTap: _openTopic, identity: identity),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            );
-          }
-          // Mobile: header + spotlight stacked, trail scrolls inside Expanded
-          return Column(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        child: ResponsiveCenter(
+          maxWidth: 720,
+          padding: EdgeInsets.symmetric(horizontal: AppGutters.pagePadding(context)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: AppGutters.pagePadding(context)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _WorldJourneyHero(path: path, subjectName: widget.subjectName, identity: identity),
-                        const SizedBox(height: 12),
-                        if (current != null)
-                          _CurrentMissionSpotlight(
-                            node: current,
-                            path: path,
-                            identity: identity,
-                            aiMetadata: state.aiMetadata,
-                            onTap: () => _openTopic(current),
-                            isLast: current.sequenceNumber == path.nodes.length,
-                          )
-                        else
-                          _WorldCompleteSpotlight(path: path, identity: identity),
-                        const SizedBox(height: 10),
-                        _JourneyLegend(path: path, identity: identity),
-                        const SizedBox(height: 4),
-                      ],
-                    ),
-                  ),
-                ),
+              const SizedBox(height: 8),
+              _WorldJourneyHero(path: path, subjectName: resolvedSubjectName, identity: identity),
+              const SizedBox(height: 14),
+              if (current != null)
+                _CurrentMissionSpotlight(
+                  node: current,
+                  path: path,
+                  identity: identity,
+                  aiMetadata: state.aiMetadata,
+                  onTap: () => _openTopic(current),
+                  isLast: current.sequenceNumber == path.nodes.length,
+                )
+              else
+                _WorldCompleteSpotlight(path: path, identity: identity),
+              const SizedBox(height: 14),
+              _JourneyLegend(path: path, identity: identity),
+              const SizedBox(height: 14),
+              AdventureTrail(
+                path: path,
+                aiMetadata: state.aiMetadata,
+                onNodeTap: _openTopic,
+                identity: identity,
               ),
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppGutters.pagePadding(context) * 0.35),
-                  child: AdventureTrail(
-                    path: path,
-                    aiMetadata: state.aiMetadata,
-                    onNodeTap: _openTopic,
-                    identity: identity,
-                  ),
-                ),
-              ),
+              const SizedBox(height: 20),
+              _TopicList(path: path, onTap: _openTopic, identity: identity),
+              const SizedBox(height: 48),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }
-
-  double _calcTrailHeight(int count) => 152 * count + 80;
 
   PathNode? _resolveCurrent(List<PathNode> nodes) {
     for (final n in nodes) {
@@ -303,11 +256,19 @@ class _WorldJourneyHero extends StatelessWidget {
     final available = path.nodes.where((n) => n.status == 'AVAILABLE').length;
     final progress = total == 0 ? 0.0 : completed / total;
     final accent = identity.accent;
-    final worldLabel = subjectName.isEmpty ? path.subjectId : subjectName;
+    final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(subjectName.trim());
+    final worldLabel = (subjectName.isEmpty || isUuid)
+        ? (identity.displayName.isNotEmpty && identity.displayName != 'Unknown' ? identity.displayName : (path.title.isNotEmpty ? path.title : 'LEARNING WORLD'))
+        : subjectName;
 
-    return FeaturedSurface(
-      accent: accent,
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E232F) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF171923), width: 2.5),
+        boxShadow: NeoBrutalShadows.hard,
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           // World gradient wash
@@ -318,15 +279,14 @@ class _WorldJourneyHero extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isDark
-                      ? [accent.withValues(alpha: 0.22), Colors.transparent]
-                      : [accent.withValues(alpha: 0.09), Colors.transparent],
+                      ? [accent.withValues(alpha: 0.20), Colors.transparent]
+                      : [accent.withValues(alpha: 0.08), Colors.transparent],
                 ),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -337,27 +297,26 @@ class _WorldJourneyHero extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: isDark ? 0.18 : 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: accent.withValues(alpha: 0.38)),
+                        color: accent.withValues(alpha: isDark ? 0.22 : 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                        boxShadow: NeoBrutalShadows.hardXs,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(identity.icon, size: 13, color: accent),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              'WORLD',
-                              style: TextStyle(
-                                fontFamily: AppTypography.bodyFamily,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.4,
-                                color: accent,
-                              ),
+                          Icon(identity.icon, size: 12, color: accent),
+                          const SizedBox(width: 5),
+                          Text(
+                            'WORLD',
+                            style: TextStyle(
+                              fontFamily: AppTypography.displayFamily,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                              color: accent,
                             ),
                           ),
                         ],
@@ -366,34 +325,39 @@ class _WorldJourneyHero extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.10),
+                        color: NeoBrutalColors.growthGreen,
                         borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                        boxShadow: NeoBrutalShadows.hardXs,
                       ),
                       child: Text(
                         path.status.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                          color: accent,
+                        style: const TextStyle(
+                          fontFamily: AppTypography.displayFamily,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          color: Colors.white,
                         ),
                       ),
                     ),
                     if (path.generatedBy.isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                          color: isDark ? const Color(0xFF282E3E) : const Color(0xFFF3F4F6),
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+                          border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                          boxShadow: NeoBrutalShadows.hardXs,
                         ),
                         child: Text(
-                          path.generatedBy,
+                          path.generatedBy.toUpperCase(),
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            fontFamily: AppTypography.displayFamily,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
                             letterSpacing: 0.8,
-                            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                            color: isDark ? Colors.white70 : NeoBrutalColors.ink,
                           ),
                         ),
                       ),
@@ -403,7 +367,7 @@ class _WorldJourneyHero extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SubjectIcon(iconKey: identity.iconKey, size: 44),
+                    SubjectIcon(iconKey: identity.iconKey, size: 48),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -414,10 +378,10 @@ class _WorldJourneyHero extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontFamily: AppTypography.bodyFamily,
+                              fontFamily: AppTypography.displayFamily,
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.6,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.4,
                               color: accent,
                             ),
                           ),
@@ -427,9 +391,9 @@ class _WorldJourneyHero extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: AppTypography.displayFamily,
                               fontSize: 19,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w900,
                               height: 1.15,
-                              color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                              color: isDark ? Colors.white : NeoBrutalColors.ink,
                             ),
                           ),
                         ],
@@ -444,9 +408,11 @@ class _WorldJourneyHero extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
                       fontSize: 13,
                       height: 1.45,
-                      color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white70 : const Color(0xFF4B5563),
                     ),
                   ),
                 ],
@@ -465,7 +431,7 @@ class _WorldJourneyHero extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: progress,
                               minHeight: 8,
-                              backgroundColor: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                              backgroundColor: isDark ? const Color(0xFF282E3E) : const Color(0xFFE5E7EB),
                               valueColor: AlwaysStoppedAnimation<Color>(accent),
                             ),
                           ),
@@ -473,17 +439,19 @@ class _WorldJourneyHero extends StatelessWidget {
                           Text(
                             '$completed of $total topics completed${inProgress > 0 ? ' · $inProgress in progress' : ''}${available > 0 ? ' · $available available' : ''}',
                             style: TextStyle(
+                              fontFamily: AppTypography.bodyFamily,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                              color: isDark ? Colors.white60 : const Color(0xFF6B7280),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${(progress * 100).round()}% journey complete',
                             style: TextStyle(
+                              fontFamily: AppTypography.displayFamily,
                               fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: 0.6,
                               color: accent,
                             ),
@@ -510,15 +478,16 @@ class _WorldJourneyHero extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Icon(Icons.auto_awesome_rounded, size: 12, color: accent.withValues(alpha: 0.9)),
+                      Icon(Icons.auto_awesome_rounded, size: 12, color: accent),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Personalized by Nova for this world',
                           style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                            color: isDark ? Colors.white60 : const Color(0xFF6B7280),
                           ),
                         ),
                       ),
@@ -563,9 +532,14 @@ class _CurrentMissionSpotlight extends StatelessWidget {
     return Semantics(
       label: isInProgress ? 'Continue learning ${node.topicName}' : 'Start next topic ${node.topicName}',
       button: true,
-      child: FeaturedSurface(
-        accent: isMilestone ? AppColors.xp : accent,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E232F) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF171923), width: 2.5),
+          boxShadow: NeoBrutalShadows.hard,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -574,25 +548,27 @@ class _CurrentMissionSpotlight extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: (isMilestone ? AppColors.xp : accent).withValues(alpha: 0.14),
+                    color: (isMilestone ? AppColors.xp : accent).withValues(alpha: isDark ? 0.22 : 0.15),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: (isMilestone ? AppColors.xp : accent).withValues(alpha: 0.32)),
+                    border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                    boxShadow: NeoBrutalShadows.hardXs,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         isMilestone ? Icons.emoji_events_rounded : Icons.flag_rounded,
-                        size: 12,
+                        size: 13,
                         color: isMilestone ? AppColors.xp : accent,
                       ),
                       const SizedBox(width: 5),
                       Text(
                         isMilestone ? 'FINAL MILESTONE' : 'YOUR CURRENT MISSION',
                         style: TextStyle(
+                          fontFamily: AppTypography.displayFamily,
                           fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.3,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
                           color: isMilestone ? AppColors.xp : accent,
                         ),
                       ),
@@ -601,17 +577,18 @@ class _CurrentMissionSpotlight extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _tintFor(node.status).withValues(alpha: 0.12),
+                    color: _tintFor(node.status).withValues(alpha: isDark ? 0.2 : 0.12),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: _tintFor(node.status).withValues(alpha: 0.30)),
+                    border: Border.all(color: const Color(0xFF171923), width: 1.5),
                   ),
                   child: Text(
                     EnumPresentationExt.nodeStatus(node.status).toUpperCase(),
                     style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: AppTypography.displayFamily,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: 0.8,
                       color: _tintFor(node.status),
                     ),
@@ -629,17 +606,9 @@ class _CurrentMissionSpotlight extends StatelessWidget {
                   height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isMilestone
-                          ? [AppColors.xp.withValues(alpha: 0.9), AppColors.xp.withValues(alpha: 0.5)]
-                          : [accent.withValues(alpha: 0.92), accent.withValues(alpha: 0.45)],
-                    ),
-                    border: Border.all(color: isMilestone ? AppColors.xp : accent, width: 2),
-                    boxShadow: isDark
-                        ? [BoxShadow(color: (isMilestone ? AppColors.xp : accent).withValues(alpha: 0.32), blurRadius: 18)]
-                        : null,
+                    color: isMilestone ? AppColors.xp : accent,
+                    border: Border.all(color: const Color(0xFF171923), width: 2.2),
+                    boxShadow: NeoBrutalShadows.hardXs,
                   ),
                   alignment: Alignment.center,
                   child: Icon(
@@ -659,10 +628,10 @@ class _CurrentMissionSpotlight extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: AppTypography.displayFamily,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
                           height: 1.2,
-                          color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                          color: isDark ? Colors.white : NeoBrutalColors.ink,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -672,9 +641,10 @@ class _CurrentMissionSpotlight extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
                             fontSize: 12.5,
                             height: 1.4,
-                            color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                            color: isDark ? Colors.white70 : const Color(0xFF4B5563),
                           ),
                         )
                       else
@@ -685,33 +655,37 @@ class _CurrentMissionSpotlight extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
                             fontSize: 12.5,
                             height: 1.4,
-                            color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                            color: isDark ? Colors.white70 : const Color(0xFF4B5563),
                           ),
                         ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.numbers_rounded, size: 11, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                          Icon(Icons.numbers_rounded, size: 12, color: isDark ? Colors.white60 : const Color(0xFF6B7280)),
                           const SizedBox(width: 4),
                           Text(
                             'Mission ${node.sequenceNumber} of ${path.nodes.length}',
                             style: TextStyle(
+                              fontFamily: AppTypography.bodyFamily,
                               fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white60 : const Color(0xFF6B7280),
                             ),
                           ),
                           if (node.requiredMastery > 0) ...[
                             const SizedBox(width: 8),
-                            Icon(Icons.shield_outlined, size: 11, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                            Icon(Icons.shield_outlined, size: 12, color: isDark ? Colors.white60 : const Color(0xFF6B7280)),
                             const SizedBox(width: 3),
                             Text(
                               '${node.requiredMastery.toStringAsFixed(0)}% mastery to unlock',
                               style: TextStyle(
+                                fontFamily: AppTypography.bodyFamily,
                                 fontSize: 11,
-                                color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white60 : const Color(0xFF6B7280),
                               ),
                             ),
                           ],
@@ -723,16 +697,37 @@ class _CurrentMissionSpotlight extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: PrimaryGameButton(
-                label: ctaLabel,
-                icon: isInProgress ? Icons.play_arrow_rounded : Icons.bolt_rounded,
-                onTap: onTap,
+            PressableScale(
+              onTap: onTap,
+              child: Container(
+                width: double.infinity,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isMilestone ? AppColors.xp : const Color(0xFF3B82F6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF171923), width: 2.2),
+                  boxShadow: NeoBrutalShadows.hardSm,
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(isInProgress ? Icons.play_arrow_rounded : Icons.bolt_rounded, size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      ctaLabel.toUpperCase(),
+                      style: const TextStyle(
+                        fontFamily: AppTypography.displayFamily,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            // Keep exact test-string duplicate for compatibility: hidden but searchable?
-            // Instead ensure topicName appears twice: already in hero + here.
           ],
         ),
       ),
@@ -755,9 +750,14 @@ class _WorldCompleteSpotlight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return FeaturedSurface(
-      accent: AppColors.success,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E232F) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF171923), width: 2.5),
+        boxShadow: NeoBrutalShadows.hard,
+      ),
       child: Row(
         children: [
           Container(
@@ -765,13 +765,9 @@ class _WorldCompleteSpotlight extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.success, Color(0xFF065F46)],
-              ),
-              border: Border.all(color: AppColors.success, width: 2),
-              boxShadow: isDark ? [BoxShadow(color: AppColors.success.withValues(alpha: 0.30), blurRadius: 18)] : null,
+              color: AppColors.success,
+              border: Border.all(color: const Color(0xFF171923), width: 2.2),
+              boxShadow: NeoBrutalShadows.hardXs,
             ),
             child: const Icon(Icons.emoji_events_rounded, size: 26, color: Colors.white),
           ),
@@ -783,8 +779,9 @@ class _WorldCompleteSpotlight extends StatelessWidget {
                 Text(
                   'WORLD COMPLETE',
                   style: TextStyle(
+                    fontFamily: AppTypography.displayFamily,
                     fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     letterSpacing: 1.4,
                     color: AppColors.success,
                   ),
@@ -795,16 +792,17 @@ class _WorldCompleteSpotlight extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: AppTypography.displayFamily,
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : NeoBrutalColors.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Revisit any topic to sharpen mastery or explore another world.',
                   style: TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
                     fontSize: 12.5,
-                    color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                    color: isDark ? Colors.white70 : const Color(0xFF4B5563),
                   ),
                 ),
               ],
@@ -825,29 +823,31 @@ class _JourneyLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+        color: isDark ? const Color(0xFF1E232F) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF171923), width: 2),
+        boxShadow: NeoBrutalShadows.hardXs,
       ),
       child: Row(
         children: [
-          Icon(Icons.map_rounded, size: 14, color: identity.accent),
+          Icon(Icons.map_rounded, size: 15, color: identity.accent),
           const SizedBox(width: 8),
           Text(
             'ADVENTURE MAP',
             style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.3,
+              fontFamily: AppTypography.displayFamily,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
               color: identity.accent,
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Wrap(
-              spacing: 6,
+              spacing: 8,
               runSpacing: 4,
               alignment: WrapAlignment.end,
               children: [
@@ -878,15 +878,20 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            border: Border.all(color: const Color(0xFF171923), width: 1),
+          ),
         ),
         const SizedBox(width: 4),
         Text(
           label,
           style: TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white70 : NeoBrutalColors.ink,
           ),
         ),
       ],
@@ -1246,7 +1251,9 @@ class _AdventureAppBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  subjectName.isEmpty ? 'Learning World' : subjectName.toUpperCase(),
+                  (subjectName.isEmpty || RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(subjectName.trim()))
+                      ? (identity.displayName.isNotEmpty && identity.displayName != 'Unknown' ? identity.displayName.toUpperCase() : 'LEARNING WORLD')
+                      : subjectName.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1339,41 +1346,52 @@ class AdventureTrail extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = _slotHeight * nodes.length + 80;
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          child: SizedBox(
-            height: height,
-            width: width,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                CustomPaint(
-                  size: Size(width, height),
-                  painter: _TrailPainter(
-                    centers: List.generate(nodes.length, (i) => _centerFor(i, width)),
-                    isDark: Theme.of(context).brightness == Brightness.dark,
-                    accent: accent,
-                    nodes: nodes,
+        return SizedBox(
+          height: height,
+          width: width,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CustomPaint(
+                size: Size(width, height),
+                painter: _TrailPainter(
+                  centers: List.generate(nodes.length, (i) => _centerFor(i, width)),
+                  isDark: Theme.of(context).brightness == Brightness.dark,
+                  accent: accent,
+                  nodes: nodes,
+                ),
+              ),
+              for (var i = 0; i < nodes.length; i++)
+                Positioned.fromRect(
+                  rect: Rect.fromCenter(center: _centerFor(i, width), width: _nodeSize, height: _nodeSize),
+                  child: LearningNode(
+                    node: nodes[i],
+                    metadata: aiMetadata[nodes[i].sequenceNumber],
+                    onTap: () => onNodeTap(nodes[i]),
+                    identity: identity,
+                    isMilestone: i == nodes.length - 1,
                   ),
                 ),
-                for (var i = 0; i < nodes.length; i++)
-                  Positioned.fromRect(
-                    rect: Rect.fromCenter(center: _centerFor(i, width), width: _nodeSize, height: _nodeSize),
-                    child: LearningNode(node: nodes[i], metadata: aiMetadata[nodes[i].sequenceNumber], onTap: () => onNodeTap(nodes[i]), identity: identity, isMilestone: i == nodes.length - 1),
-                  ),
-                for (var i = 0; i < nodes.length; i++)
-                  Positioned(
-                    left: _centerFor(i, width).dx < width / 2 ? _centerFor(i, width).dx + _nodeSize / 2 + 10 : null,
-                    right: _centerFor(i, width).dx >= width / 2 ? width - _centerFor(i, width).dx + _nodeSize / 2 + 10 : null,
-                    top: _centerFor(i, width).dy - 18,
-                    width: _captionWidth(width),
-                    child: Align(
-                      alignment: _centerFor(i, width).dx < width / 2 ? Alignment.centerLeft : Alignment.centerRight,
-                      child: _NodeCaption(node: nodes[i], metadata: aiMetadata[nodes[i].sequenceNumber], identity: identity, isMilestone: i == nodes.length - 1),
+              for (var i = 0; i < nodes.length; i++)
+                Positioned(
+                  left: _centerFor(i, width).dx < width / 2 ? _centerFor(i, width).dx + _nodeSize / 2 + 10 : null,
+                  right: _centerFor(i, width).dx >= width / 2 ? width - _centerFor(i, width).dx + _nodeSize / 2 + 10 : null,
+                  top: _centerFor(i, width).dy - 18,
+                  width: _captionWidth(width),
+                  child: Align(
+                    alignment: _centerFor(i, width).dx < width / 2 ? Alignment.centerLeft : Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () => onNodeTap(nodes[i]),
+                      child: _NodeCaption(
+                        node: nodes[i],
+                        metadata: aiMetadata[nodes[i].sequenceNumber],
+                        identity: identity,
+                        isMilestone: i == nodes.length - 1,
+                      ),
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         );
       },
@@ -1749,6 +1767,7 @@ class _NodeCaption extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.start,
           style: TextStyle(
+            fontFamily: AppTypography.displayFamily,
             fontSize: 13,
             fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
             height: 1.25,
@@ -1774,7 +1793,12 @@ class _NodeCaption extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 10.5, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary),
+                style: TextStyle(
+                  fontFamily: AppTypography.bodyFamily,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -1790,18 +1814,16 @@ class _NodeCaption extends StatelessWidget {
       ],
     );
 
-    if (isDark) return captionContent;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E232F) : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: NeoBrutalColors.ink, width: 1.5),
-        boxShadow: const [
+        border: Border.all(color: isDark ? const Color(0xFF374151) : NeoBrutalColors.ink, width: 1.6),
+        boxShadow: [
           BoxShadow(
-            color: NeoBrutalColors.ink,
-            offset: Offset(2.5, 2.5),
+            color: isDark ? Colors.black54 : NeoBrutalColors.ink,
+            offset: const Offset(2.5, 2.5),
             blurRadius: 0,
           ),
         ],

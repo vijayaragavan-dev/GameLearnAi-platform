@@ -468,7 +468,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                           final sid = r.config.subjectId;
                           final sname = r.config.subjectName;
                           if (sid != null && sid.isNotEmpty) {
-                            context.go(Routes.gameHub(r.config.topicId, subjectId: sid, subjectName: sname), extra: r.config.topicName);
+                            context.push(Routes.gameHub(r.config.topicId, subjectId: sid, subjectName: sname), extra: r.config.topicName);
                           } else {
                             context.go(Routes.home);
                           }
@@ -493,7 +493,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                         label: 'Back to arena • ${r.config.subjectName ?? 'World'}',
                         icon: Icons.stadium_rounded,
                         expanded: true,
-                        onTap: () => context.go(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
+                        onTap: () => context.push(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
                       ),
                     ],
                   ],
@@ -697,7 +697,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
                 if (isWeak) {
                   context.push(Routes.tutorWithContext(topicId: result.config.topicId, topicName: result.config.topicName, focus: result.config.topicName));
                 } else if (result.config.subjectId != null) {
-                  context.go(Routes.gameHub(result.config.topicId, subjectId: result.config.subjectId, subjectName: result.config.subjectName), extra: result.config.topicName);
+                  context.push(Routes.gameHub(result.config.topicId, subjectId: result.config.subjectId, subjectName: result.config.subjectName), extra: result.config.topicName);
                 } else {
                   context.go(Routes.home);
                 }

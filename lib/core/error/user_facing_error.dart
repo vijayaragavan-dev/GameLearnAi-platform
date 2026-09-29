@@ -51,7 +51,7 @@ UserFacingError describeError(Object error) {
   }
   if (error is AiUnavailableException) {
     return const UserFacingError(
-      'AI Tutor unavailable',
+      'Study Buddy unavailable',
       'The AI service could not be reached. Try again soon.',
     );
   }

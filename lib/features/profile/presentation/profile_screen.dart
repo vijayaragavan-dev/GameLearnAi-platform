@@ -8,6 +8,7 @@ import '../../../app/router.dart';
 import '../../../core/audio/audio_manager.dart';
 import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/gamification_models.dart';
+import '../../../core/models/mascot_character.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neo_brutalism.dart';
@@ -17,6 +18,8 @@ import '../../../shared/widgets/brutal_widgets.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/xp_bar.dart' show XPBar;
+import '../../avatar/providers/active_mascot_provider.dart';
+import '../../avatar/widgets/cartoon_mascot_view.dart';
 
 /// USER-001 Player Profile with Comic Neo-Brutalism Theme.
 /// Features a vibrant 2D cartoon learning mascot (Duolingo-style animated owl buddy Pip),
@@ -212,29 +215,35 @@ class _DuolingoMascotHeroStage extends ConsumerStatefulWidget {
 }
 
 class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroStage> {
-  final GlobalKey<_DuolingoCartoonMascotState> _mascotKey = GlobalKey<_DuolingoCartoonMascotState>();
   int _quoteIndex = 0;
+  MascotMood? _tapMood;
 
-  List<String> get _quotes => [
+  List<String> _getQuotes(MascotCharacter character) => [
+        ...character.quotes,
         'Protect that ${widget.summary.currentStreakDays}-day streak, ${widget.profile.displayName}! A 5-minute quiz today keeps your mind razor-sharp! 🔥',
         'Level ${widget.profile.currentLevel} Brain Power! You\'re soaring high! Ready to tackle your next quest? ⚡',
-        'Did you know? Practicing just 5 minutes daily boosts memory retention by over 40%! 🧠✨',
         'Incredible! You\'ve collected ${Formatters.count(widget.profile.totalXp)} total XP! You are an unstoppable learner! 🏆',
-        'Tap me anytime for good luck and a high-five! I\'m always cheering for you! 🦉💚',
-        'Don\'t let our streak flame go cold! Let\'s earn some badges together today! 🚀',
+        'Tap me anytime for good luck and a high-five! I\'m always cheering for you! 💚',
       ];
 
-  void _onMascotTap() {
+  void _onMascotTap(MascotCharacter character) {
     ref.read(audioManagerProvider).play(Sfx.buttonTap);
-    _mascotKey.currentState?.triggerCheer();
     setState(() {
-      _quoteIndex = (_quoteIndex + 1) % _quotes.length;
+      _quoteIndex = (_quoteIndex + 1) % _getQuotes(character).length;
+      _tapMood = MascotMood.celebrating;
+    });
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) setState(() => _tapMood = null);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final quoteText = _quotes[_quoteIndex % _quotes.length];
+    final activeMascot = ref.watch(activeMascotProvider);
+    final character = activeMascot.character;
+    final quotes = _getQuotes(character);
+    final quoteText = quotes[_quoteIndex % quotes.length];
+    final currentMood = _tapMood ?? activeMascot.mood;
 
     return BrutalCard(
       backgroundColor: widget.isDark ? const Color(0xFF1E2430) : Colors.white,
@@ -253,18 +262,18 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF58CC02), // Duolingo Green
+                        color: character.primaryColor,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: NeoBrutalColors.ink, width: 1.5),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('🦉', style: TextStyle(fontSize: 12)),
-                          SizedBox(width: 4),
+                          Text(character.emoji, style: const TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
                           Text(
-                            'LEARNING BUDDY',
-                            style: TextStyle(
+                            character.species.toUpperCase(),
+                            style: const TextStyle(
                               fontFamily: AppTypography.displayFamily,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w900,
@@ -278,7 +287,7 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'PIP THE SAGE',
+                        '${character.name.toUpperCase()} • ${character.title}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -294,9 +303,9 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
               ),
               const SizedBox(width: 6),
               GestureDetector(
-                onTap: _onMascotTap,
+                onTap: () => context.push(Routes.adminCharacters),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: NeoBrutalColors.lemonYellow,
                     borderRadius: BorderRadius.circular(999),
@@ -306,10 +315,10 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('👆', style: TextStyle(fontSize: 11)),
+                      Text('🎨', style: TextStyle(fontSize: 11)),
                       SizedBox(width: 4),
                       Text(
-                        'TAP PIP',
+                        'STUDIO / ADMIN',
                         style: TextStyle(
                           fontFamily: AppTypography.displayFamily,
                           fontSize: 9.5,
@@ -332,17 +341,17 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
               final isCompact = constraints.maxWidth < 420;
 
               final mascotWidget = Center(
-                child: GestureDetector(
-                  onTap: _onMascotTap,
-                  child: _DuolingoCartoonMascot(
-                    key: _mascotKey,
-                    size: isCompact ? 104 : 116,
-                  ),
+                child: CartoonMascotView(
+                  character: character,
+                  accessory: activeMascot.accessory,
+                  mood: currentMood,
+                  size: isCompact ? 108 : 124,
+                  onTap: () => _onMascotTap(character),
                 ),
               );
 
               final speechBubbleWidget = GestureDetector(
-                onTap: _onMascotTap,
+                onTap: () => _onMascotTap(character),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -359,7 +368,7 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
                           const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: NeoBrutalColors.cobaltBlue),
                           const SizedBox(width: 6),
                           Text(
-                            'PIP SAYS:',
+                            '${character.name.toUpperCase()} SAYS:',
                             style: TextStyle(
                               fontFamily: AppTypography.displayFamily,
                               fontSize: 10,
@@ -387,14 +396,14 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Wrap(
+                      Wrap(
                         spacing: 4,
                         runSpacing: 4,
-                        children: [
-                          _ComicMicroTag(label: '🦉 Motivator', color: Color(0xFFE8FBE8), textColor: Color(0xFF166534)),
-                          _ComicMicroTag(label: '🔥 Streak Shield', color: Color(0xFFFFE4E6), textColor: Color(0xFF9F1239)),
-                          _ComicMicroTag(label: '⚡ XP Booster', color: Color(0xFFFEF3C7), textColor: Color(0xFF92400E)),
-                        ],
+                        children: character.tags.map((t) => _ComicMicroTag(
+                          label: t,
+                          color: character.bellyColor,
+                          textColor: character.secondaryColor,
+                        )).toList(),
                       ),
                     ],
                   ),
@@ -431,7 +440,7 @@ class _DuolingoMascotHeroStageState extends ConsumerState<_DuolingoMascotHeroSta
 // 2. OFFICIAL PLAYER PASS (COMIC ID CARD)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PlayerIdentityCard extends StatelessWidget {
+class _PlayerIdentityCard extends ConsumerWidget {
   const _PlayerIdentityCard({
     required this.profile,
     required this.summary,
@@ -443,7 +452,8 @@ class _PlayerIdentityCard extends StatelessWidget {
   final bool isDark;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeMascot = ref.watch(activeMascotProvider);
     final handle = '@${profile.displayName.toLowerCase().replaceAll(' ', '')}';
     final atMax = summary.atMaxLevel;
 
@@ -513,20 +523,18 @@ class _PlayerIdentityCard extends StatelessWidget {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: NeoBrutalColors.pastelBlue,
+                      color: activeMascot.character.bellyColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: NeoBrutalColors.ink, width: 2.5),
                       boxShadow: NeoBrutalShadows.hardSm,
                     ),
                     alignment: Alignment.center,
-                    child: Text(
-                      profile.displayName.isEmpty ? 'P' : profile.displayName[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontFamily: AppTypography.displayFamily,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: NeoBrutalColors.ink,
-                      ),
+                    child: CartoonMascotView(
+                      character: activeMascot.character,
+                      accessory: activeMascot.accessory,
+                      mood: MascotMood.idle,
+                      size: 56,
+                      isAnimated: false,
                     ),
                   ),
                   Positioned(
@@ -684,7 +692,7 @@ class _StatsTripleRow extends StatelessWidget {
         // Streak Card
         Expanded(
           child: BrutalPressable(
-            onTap: () => context.go(Routes.streak),
+            onTap: () => context.push(Routes.streak),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               decoration: BoxDecoration(
@@ -793,7 +801,7 @@ class _StatsTripleRow extends StatelessWidget {
         // Badges Card
         Expanded(
           child: BrutalPressable(
-            onTap: () => context.go(Routes.achievements),
+            onTap: () => context.push(Routes.achievements),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               decoration: BoxDecoration(
@@ -998,7 +1006,7 @@ class _ProgressionMasteryCard extends StatelessWidget {
 // 5. LEARNING BUDDY ROSTER & CUSTOMIZATION (REPLACES ROBOT COMPLETELY)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BuddyRosterShowcaseCard extends StatelessWidget {
+class _BuddyRosterShowcaseCard extends ConsumerWidget {
   const _BuddyRosterShowcaseCard({
     required this.isDark,
   });
@@ -1006,7 +1014,11 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
   final bool isDark;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeMascot = ref.watch(activeMascotProvider);
+    final character = activeMascot.character;
+    final accessory = activeMascot.accessory;
+
     return BrutalCard(
       backgroundColor: isDark ? const Color(0xFF1E2430) : Colors.white,
       padding: const EdgeInsets.all(16),
@@ -1031,21 +1043,24 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: NeoBrutalColors.pastelBlue,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: NeoBrutalColors.ink, width: 1.2),
-                ),
-                child: const Text(
-                  'COMPANION VAULT',
-                  style: TextStyle(
-                    fontFamily: AppTypography.displayFamily,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.6,
-                    color: NeoBrutalColors.cobaltBlue,
+              GestureDetector(
+                onTap: () => context.push(Routes.adminCharacters),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: NeoBrutalColors.pastelBlue,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: NeoBrutalColors.ink, width: 1.2),
+                  ),
+                  child: const Text(
+                    'STUDIO / ADMIN',
+                    style: TextStyle(
+                      fontFamily: AppTypography.displayFamily,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                      color: NeoBrutalColors.cobaltBlue,
+                    ),
                   ),
                 ),
               ),
@@ -1065,15 +1080,21 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
               children: [
                 // Mini mascot portrait frame
                 Container(
-                  width: 54,
-                  height: 54,
+                  width: 58,
+                  height: 58,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8FBE8),
+                    color: character.bellyColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: NeoBrutalColors.ink, width: 2.0),
                   ),
                   alignment: Alignment.center,
-                  child: const Text('🦉', style: TextStyle(fontSize: 26)),
+                  child: CartoonMascotView(
+                    character: character,
+                    accessory: accessory,
+                    mood: MascotMood.idle,
+                    size: 46,
+                    isAnimated: false,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1081,7 +1102,7 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Pip the Sage Owl',
+                        '${character.name} the ${character.species}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1092,8 +1113,8 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        'ACTIVE STREAK GUARDIAN',
+                      Text(
+                        character.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1101,17 +1122,25 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.6,
-                          color: Color(0xFF16A34A),
+                          color: isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A),
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Wrap(
+                      Wrap(
                         spacing: 4,
                         runSpacing: 4,
                         children: [
-                          _ComicMicroTag(label: 'Curious', color: Color(0xFFE0E7FF), textColor: Color(0xFF3730A3)),
-                          _ComicMicroTag(label: 'Wise', color: Color(0xFFFEF3C7), textColor: Color(0xFF92400E)),
-                          _ComicMicroTag(label: 'Supportive', color: Color(0xFFE8FBE8), textColor: Color(0xFF166534)),
+                          if (accessory != MascotAccessory.none)
+                            _ComicMicroTag(
+                              label: '${accessory.emoji} ${accessory.label}',
+                              color: const Color(0xFFFEF3C7),
+                              textColor: const Color(0xFF92400E),
+                            ),
+                          ...character.tags.map((t) => _ComicMicroTag(
+                            label: t,
+                            color: character.bellyColor,
+                            textColor: character.secondaryColor,
+                          )),
                         ],
                       ),
                     ],
@@ -1122,11 +1151,11 @@ class _BuddyRosterShowcaseCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           BrutalButton(
-            text: 'CHOOSE BUDDY',
-            icon: Icons.swap_horiz_rounded,
+            text: 'MODIFY IN ADMIN STUDIO',
+            icon: Icons.palette_outlined,
             backgroundColor: NeoBrutalColors.lemonYellow,
             textColor: NeoBrutalColors.ink,
-            onPressed: () => context.push('/profile/characters'),
+            onPressed: () => context.push(Routes.adminCharacters),
           ),
         ],
       ),
@@ -1154,7 +1183,7 @@ class _QuickNavigationTiles extends StatelessWidget {
         // Trophy Vault
         Expanded(
           child: BrutalPressable(
-            onTap: () => context.go(Routes.achievements),
+            onTap: () => context.push(Routes.achievements),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1205,7 +1234,7 @@ class _QuickNavigationTiles extends StatelessWidget {
         // Streak Journey
         Expanded(
           child: BrutalPressable(
-            onTap: () => context.go(Routes.streak),
+            onTap: () => context.push(Routes.streak),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1344,12 +1373,9 @@ class _PreferencesCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _DuolingoCartoonMascot extends StatefulWidget {
-  const _DuolingoCartoonMascot({
-    super.key,
-    this.size = 116,
-  });
+  const _DuolingoCartoonMascot();
 
-  final double size;
+  final double size = 116;
 
   @override
   State<_DuolingoCartoonMascot> createState() => _DuolingoCartoonMascotState();

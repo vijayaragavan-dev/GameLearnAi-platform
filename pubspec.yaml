@@ -32,6 +32,7 @@ flutter:
     - assets/audio/music/
     - assets/audio/sfx/
     - assets/characters/
+    - assets/images/
   fonts:
     - family: GameLearnDisplay
       fonts:

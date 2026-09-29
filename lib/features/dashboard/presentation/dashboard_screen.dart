@@ -13,7 +13,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/neo_brutalism.dart';
 import '../../../core/theme/game_visual_identity.dart';
 import '../../../core/theme/subject_visual_identity.dart';
@@ -21,7 +20,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/feedback.dart';
-import '../../../shared/widgets/game_button.dart' show PressableScale;
+import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/progression_widgets.dart';
 import '../../../shared/widgets/responsive_layout.dart';
@@ -29,6 +28,9 @@ import '../../../shared/widgets/xp_bar.dart';
 import '../../game_engine/models/game_models.dart';
 import '../../leaderboard/providers/leaderboard_providers.dart';
 import '../../subjects/domain/world_context.dart';
+import '../../avatar/providers/active_mascot_provider.dart';
+import '../../avatar/widgets/cartoon_mascot_view.dart';
+import '../../../core/models/mascot_character.dart';
 import '../providers/dashboard_provider.dart';
 
 /// Comic Neo-Brutalist Dashboard Screen
@@ -86,10 +88,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         }
       }
       final name = Uri.encodeComponent(subject.name);
-      context.go('/${Routes.path(subject.id).substring(1)}?name=$name');
+      context.push('/${Routes.path(subject.id).substring(1)}?name=$name');
       return;
     }
-    context.go(Routes.subjects);
+    context.push(Routes.subjects);
   }
 
   void _openRecommendation(RecommendationItem item) {
@@ -339,13 +341,14 @@ class _DashboardBody extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // ---------------------------------------------------------------------------
 // 1. HERO — Comic Brutalist Command Center
-class _HeroCard extends StatelessWidget {
+class _HeroCard extends ConsumerWidget {
   const _HeroCard({required this.dashboard});
 
   final Dashboard dashboard;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeMascot = ref.watch(activeMascotProvider);
     final g = dashboard.gamification;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -468,35 +471,32 @@ class _HeroCard extends StatelessWidget {
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          Container(
-                            width: compactHero ? 58 : 72,
-                            height: compactHero ? 58 : 72,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppGradients.brand,
-                              border: Border.all(
-                                color: ink,
-                                width: 3,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: ink.withValues(alpha: 0.22),
-                                  offset: const Offset(4, 4),
-                                  blurRadius: 0,
+                          GestureDetector(
+                            onTap: () => context.push(Routes.adminCharacters),
+                            child: Container(
+                              width: compactHero ? 58 : 72,
+                              height: compactHero ? 58 : 72,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: activeMascot.character.bellyColor,
+                                border: Border.all(
+                                  color: ink,
+                                  width: 3,
                                 ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              name.isEmpty
-                                  ? '?'
-                                  : name[0].toUpperCase(),
-                              style: TextStyle(
-                                fontFamily:
-                                    AppTypography.displayFamily,
-                                fontSize: compactHero ? 24 : 28,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: ink.withValues(alpha: 0.22),
+                                    offset: const Offset(4, 4),
+                                    blurRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: CartoonMascotView(
+                                character: activeMascot.character,
+                                accessory: activeMascot.accessory,
+                                mood: MascotMood.idle,
+                                size: compactHero ? 48 : 58,
                               ),
                             ),
                           ),
@@ -645,7 +645,7 @@ class _HeroCard extends StatelessWidget {
                           days:
                               dashboard.streak.currentStreakDays,
                           onTap: () =>
-                              context.go(Routes.streak),
+                              context.push(Routes.streak),
                         ),
 
                         const SizedBox(width: 7),
@@ -676,7 +676,7 @@ class _HeroCard extends StatelessWidget {
                           days:
                               dashboard.streak.currentStreakDays,
                           onTap: () =>
-                              context.go(Routes.streak),
+                              context.push(Routes.streak),
                         ),
                         const SizedBox(width: 8),
                         _LeaderboardRankChip(
@@ -1328,7 +1328,7 @@ class _JourneySection extends StatelessWidget {
                 path.subjectName.isEmpty ? dashboard.currentSubject?.name ?? '' : path.subjectName,
               );
               final id = path.subjectId.isEmpty ? dashboard.currentSubject?.id ?? '' : path.subjectId;
-              if (id.isNotEmpty) context.go('/path/$id?name=$name');
+              if (id.isNotEmpty) context.push('/path/$id?name=$name');
             },
             child: Container(
               width: double.infinity,
@@ -1447,7 +1447,7 @@ class _SubjectsSection extends ConsumerWidget {
                 child: PressableScale(
                   onTap: () {
                     final name = Uri.encodeComponent(s.name);
-                    context.go('${Routes.world(s.id)}?name=$name');
+                    context.push('${Routes.world(s.id)}?name=$name');
                   },
                   child: Container(
                     padding: const EdgeInsets.all(14),
@@ -1536,7 +1536,7 @@ class _SubjectsSection extends ConsumerWidget {
             if (subjects.length > 2) ...[
               const SizedBox(height: 2),
               PressableScale(
-                onTap: () => context.go(Routes.subjects),
+                onTap: () => context.push(Routes.subjects),
                 child: Container(
                   width: double.infinity,
                   height: 48,
@@ -1581,39 +1581,74 @@ class _SubjectsSection extends ConsumerWidget {
 // 5. GAME ZONE — 14 Games Showcase & Featured Arenas
 // ─────────────────────────────────────────────────────────────────────────────
 class _GameZoneSection extends StatelessWidget {
-  const _GameZoneSection({required this.dashboard});
+  const _GameZoneSection({
+    required this.dashboard,
+  });
+
   final Dashboard dashboard;
 
   String? _topicIdForGames() {
-    final t = dashboard.currentSubject?.currentTopic?.topicId;
+    final t =
+        dashboard.currentSubject?.currentTopic?.topicId;
+
     if (t != null && t.isNotEmpty) return t;
+
     final lp = dashboard.learningPath;
-    if (lp != null && lp.nodes.isNotEmpty) return lp.nodes.first.topicId;
-    final rec = dashboard.recommendations.firstOrNull?.topicId;
+
+    if (lp != null && lp.nodes.isNotEmpty) {
+      return lp.nodes.first.topicId;
+    }
+
+    final rec =
+        dashboard.recommendations.firstOrNull?.topicId;
+
     if (rec != null && rec.isNotEmpty) return rec;
-    final recent = dashboard.mastery.recentTopics.firstOrNull?.topicId;
+
+    final recent =
+        dashboard.mastery.recentTopics.firstOrNull?.topicId;
+
     return recent;
   }
 
+  /// Topic label for the Global Arena entry, mirroring [_topicIdForGames]
+  /// source-by-source. The arena is intentionally subject-free, so the hub
+  /// must show the topic — never the subject name in the topic slot.
   String? _topicNameForGames() {
-    final t = dashboard.currentSubject?.currentTopic?.topicName;
+    final t =
+        dashboard.currentSubject?.currentTopic?.topicName;
+
     if (t != null && t.isNotEmpty) return t;
+
     final lp = dashboard.learningPath;
+
     if (lp != null && lp.nodes.isNotEmpty) {
       final n = lp.nodes.first.topicName;
+
       if (n.isNotEmpty) return n;
     }
-    final rec = dashboard.recommendations.firstOrNull?.topicName;
+
+    final rec =
+        dashboard.recommendations.firstOrNull?.topicName;
+
     if (rec != null && rec.isNotEmpty) return rec;
-    final recent = dashboard.mastery.recentTopics.firstOrNull?.topicName;
+
+    final recent =
+        dashboard.mastery.recentTopics.firstOrNull?.topicName;
+
     if (recent != null && recent.isNotEmpty) return recent;
+
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
     final topicId = _topicIdForGames();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Use real game identities from registry.
+    // Logic intentionally unchanged.
     final featuredTypes = [
       GameType.quizBattle,
       GameType.memoryMatch,
@@ -1622,7 +1657,7 @@ class _GameZoneSection extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E232F) : Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1632,27 +1667,36 @@ class _GameZoneSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ========================================================
+          // HEADER ROW
+          // ========================================================
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // GAME ZONE BADGE
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7C3AED), // Vivid Purple
+                  color: const Color(0xFF8B5CF6),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                  border: Border.all(color: const Color(0xFF171923), width: 1.8),
+                  boxShadow: NeoBrutalShadows.hardXs,
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(AppIcons.navGamesActive, size: 12, color: Colors.white),
-                    SizedBox(width: 5),
+                    const Icon(
+                      AppIcons.navGamesActive,
+                      size: 13,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 5),
                     Text(
                       'GAME ZONE',
                       style: TextStyle(
                         fontFamily: AppTypography.displayFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
                         color: Colors.white,
                       ),
@@ -1660,162 +1704,243 @@ class _GameZoneSection extends StatelessWidget {
                   ],
                 ),
               ),
+              const Spacer(),
+              // GAME COUNT BADGE
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDE9FE),
+                  color: isDark ? const Color(0xFF282E3E) : const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                  border: Border.all(color: const Color(0xFF171923), width: 1.6),
+                  boxShadow: NeoBrutalShadows.hardXs,
                 ),
-                child: const Text(
+                child: Text(
                   '14 GAMES',
                   style: TextStyle(
                     fontFamily: AppTypography.displayFamily,
                     fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    color: Color(0xFF171923),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.6,
+                    color: isDark ? AppColors.textPrimary : const Color(0xFF171923),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          const Text(
+          const SizedBox(height: 8),
+
+          // ========================================================
+          // DESCRIPTION
+          // ========================================================
+          Text(
             'Play is how you master. Same mastery, more fun.',
             style: TextStyle(
               fontFamily: AppTypography.bodyFamily,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF596174),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+              color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
+
+          // ========================================================
+          // GAME GRID
+          // ========================================================
           AdaptiveGrid(
             compact: 2,
             medium: 2,
             expanded: 4,
             wide: 4,
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 8,
+            runSpacing: 8,
             children: featuredTypes.map((type) {
               final identity = GameVisualRegistry.of(type);
               return PressableScale(
                 onTap: () {
                   if (topicId == null || topicId.isEmpty) {
-                    context.go(Routes.subjects);
+                    context.push(Routes.subjects);
                     return;
                   }
-                  context.push(Routes.gameHub(topicId), extra: _topicNameForGames());
+                  context.push(
+                    Routes.gameHub(topicId),
+                    extra: _topicNameForGames(),
+                  );
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: identity.gradient,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF171923), width: 2.0),
+                    color: isDark ? const Color(0xFF262C3A) : Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: const Color(0xFF171923),
+                      width: 2,
+                    ),
                     boxShadow: NeoBrutalShadows.hardSm,
                   ),
-                  child: Column(
-                    children: [
-                      SceneThumb(
-                        palette: scenePaletteForGame(identity.type.name),
-                        seed: seedForKey(identity.type.name),
-                        icon: identity.icon,
-                        accent: identity.accent,
-                        width: double.infinity,
-                        height: 72,
-                        iconSize: 22,
-                        label: '${identity.type.displayName} game artwork',
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        identity.type.displayName,
-                        style: const TextStyle(
-                          fontFamily: AppTypography.displayFamily,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: Column(
+                      children: [
+                        // SCENE THUMB / ARTWORK
+                        Stack(
+                          children: [
+                            SceneThumb(
+                              palette: scenePaletteForGame(identity.type.name),
+                              seed: seedForKey(identity.type.name),
+                              icon: identity.icon,
+                              accent: identity.accent,
+                              width: double.infinity,
+                              height: 64,
+                              iconSize: 26,
+                              label: '${identity.type.displayName} game artwork',
+                            ),
+                            // Comic corner icon badge
+                            Positioned(
+                              top: 5,
+                              left: 5,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                                  boxShadow: NeoBrutalShadows.hardXs,
+                                ),
+                                child: Icon(
+                                  identity.icon,
+                                  size: 11,
+                                  color: identity.accent,
+                                ),
+                              ),
+                            ),
+                            // Comic accent dot
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: identity.accent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFF171923), width: 1),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFF171923), width: 1.5),
-                        ),
-                        child: Text(
-                          identity.category.toUpperCase(),
-                          style: const TextStyle(
-                            fontFamily: AppTypography.displayFamily,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            color: Color(0xFF171923),
+                        // GAME DETAILS
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(7, 7, 7, 8),
+                          child: Column(
+                            children: [
+                              Text(
+                                identity.type.displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                  color: isDark ? AppColors.textPrimary : const Color(0xFF171923),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: identity.accent.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: identity.accent.withValues(alpha: 0.4),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  identity.category.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: AppTypography.displayFamily,
+                                    fontSize: 7.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: identity.accent,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
+
+          // ========================================================
+          // EXPLORE ALL GAMES BUTTON (Comic Neo-Brutal)
+          // ========================================================
           PressableScale(
             onTap: () {
               if (topicId == null || topicId.isEmpty) {
-                context.go(Routes.subjects);
+                context.push(Routes.subjects);
                 return;
               }
-              context.push(Routes.gameHub(topicId), extra: _topicNameForGames());
+              context.push(
+                Routes.gameHub(topicId),
+                extra: _topicNameForGames(),
+              );
             },
             child: Container(
               width: double.infinity,
-              height: 48,
+              height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD43B),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF171923), width: 2.5),
+                color: const Color(0xFF3B82F6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF171923), width: 2.2),
                 boxShadow: NeoBrutalShadows.hardSm,
               ),
               alignment: Alignment.center,
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
-                    child: Text(
-                      'EXPLORE ALL 14 GAMES',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: AppTypography.displayFamily,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: Color(0xFF171923),
-                      ),
+                  Text(
+                    'EXPLORE ALL 14 GAMES',
+                    style: TextStyle(
+                      fontFamily: AppTypography.displayFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: Colors.white,
                     ),
                   ),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF171923)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.white),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          const Center(
+          const SizedBox(height: 6),
+
+          // ========================================================
+          // XP INFORMATION
+          // ========================================================
+          Center(
             child: Text(
               'Quiz Battle & Speed Run award real XP',
               style: TextStyle(
                 fontFamily: AppTypography.bodyFamily,
-                fontSize: 11,
+                fontSize: 9.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF596174),
+                letterSpacing: 0.1,
+                color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
               ),
             ),
           ),
@@ -1964,7 +2089,7 @@ class _AssessmentNudge extends ConsumerWidget {
               if (subjectId != null) {
                 context.push(Routes.assessmentIntro(subjectId));
               } else {
-                context.go(Routes.subjects);
+                context.push(Routes.subjects);
               }
             },
             child: Container(

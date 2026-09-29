@@ -41,7 +41,7 @@ class IntelligenceSection extends ConsumerWidget {
             Text('Not enough activity yet to identify weak topics. Complete a quiz or play a game to generate your first insights.', style: AppTypography.bodySecondary(context)),
             const SizedBox(height: 12),
             Wrap(spacing: 8, runSpacing: 8, children: [
-              ActionChip(label: const Text('Explore Worlds'), onPressed: () => context.go(Routes.subjects)),
+              ActionChip(label: const Text('Explore Worlds'), onPressed: () => context.push(Routes.subjects)),
               ActionChip(label: const Text('Open Tutor'), onPressed: () => context.push(Routes.tutor)),
             ]),
           ],
@@ -235,7 +235,7 @@ class IntelligenceSection extends ConsumerWidget {
             const Icon(Icons.psychology_rounded, color: AppColors.secondary),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('AI TUTOR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.secondary)),
+              const Text('STUDY BUDDY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.secondary)),
               const SizedBox(height: 2),
               Text(intel.weakTopics.isNotEmpty ? 'Get help with ${intel.weakTopics.first.topicName} — contextual guidance ready' : 'Get hints, explanations, or a study plan', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
             ])),
@@ -259,7 +259,7 @@ class IntelligenceSection extends ConsumerWidget {
         context.push(Routes.topic(r.topicId!));
       }
     } else {
-      context.go(Routes.subjects);
+      context.push(Routes.subjects);
     }
   }
 }

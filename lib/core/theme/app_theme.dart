@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
+import 'app_typography.dart';
 
 /// Global GameLearn AI themes — dark (original futuristic) + genuine light.
 ///
@@ -13,6 +14,7 @@ ThemeData buildGameLearnDarkTheme() {
   final base = ThemeData(
     brightness: Brightness.dark,
     useMaterial3: true,
+    fontFamily: AppTypography.bodyFamily,
     scaffoldBackgroundColor: AppColors.background,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primary,
@@ -28,6 +30,7 @@ ThemeData buildGameLearnDarkTheme() {
 
   return base.copyWith(
     textTheme: base.textTheme.apply(
+      fontFamily: AppTypography.bodyFamily,
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     ),
@@ -42,10 +45,11 @@ ThemeData buildGameLearnDarkTheme() {
         statusBarBrightness: Brightness.dark,
       ),
       titleTextStyle: TextStyle(
+        fontFamily: AppTypography.displayFamily,
         fontSize: 17,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
-        letterSpacing: 0.2,
+        letterSpacing: 0.5,
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -158,6 +162,7 @@ ThemeData buildGameLearnLightTheme() {
   final base = ThemeData(
     brightness: Brightness.light,
     useMaterial3: true,
+    fontFamily: AppTypography.bodyFamily,
     scaffoldBackgroundColor: AppLightColors.background,
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
@@ -173,6 +178,7 @@ ThemeData buildGameLearnLightTheme() {
 
   return base.copyWith(
     textTheme: base.textTheme.apply(
+      fontFamily: AppTypography.bodyFamily,
       bodyColor: AppLightColors.textPrimary,
       displayColor: AppLightColors.textPrimary,
     ),
@@ -188,10 +194,11 @@ ThemeData buildGameLearnLightTheme() {
         statusBarBrightness: Brightness.light,
       ),
       titleTextStyle: TextStyle(
+        fontFamily: AppTypography.displayFamily,
         fontSize: 17,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: AppLightColors.textPrimary,
-        letterSpacing: 0.2,
+        letterSpacing: 0.5,
       ),
       iconTheme: IconThemeData(color: AppLightColors.textPrimary),
     ),

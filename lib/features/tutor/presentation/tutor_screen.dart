@@ -239,7 +239,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI TUTOR',
+                  'STUDY BUDDY',
                   style: TextStyle(
                     fontFamily: NeoBrutalTypography.displayFamily,
                     fontSize: 16,
@@ -334,7 +334,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'NOVA TUTOR',
+                                  'STUDY BUDDY',
                                   style: TextStyle(
                                     fontFamily: AppTypography.displayFamily,
                                     fontSize: 17,

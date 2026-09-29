@@ -354,7 +354,7 @@ class _LearnPlayGrowOrb extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       button: true,
-      label: 'Learn Play Grow — open Nova Tutor',
+      label: 'Learn Play Grow — open Study Buddy',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,

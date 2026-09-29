@@ -65,7 +65,7 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
     // World landing preserves backend subjectId; the world page resolves
     // the canonical WorldId via WorldCatalog (generic fallback when unmapped).
     final name = Uri.encodeComponent(subject.name);
-    context.go('${Routes.world(subject.id)}?name=$name');
+    context.push('${Routes.world(subject.id)}?name=$name');
   }
 
   void _scan(Subject subject) {
@@ -919,6 +919,7 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = resolveWorldPalette(widget.subject);
     final description = widget.subject.description.isNotEmpty
         ? widget.subject.description
@@ -943,7 +944,7 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
               curve: AppMotion.easeOut,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
-                color: palette.cardBackground,
+                color: isDark ? const Color(0xFF1E232F) : Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: const Color(0xFF171923),
@@ -983,12 +984,12 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                           widget.subject.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: AppTypography.displayFamily,
                             fontSize: 16.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.2,
-                            color: Color(0xFF171923),
+                            color: isDark ? Colors.white : const Color(0xFF171923),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -996,11 +997,12 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                           description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
                             fontSize: 12.5,
                             height: 1.25,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF171923),
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF596174),
                           ),
                         ),
                       ],
@@ -1051,10 +1053,10 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
                         size: 24,
-                        color: Color(0xFF171923),
+                        color: isDark ? Colors.white : const Color(0xFF171923),
                       ),
                     ],
                   ),

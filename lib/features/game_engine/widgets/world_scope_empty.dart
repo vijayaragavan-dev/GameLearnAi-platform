@@ -37,7 +37,7 @@ class WorldScopeEmpty extends StatelessWidget {
               icon: Icons.arrow_back_rounded,
               onTap: () => context.canPop()
                   ? context.pop()
-                  : context.go('/subjects'),
+                  : context.push('/subjects'),
             ),
           ],
         ),

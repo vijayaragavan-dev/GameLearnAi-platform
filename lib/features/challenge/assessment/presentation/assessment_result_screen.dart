@@ -319,7 +319,7 @@ class _AssessmentResultScreenState
                               .read(audioManagerProvider)
                               .play(Sfx.missionComplete);
                           // PRIMARY FIX UI-5: navigate to subject-specific personalized path
-                          context.go(Routes.path(widget.subjectId));
+                          context.push(Routes.path(widget.subjectId));
                         },
                       ),
                     ),

@@ -7,10 +7,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/neo_brutalism.dart';
+import '../../../core/models/mascot_character.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
+import '../../avatar/providers/active_mascot_provider.dart';
+import '../../avatar/widgets/cartoon_mascot_view.dart';
 import '../providers/leaderboard_providers.dart';
-import 'leaderboard_avatar.dart';
 
 /// Compact dashboard teaser — uses GET /api/v1/me/leaderboard-position
 /// via dashboardLeaderboardProvider. Never fetches full leaderboard.
@@ -73,6 +75,7 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
       );
     }
 
+    final activeMascot = ref.watch(activeMascotProvider);
     final rank = data.rank;
     final xp = data.totalXp;
     final xpToNext = data.xpToNextRank;
@@ -137,33 +140,51 @@ class DashboardLeaderboardTeaser extends ConsumerWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                if (data.avatar != null)
-                  LeaderboardAvatarView(
-                    avatar: data.avatar!,
-                    displayName: 'You',
-                    size: 46,
-                  )
-                else
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF3B82F6),
-                      border: Border.all(color: const Color(0xFF171923), width: 2.0),
-                      boxShadow: NeoBrutalShadows.hardXs,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '#$rank',
-                      style: const TextStyle(
-                        fontFamily: AppTypography.displayFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF171923), width: 2.2),
+                        boxShadow: NeoBrutalShadows.hardXs,
+                      ),
+                      alignment: Alignment.center,
+                      child: CartoonMascotView(
+                        character: activeMascot.character,
+                        accessory: activeMascot.accessory,
+                        mood: MascotMood.idle,
+                        size: 42,
+                        isAnimated: false,
                       ),
                     ),
-                  ),
+                    Positioned(
+                      right: -5,
+                      bottom: -5,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD43B),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: const Color(0xFF171923), width: 1.5),
+                          boxShadow: NeoBrutalShadows.hardXs,
+                        ),
+                        child: Text(
+                          '#$rank',
+                          style: const TextStyle(
+                            fontFamily: AppTypography.displayFamily,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF171923),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

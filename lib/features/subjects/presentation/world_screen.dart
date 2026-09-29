@@ -10,9 +10,9 @@ import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../../../core/theme/subject_visual_identity.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
-import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
@@ -89,8 +89,11 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final subject = ref.watch(subjectByIdProvider(widget.subjectId));
+    final rawName = widget.subjectName.trim();
+    final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(rawName);
+    final safeWidgetName = (isUuid || rawName.isEmpty) ? '' : rawName;
     final displayName = subject?.name ??
-        (widget.subjectName.isNotEmpty ? widget.subjectName : 'World');
+        (safeWidgetName.isNotEmpty ? safeWidgetName : 'World');
     final description = subject?.description ?? '';
     final definition = subject != null
         ? WorldCatalog.resolveSubject(subject)
@@ -110,13 +113,22 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${displayName.toUpperCase()} WORLD'),
+        title: Text(
+          '${displayName.toUpperCase()} WORLD',
+          style: TextStyle(
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.8,
+            color: isDark ? Colors.white : NeoBrutalColors.ink,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : NeoBrutalColors.ink),
           tooltip: 'Back to worlds',
           onPressed: () => context.canPop()
               ? context.pop()
-              : context.go(Routes.subjects),
+              : context.push(Routes.subjects),
         ),
       ),
       body: RefreshIndicator(
@@ -259,11 +271,14 @@ class _WorldHero extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       label: '$displayName world',
-      child: FeaturedSurface(
-        accent: accent,
-        padding: EdgeInsets.zero,
-        scene: scenePaletteForWorld(identity.iconKey),
-        sceneSeed: seedForKey(displayName),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E232F) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF171923), width: 2.5),
+          boxShadow: NeoBrutalShadows.hard,
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
             Positioned.fill(
@@ -276,7 +291,6 @@ class _WorldHero extends StatelessWidget {
                         ? [accent.withValues(alpha: 0.22), Colors.transparent]
                         : [accent.withValues(alpha: 0.08), Colors.transparent],
                   ),
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
               ),
             ),
@@ -295,15 +309,22 @@ class _WorldHero extends StatelessWidget {
                           children: [
                             Text(
                               displayName,
-                              style: AppTypography.hero(context, size: 22),
+                              style: TextStyle(
+                                fontFamily: AppTypography.displayFamily,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : NeoBrutalColors.ink,
+                              ),
                             ),
                             if (tagline != null) ...[
                               const SizedBox(height: 2),
                               Text(
                                 tagline!,
-                                style: AppTypography.caption(context).copyWith(
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
                                   color: accent,
-                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
@@ -315,7 +336,13 @@ class _WorldHero extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     description,
-                    style: AppTypography.bodySecondary(context),
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      fontSize: 13,
+                      height: 1.45,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                    ),
                   ),
                   if (availability == WorldAvailability.comingSoon) ...[
                     const SizedBox(height: 10),
@@ -364,25 +391,94 @@ class _ContinueSection extends StatelessWidget {
     // Promote once for closure-safe access below.
     final PathNode? next = recommended;
     final PathNode? inProgress = current;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('CONTINUE LEARNING', style: AppTypography.overline(context)),
-        const SizedBox(height: 8),
+        Text(
+          'CONTINUE LEARNING',
+          style: TextStyle(
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.0,
+            color: isDark ? Colors.white70 : NeoBrutalColors.textMuted,
+          ),
+        ),
+        const SizedBox(height: 10),
         if (loading)
           const SkeletonList(itemCount: 2, itemHeight: 72)
         else if (error != null)
           ErrorState(title: 'Path unavailable', message: error!, onRetry: onRetry)
         else if (nodes.isEmpty)
-          EmptyState(
-            icon: Icons.route_outlined,
-            title: 'No learning path yet',
-            message:
-                'Generate your personalized path to unlock topics, games and recommendations for this world.',
-            action: PrimaryGameButton(
-              label: generating ? 'Generating…' : 'View path',
-              onTap: generating ? null : onOpenPath,
-              busy: generating,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E232F) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFF171923), width: 2.2),
+              boxShadow: NeoBrutalShadows.hardSm,
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFEFF6FF),
+                    border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.35), width: 1.5),
+                  ),
+                  child: const Icon(Icons.route_outlined, color: Color(0xFF2563EB), size: 26),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'No learning path yet',
+                  style: TextStyle(
+                    fontFamily: AppTypography.displayFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : NeoBrutalColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Generate your personalized path to unlock topics, games and recommendations for this world.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
+                    fontSize: 13,
+                    height: 1.4,
+                    color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                PressableScale(
+                  onTap: generating ? null : onOpenPath,
+                  child: Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxWidth: 260),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF171923), width: 2.2),
+                      boxShadow: NeoBrutalShadows.hardSm,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      generating ? 'GENERATING…' : 'VIEW PATH',
+                      style: const TextStyle(
+                        fontFamily: AppTypography.displayFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         else ...[
@@ -514,14 +610,29 @@ class _ArenaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('WORLD ARENA', style: AppTypography.overline(context)),
+        Text(
+          'WORLD ARENA',
+          style: TextStyle(
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.0,
+            color: isDark ? Colors.white70 : NeoBrutalColors.textMuted,
+          ),
+        ),
         const SizedBox(height: 8),
-        GameIdentitySurface(
-          accent: accent,
+        Container(
           padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E232F) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFF171923), width: 2.2),
+            boxShadow: NeoBrutalShadows.hardSm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -529,7 +640,12 @@ class _ArenaSection extends StatelessWidget {
                 header: true,
                 child: Text(
                   '$displayName // WORLD ARENA',
-                  style: AppTypography.h3(context),
+                  style: TextStyle(
+                    fontFamily: AppTypography.displayFamily,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : NeoBrutalColors.ink,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -537,7 +653,11 @@ class _ArenaSection extends StatelessWidget {
                 hasTopic
                     ? 'Every game here plays $displayName content only.'
                     : 'The arena unlocks once your path has a topic.',
-                style: AppTypography.caption(context),
+                style: TextStyle(
+                  fontFamily: AppTypography.bodyFamily,
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                ),
               ),
               const SizedBox(height: 12),
               PrimaryGameButton(
@@ -548,7 +668,7 @@ class _ArenaSection extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               SecondaryGameButton(
-                label: 'Ask Nova tutor',
+                label: 'Ask Study Buddy',
                 icon: Icons.psychology_outlined,
                 onTap: onTutor,
               ),
@@ -576,10 +696,20 @@ class _SyllabusSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final worldId = definition?.id;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('SYLLABUS', style: AppTypography.overline(context)),
+        Text(
+          'SYLLABUS',
+          style: TextStyle(
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.0,
+            color: isDark ? Colors.white70 : NeoBrutalColors.textMuted,
+          ),
+        ),
         const SizedBox(height: 8),
         if (worldId == null)
           const EmptyMiniCard(
@@ -808,10 +938,20 @@ class _MasterySection extends StatelessWidget {
     final topics = (dashboard?.mastery.recentTopics ?? const [])
         .where((t) => nodeIds.contains(t.topicId))
         .toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('WORLD MASTERY', style: AppTypography.overline(context)),
+        Text(
+          'WORLD MASTERY',
+          style: TextStyle(
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.0,
+            color: isDark ? Colors.white70 : NeoBrutalColors.textMuted,
+          ),
+        ),
         const SizedBox(height: 8),
         if (dashboard == null)
           const EmptyMiniCard(text: 'Mastery unavailable right now.')
