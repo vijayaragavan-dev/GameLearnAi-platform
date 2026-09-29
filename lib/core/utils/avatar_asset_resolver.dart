@@ -2,6 +2,7 @@
 /// Maps backend assetKey (e.g., "characters/nova_spark") to
 /// local asset path (e.g., "assets/characters/nova_spark.svg").
 /// No remote URLs, no network dependency.
+library;
 
 const String _kDefaultAsset = 'assets/characters/nova_spark.svg';
 
@@ -30,9 +31,24 @@ const Map<String, String> _kAssetMap = {
   'characters/code_sovereign': 'assets/characters/code_sovereign.svg',
   'characters/network_warden': 'assets/characters/network_warden.svg',
   'characters/kernel_legend': 'assets/characters/kernel_legend.svg',
+  // Official Mascot Characters from gamelearnai/asserts
+  'characters/mascot_panda': 'assets/images/mascot_panda.png',
+  'characters/mascot_cat': 'assets/images/mascot_cat.png',
+  'characters/mascot_penguin': 'assets/images/mascot_penguin.png',
+  'characters/mascot_robot': 'assets/images/mascot_robot.png',
+  'characters/mascot_owl': 'assets/images/mascot_owl.png',
+  'characters/mascot_dragon': 'assets/images/mascot_dragon.png',
+  'characters/sparky_fox': 'assets/images/sparky_login.png',
+  'characters/bao_panda': 'assets/images/mascot_panda.png',
+  'characters/milo_cat': 'assets/images/mascot_cat.png',
+  'characters/pippin_penguin': 'assets/images/mascot_penguin.png',
+  'characters/nova_bot': 'assets/images/mascot_robot.png',
+  'characters/pip_owl': 'assets/images/mascot_owl.png',
+  'characters/blaze_dragon': 'assets/images/mascot_dragon.png',
+  'characters/spark_fox': 'assets/images/sparky_login.png',
   // Fallback code-named variants
-  'characters/initiates_spark': 'assets/characters/nova_spark.svg',
-  'characters/initiates_scout': 'assets/characters/byte_scout.svg',
+  'characters/initiates_spark': 'assets/images/mascot_robot.png',
+  'characters/initiates_scout': 'assets/images/mascot_owl.png',
 };
 
 String resolveAvatarAsset(String? assetKey) {

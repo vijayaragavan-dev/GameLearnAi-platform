@@ -153,6 +153,11 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
               _selectedCategory,
             );
             final dashboard = ref.watch(dashboardProvider).data;
+            final assessedIds = <String>{
+              ...?dashboard?.assessment.assessedSubjects.map((a) => a.subjectId),
+              if (dashboard?.currentSubject?.id != null) dashboard!.currentSubject!.id,
+              if (dashboard?.learningPath?.subjectId != null) dashboard!.learningPath!.subjectId,
+            };
             final featuredSubject = _featuredWorld(subjects, dashboard, filtered);
             // Premium catalog: atmospheric header + featured world + chips + adaptive grid
             return Stack(
@@ -226,9 +231,7 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                           if (featuredSubject != null && filtered.length > 1) ...[
                             _FeaturedWorldCard(
                               subject: featuredSubject,
-                              assessed: dashboard?.assessment.assessedSubjects
-                                      .any((a) => a.subjectId == featuredSubject.id) ??
-                                  false,
+                              assessed: assessedIds.contains(featuredSubject.id),
                               onEnter: () => _enter(featuredSubject),
                               onScan: () => _scan(featuredSubject),
                             ),
@@ -272,10 +275,12 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                                 if (isFeatured && filtered.length > 1) {
                                   // Featured already shown above — still show in grid but with compact variant
                                 }
+                                final isAssessed = assessedIds.contains(subject.id);
                                 return PressableWorldCard(
                                   subject: subject,
+                                  isAssessed: isAssessed,
                                   onTap: () => _enter(subject),
-                                  onScan: () => _scan(subject),
+                                  onScan: () => isAssessed ? _enter(subject) : _scan(subject),
                                 );
                               }).toList(),
                             ),
@@ -313,16 +318,6 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                          // ── DISCOVER / RECOMMENDED (only if real recommendation exists) ──
-                          if (dashboard != null && dashboard.recommendations.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 18),
-                              child: _RecommendedWorldStrip(
-                                dashboard: dashboard,
-                                subjects: subjects,
-                                onEnter: _enter,
                               ),
                             ),
                         ],
@@ -541,10 +536,10 @@ class _FeaturedWorldCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           _WorldCTA(
-                            label: 'SCAN',
-                            icon: Icons.radar_rounded,
+                            label: assessed ? 'VIEW PATH' : 'SCAN',
+                            icon: assessed ? Icons.alt_route_rounded : Icons.radar_rounded,
                             accent: accent,
-                            onTap: onScan,
+                            onTap: assessed ? onEnter : onScan,
                             primary: false,
                           ),
                         ],
@@ -668,87 +663,6 @@ class _WorldCTA extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── RECOMMENDED WORLD STRIP (only if real recommendation)
-class _RecommendedWorldStrip extends StatelessWidget {
-  const _RecommendedWorldStrip({
-    required this.dashboard,
-    required this.subjects,
-    required this.onEnter,
-  });
-  final Dashboard dashboard;
-  final List<Subject> subjects;
-  final void Function(Subject) onEnter;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rec = dashboard.recommendations.firstOrNull;
-    if (rec == null || rec.topicName == null || rec.topicName!.isEmpty) return const SizedBox.shrink();
-    // Enter the learner's current world only. Guessing another world
-    // (e.g. subjects.first) would point the recommendation at the wrong
-    // world, so without a resolved current subject show nothing.
-    final currentId = dashboard.currentSubject?.id;
-    Subject? resolved;
-    if (currentId != null && currentId.isNotEmpty) {
-      for (final s in subjects) {
-        if (s.id == currentId) {
-          resolved = s;
-          break;
-        }
-      }
-    }
-    // Final for closure capture below (onEnter tap).
-    final subject = resolved;
-    if (subject == null) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('RECOMMENDED FOR YOU', style: AppTypography.overline(context).copyWith(color: AppColors.secondary)),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => onEnter(subject),
-          child: GameIdentitySurface(
-            accent: AppColors.secondary,
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                SubjectIcon(iconKey: subject.iconKey, size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Continue with ${subject.name}',
-                        style: AppTypography.h3(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        rec.topicName! + (rec.reason.isNotEmpty ? ' • ${rec.reason}' : ''),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.caption(context),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Icon(Icons.arrow_forward_rounded, size: 16, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-extension on List<RecommendationItem> {
-  RecommendationItem? get firstOrNull => isEmpty ? null : first;
 }
 
 class WorldVisualPalette {
@@ -903,11 +817,13 @@ class PressableWorldCard extends StatefulWidget {
     required this.subject,
     required this.onTap,
     required this.onScan,
+    this.isAssessed = false,
   });
 
   final Subject subject;
   final VoidCallback onTap;
   final VoidCallback onScan;
+  final bool isAssessed;
 
   @override
   State<PressableWorldCard> createState() => _PressableWorldCardState();
@@ -1015,9 +931,11 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                     children: [
                       Semantics(
                         button: true,
-                        label: 'Scan ${widget.subject.name} knowledge',
+                        label: widget.isAssessed
+                            ? 'Open ${widget.subject.name} world'
+                            : 'Scan ${widget.subject.name} knowledge',
                         child: GestureDetector(
-                          onTap: widget.onScan,
+                          onTap: widget.isAssessed ? widget.onTap : widget.onScan,
                           behavior: HitTestBehavior.opaque,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -1025,7 +943,9 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                               vertical: 3.5,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444),
+                              color: widget.isAssessed
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444),
                               borderRadius: BorderRadius.circular(999),
                               border: Border.all(
                                 color: const Color(0xFF171923),
@@ -1039,9 +959,9 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                                 ),
                               ],
                             ),
-                            child: const Text(
-                              'NEW',
-                              style: TextStyle(
+                            child: Text(
+                              widget.isAssessed ? 'ACTIVE' : 'NEW',
+                              style: const TextStyle(
                                 fontFamily: AppTypography.displayFamily,
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w800,

@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
-import '../../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
+import '../../../../core/audio/audio_manager.dart' show Sfx;
 import '../../../../core/models/quiz_models.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -15,6 +15,9 @@ import '../../../../shared/widgets/celebrations.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/xp_bar.dart' show AnimatedCounter;
+import '../../../dashboard/providers/dashboard_provider.dart';
+import '../../../learning/path/providers/path_provider.dart';
+import '../../../avatar/widgets/floating_result_mascot.dart';
 import 'quiz_result_arg.dart';
 
 /// QUIZ-002 result: WHAT HAPPENED -> WHAT YOU EARNED -> WHAT'S NEXT.
@@ -35,9 +38,14 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
   @override
   void initState() {
     super.initState();
-    ref.read(audioManagerProvider).playContext(MusicContext.celebration);
+    final score = widget.arg.result.score;
+    ref.read(audioManagerProvider).playResultOutcomeAudio(score: score);
+    if (score >= 80) {
+      ref.read(hapticsProvider).celebrate();
+    } else if (score >= 50) {
+      ref.read(hapticsProvider).tap();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _playCelebrations());
-    ref.read(hapticsProvider).celebrate();
   }
 
   Future<void> _playCelebrations() async {
@@ -150,9 +158,12 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
                 ),
               ),
 
+              // ---- FLOATING MASCOT REACTION --------------------------
+              FloatingResultMascot(score: result.score),
+
               // ---- WHAT YOU EARNED -----------------------------------
               Container(
-                margin: const EdgeInsets.only(top: 26),
+                margin: const EdgeInsets.only(top: 14),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -170,7 +181,14 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
                 ),
                 child: Row(
                   children: [
-                    const NovaCompanion(size: 44, mood: NovaMood.celebrating),
+                    NovaCompanion(
+                      size: 44,
+                      mood: result.score < 50
+                          ? NovaMood.sad
+                          : (result.score < 80
+                              ? NovaMood.motivating
+                              : NovaMood.celebrating),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -242,14 +260,56 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen>
               ],
 
               const SizedBox(height: 26),
-              PrimaryGameButton(
-                label: 'Continue',
-                icon: Icons.arrow_forward_rounded,
-                onTap: () async {
-                  ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
-                  context.go(Routes.home);
-                },
-              ),
+              if (result.score >= 50) ...[
+                PrimaryGameButton(
+                  label: 'Next Challenge',
+                  icon: Icons.arrow_forward_rounded,
+                  onTap: () async {
+                    ref.read(audioManagerProvider).play(Sfx.buttonConfirm);
+                    final subId = widget.arg.subjectId ??
+                        ref.read(dashboardProvider).data?.currentSubject?.id ??
+                        ref.read(dashboardProvider).data?.learningPath?.subjectId;
+                    if (subId != null && subId.isNotEmpty) {
+                      ref.read(pathProvider(subId).notifier).load();
+                      context.push(Routes.path(subId));
+                    } else {
+                      context.go(Routes.home);
+                    }
+                  },
+                ),
+                const SizedBox(height: 10),
+                SecondaryGameButton(
+                  label: 'Back to Hub',
+                  icon: Icons.home_rounded,
+                  onTap: () {
+                    ref.read(audioManagerProvider).play(Sfx.buttonTap);
+                    context.go(Routes.home);
+                  },
+                ),
+              ] else ...[
+                PrimaryGameButton(
+                  label: 'Try Again',
+                  icon: Icons.refresh_rounded,
+                  onTap: () {
+                    ref.read(audioManagerProvider).play(Sfx.buttonTap);
+                    if (widget.arg.topicId != null &&
+                        widget.arg.topicId!.isNotEmpty) {
+                      context.pushReplacement(Routes.quiz(widget.arg.topicId!));
+                    } else {
+                      context.go(Routes.home);
+                    }
+                  },
+                ),
+                const SizedBox(height: 10),
+                SecondaryGameButton(
+                  label: 'Back to Hub',
+                  icon: Icons.home_rounded,
+                  onTap: () {
+                    ref.read(audioManagerProvider).play(Sfx.buttonTap);
+                    context.go(Routes.home);
+                  },
+                ),
+              ],
             ],
           ),
           if (perfect || widget.arg.xpGained > 0)

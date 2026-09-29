@@ -6,6 +6,8 @@ class QuizResultArg {
   const QuizResultArg({
     required this.result,
     required this.topicName,
+    this.topicId,
+    this.subjectId,
     this.xpGained = 0,
     this.leveledUpTo,
     this.newAchievements = const <Achievement>[],
@@ -13,6 +15,8 @@ class QuizResultArg {
 
   final QuizResult result;
   final String topicName;
+  final String? topicId;
+  final String? subjectId;
 
   /// Backend-derived deltas between two GAM-001 reads (pre/post submission).
   /// Zero when the reads could not be compared.

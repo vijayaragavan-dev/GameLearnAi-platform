@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
-import '../../../../core/audio/audio_manager.dart' show MusicContext, Sfx;
+import '../../../../core/audio/audio_manager.dart' show Sfx;
 import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/assessment_models.dart';
 import '../../../../core/providers.dart';
@@ -16,9 +16,9 @@ import '../../../../shared/widgets/celebrations.dart' show ConfettiEffect;
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
 import '../../../../shared/widgets/game_card.dart';
-import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/recommendation_card.dart' show SectionHeader;
 import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../avatar/widgets/floating_result_mascot.dart';
 import '../providers/assessment_provider.dart';
 
 /// ASMT-003 result reveal. Assessment never awards XP - the celebration is
@@ -40,7 +40,9 @@ class _AssessmentResultScreenState
   @override
   void initState() {
     super.initState();
-    ref.read(audioManagerProvider).playContext(MusicContext.celebration);
+    final submission = ref.read(assessmentProvider(widget.subjectId)).result;
+    final score = submission?.score ?? 75.0;
+    ref.read(audioManagerProvider).playResultOutcomeAudio(score: score);
     _future = ref.read(assessmentRepoProvider).result(widget.subjectId);
   }
 
@@ -98,13 +100,10 @@ class _AssessmentResultScreenState
                   ).copyWith(bottom: 32),
                   children: [
                     const SizedBox(height: 8),
-                    Center(
-                      child: NovaCompanion(
-                        size: 76,
-                        mood: outcome.assessed
-                            ? NovaMood.celebrating
-                            : NovaMood.encouraging,
-                      ),
+                    // Floating Mascot Reaction Companion
+                    FloatingResultMascot(
+                      score: submission?.score ?? (outcome.assessed ? 85.0 : 65.0),
+                      compact: true,
                     ),
                     const SizedBox(height: 16),
                     Text(

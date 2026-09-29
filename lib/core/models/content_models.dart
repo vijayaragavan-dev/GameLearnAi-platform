@@ -109,6 +109,22 @@ class PathNode {
   final double requiredMastery;
   final String status;
 
+  PathNode copyWith({
+    String? id,
+    String? topicId,
+    String? topicName,
+    int? sequenceNumber,
+    double? requiredMastery,
+    String? status,
+  }) => PathNode(
+    id: id ?? this.id,
+    topicId: topicId ?? this.topicId,
+    topicName: topicName ?? this.topicName,
+    sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+    requiredMastery: requiredMastery ?? this.requiredMastery,
+    status: status ?? this.status,
+  );
+
   factory PathNode.fromJson(Map<String, dynamic> json) => PathNode(
     id: uuidOf(json['id'], 'PathNode.id'),
     topicId: uuidOf(json['topicId'], 'PathNode.topicId'),
@@ -142,6 +158,28 @@ class LearningPath {
   final List<PathNode> nodes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  LearningPath copyWith({
+    String? id,
+    String? subjectId,
+    String? title,
+    String? description,
+    String? status,
+    String? generatedBy,
+    List<PathNode>? nodes,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => LearningPath(
+    id: id ?? this.id,
+    subjectId: subjectId ?? this.subjectId,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    status: status ?? this.status,
+    generatedBy: generatedBy ?? this.generatedBy,
+    nodes: nodes ?? this.nodes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   static List<PathNode> _nodes(List<dynamic>? raw) =>
       raw?.whereType<Map<String, dynamic>>().map(PathNode.fromJson).toList() ??

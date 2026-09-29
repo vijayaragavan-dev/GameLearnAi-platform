@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
-import '../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../core/gamification_delta.dart';
 import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
@@ -19,7 +18,6 @@ import '../../../core/models/dashboard_models.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../../core/theme/neo_brutalism.dart';
-import '../../../shared/widgets/brutal_widgets.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/celebrations.dart';
 import '../../../shared/widgets/game_button.dart';
@@ -27,6 +25,7 @@ import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/xp_bar.dart';
 import '../../gamification/models/game_result_models.dart';
+import '../../avatar/widgets/floating_result_mascot.dart';
 import '../models/game_models.dart';
 
 /// Premium result screen for all games. Displays score/accuracy/xp/combo/time with game identity.
@@ -57,9 +56,14 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
   @override
   void initState() {
     super.initState();
-    ref.read(audioManagerProvider).playContext(MusicContext.celebration);
+    final acc = widget.result.accuracy;
+    ref.read(audioManagerProvider).playResultOutcomeAudio(score: acc);
+    if (acc >= 80) {
+      ref.read(hapticsProvider).celebrate();
+    } else if (acc >= 50) {
+      ref.read(hapticsProvider).tap();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _celebrate());
-    ref.read(hapticsProvider).celebrate();
     _submitResultPersistent();
   }
 
@@ -178,7 +182,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
           ),
           if (isDark) ...[
             Positioned(top: -30, right: -20, child: GlowOrb(color: identity.accent, size: 240, opacity: 0.10)),
-            Positioned(bottom: 100, left: -40, child: GlowOrb(color: AppColors.secondary, size: 200, opacity: 0.06)),
+            const Positioned(bottom: 100, left: -40, child: GlowOrb(color: AppColors.secondary, size: 200, opacity: 0.06)),
           ],
           ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -378,7 +382,9 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                         child: Text(r.config.topicName!, textAlign: TextAlign.center, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 17, fontWeight: FontWeight.w700)),
                       ),
                     ],
-                    const SizedBox(height: 18),
+                    // Floating Mascot Reaction Companion
+                    FloatingResultMascot(score: r.accuracy),
+                    const SizedBox(height: 6),
                     // Metrics grid — real data only
                     Row(
                       children: [
@@ -406,7 +412,14 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                       ),
                       child: Row(
                         children: [
-                          const NovaCompanion(size: 44, mood: NovaMood.celebrating),
+                          NovaCompanion(
+                            size: 44,
+                            mood: r.accuracy < 50
+                                ? NovaMood.sad
+                                : (r.accuracy < 80
+                                    ? NovaMood.motivating
+                                    : NovaMood.celebrating),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -632,7 +645,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     Dashboard? dash;
     try {
-      dash = ref.watch(dashboardProvider).data as Dashboard?;
+      dash = ref.watch(dashboardProvider).data;
     } catch (_) {
       return const SizedBox.shrink();
     }
@@ -643,7 +656,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
     final isWeak = intel.weakTopics.any((w) => w.topicId == result.config.topicId);
     final isStrong = intel.strongTopics.any((s) => s.topicId == result.config.topicId);
     // Overall (not topic) mastery: label it honestly.
-    String masteryLine = 'Overall mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
+    final masteryLine = 'Overall mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
     String nextLine;
     if (isWeak && result.accuracy < 60) {
       nextLine = 'This concept needs a little more practice — try an easier challenge or ask Tutor.';
@@ -679,7 +692,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
                   ],
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [Icon(Icons.psychology_rounded, size: 14, color: AppColors.primary), const SizedBox(width: 6), Text('YOUR PERFORMANCE INSIGHT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.primary))]),
+            const Row(children: [Icon(Icons.psychology_rounded, size: 14, color: AppColors.primary), SizedBox(width: 6), Text('YOUR PERFORMANCE INSIGHT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.primary))]),
             const SizedBox(height: 8),
             Text(masteryLine, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
             const SizedBox(height: 4),

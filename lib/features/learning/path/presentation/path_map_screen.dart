@@ -19,7 +19,6 @@ import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/feedback.dart';
 import '../../../../shared/widgets/game_button.dart';
-import '../../../../shared/widgets/game_surfaces.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/progression_widgets.dart';
 import '../../../../shared/widgets/responsive_layout.dart';

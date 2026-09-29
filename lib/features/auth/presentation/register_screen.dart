@@ -3,19 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
-import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/neo_brutalism.dart';
-import '../../../shared/widgets/app_backgrounds.dart';
-import '../../../shared/widgets/cinematic_scenery.dart';
-import '../../../shared/widgets/cinematic_surfaces.dart';
+import '../../../core/theme/theme_controller.dart';
 import '../providers/session_controller.dart';
 
-/// AUTH-002. Cinematic player-creation screen — same visual family as login.
-///
-/// Client-side validation mirrors the backend's bean constraints
-/// (email <=255, password 8..72, displayName 2..100 with allowed charset).
+/// AUTH-002. Comic GameLearnAI register screen matching attached mockup with
+/// Teacher & Sparky mascots, neo-brutalist cards, display name/email/password,
+/// create player button, sign in link, and bottom curiosity banner.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -56,314 +51,605 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeMode = ref.watch(themeControllerProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
+    final bgLight = const Color(0xFFFAF9F5);
+    final bgDark = const Color(0xFF0F172A);
+    final ink = isDark ? Colors.white : const Color(0xFF171923);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('CREATE PLAYER')),
+      backgroundColor: isDark ? bgDark : bgLight,
       body: Stack(
         children: [
-          const AtmosphericBackground(),
-          // Cinematic world backdrop — matches login atmosphere.
-          const Positioned.fill(
-            child: CinematicScenery(
-              palette: ScenePalette.indigo,
-              seed: 4,
-              intensity: 0.55,
-            ),
-          ),
-          if (isDark)
-            const Positioned(
-              top: -80,
-              right: -60,
-              child: GlowOrb(
-                color: AppColors.primary,
-                size: 260,
-                opacity: 0.20,
+          // ── Background Comic Doodles ──
+          const Positioned(
+            top: 130,
+            left: 20,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.25,
+                child: Icon(Icons.star_rounded, size: 40, color: Color(0xFFFDE047)),
               ),
             ),
+          ),
+          const Positioned(
+            top: 220,
+            right: 15,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.25,
+                child: Icon(Icons.all_inclusive_rounded, size: 55, color: Color(0xFF60A5FA)),
+              ),
+            ),
+          ),
+          const Positioned(
+            bottom: 160,
+            left: -15,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.22,
+                child: Icon(Icons.circle_outlined, size: 85, color: Color(0xFFFDE047)),
+              ),
+            ),
+          ),
+
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppGutters.pagePadding(context),
-                  vertical: 12,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ── Top Navigation Bar & App Logo ──
+                      Row(
                         children: [
-                          const Center(child: BrandWordmark()),
-                          const SizedBox(height: 16),
-                          // ── Studora Brand Logo ──
-                          Center(
-                            child: Image.asset(
-                              'assets/images/studora_logo.jpg',
-                              width: 180,
-                              height: 180,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // ── Neo-Brutalist Segmented Mode Selector Switch ──
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceHigh : NeoBrutalColors.ink.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isDark ? AppColors.border : NeoBrutalColors.ink,
-                                width: isDark ? 1.0 : 2.5,
+                          GestureDetector(
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(Routes.login);
+                              }
+                            },
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDE047),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: ink, width: 2.2),
+                                boxShadow: [
+                                  BoxShadow(color: ink, offset: const Offset(2, 2)),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.arrow_back_rounded,
+                                size: 22,
+                                color: Color(0xFF171923),
                               ),
                             ),
-                            padding: const EdgeInsets.all(4),
+                          ),
+                          Expanded(
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => context.go(Routes.login),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 9),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'SIGN IN',
-                                        style: TextStyle(
-                                          fontFamily: AppTypography.displayFamily,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.8,
-                                          color: isDark ? AppColors.textSecondary : NeoBrutalColors.inkSecondary,
-                                        ),
-                                      ),
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [Color(0xFF60A5FA), Color(0xFF2563EB)],
                                     ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: ink, width: 2),
+                                    boxShadow: [
+                                      BoxShadow(color: ink, offset: const Offset(2, 2)),
+                                    ],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.sports_esports_rounded,
+                                    size: 24,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 9),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? AppColors.primary : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 2.0),
-                                      boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      'CREATE PLAYER',
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'GAMELEARN AI',
                                       style: TextStyle(
                                         fontFamily: AppTypography.displayFamily,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.8,
-                                        color: isDark ? Colors.white : NeoBrutalColors.ink,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                        color: ink,
                                       ),
                                     ),
-                                  ),
+                                    RichText(
+                                      text: TextSpan(
+                                        style: const TextStyle(
+                                          fontFamily: AppTypography.displayFamily,
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1.8,
+                                        ),
+                                        children: [
+                                          const TextSpan(text: 'LEARN', style: TextStyle(color: Color(0xFF3B82F6))),
+                                          TextSpan(text: ' • ', style: TextStyle(color: ink)),
+                                          const TextSpan(text: 'PLAY', style: TextStyle(color: Color(0xFF10B981))),
+                                          TextSpan(text: ' • ', style: TextStyle(color: ink)),
+                                          const TextSpan(text: 'ADAPT', style: TextStyle(color: Color(0xFFF97316))),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          GlassPanel(
-                            glowColor: AppColors.primary,
-                            semanticsLabel: 'Create player card',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  'Begin your journey',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: AppTypography.displayFamily,
-                                    fontSize: 23,
-                                    fontWeight: FontWeight.w800,
-                                    color: isDark
-                                        ? AppColors.textPrimary
-                                        : AppLightColors.textPrimary,
+                          const SizedBox(width: 42), // Balance for back button
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Mascot Characters Header ──
+                      Image.asset(
+                        'assets/images/register_mascots.png',
+                        height: 165,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 120,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.people_alt_rounded, size: 64, color: Color(0xFF2563EB)),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // ── Main Registration Card ──
+                      Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: ink, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(color: ink, offset: const Offset(4, 4)),
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Create Your Player',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: ink,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Tell us a bit about yourself to begin your journey.',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.bodyFamily,
+                                  fontSize: 13,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+
+                              // 1. Display Name Field
+                              Text(
+                                'Display Name',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: ink,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _displayName,
+                                style: TextStyle(
+                                  fontFamily: AppTypography.bodyFamily,
+                                  color: ink,
+                                  fontSize: 14.5,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Enter your player name',
+                                  hintStyle: TextStyle(
+                                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.person_outline_rounded,
+                                    size: 20,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  filled: true,
+                                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: ink, width: 1.8),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: ink, width: 1.8),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2.2),
                                   ),
                                 ),
-                                const SizedBox(height: 20),
-                                TextFormField(
-                                  controller: _displayName,
-                                  textCapitalization:
-                                      TextCapitalization.words,
-                                  maxLength: 100,
-                                  buildCounter:
-                                      (
-                                        _, {
-                                        required currentLength,
-                                        required isFocused,
-                                        maxLength,
-                                      }) => null,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Display name',
-                                    hintText: 'Choose a player name',
-                                    prefixIcon: Icon(
-                                      Icons.badge_outlined,
-                                      size: 19,
-                                    ),
-                                  ),
-                                  validator: (v) {
-                                    final value = v?.trim() ?? '';
-                                    if (value.isEmpty) {
-                                      return 'Pick a display name';
-                                    }
-                                    if (value.length < 2) {
-                                      return 'At least 2 characters';
-                                    }
-                                    if (value.length > 100) {
-                                      return 'At most 100 characters';
-                                    }
-                                    if (!_namePattern.hasMatch(value)) {
-                                      return "Letters, numbers and . - _ ' only";
-                                    }
-                                    return null;
-                                  },
+                                validator: (v) {
+                                  final val = v?.trim() ?? '';
+                                  if (val.length < 2) return 'At least 2 characters';
+                                  if (val.length > 100) return 'At most 100 characters';
+                                  if (!_namePattern.hasMatch(val)) {
+                                    return 'Letters, numbers, spaces, . - _ \' only';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'This will be your display name in the game.',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.bodyFamily,
+                                  fontSize: 11,
+                                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
                                 ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _email,
-                                  keyboardType:
-                                      TextInputType.emailAddress,
-                                  autofillHints: const [
-                                    AutofillHints.newUsername,
-                                  ],
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                    hintText: 'you@example.com',
-                                    prefixIcon: Icon(
-                                      Icons.alternate_email_rounded,
-                                      size: 19,
-                                    ),
-                                  ),
-                                  validator: (v) {
-                                    final value = v?.trim() ?? '';
-                                    if (value.isEmpty) {
-                                      return 'Enter an email';
-                                    }
-                                    if (value.length > 255) {
-                                      return 'Email is too long';
-                                    }
-                                    final emailPattern = RegExp(
-                                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                                    );
-                                    if (!emailPattern.hasMatch(value)) {
-                                      return 'That email does not look right';
-                                    }
-                                    return null;
-                                  },
+                              ),
+                              const SizedBox(height: 14),
+
+                              // 2. Email Address Field
+                              Text(
+                                'Email Address',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: ink,
                                 ),
-                                const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _password,
-                                  obscureText: _obscure,
-                                  onFieldSubmitted: (_) => _submit(),
-                                  decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    hintText: '••••••••',
-                                    helperText: '8-72 characters',
-                                    prefixIcon: const Icon(
-                                      Icons.lock_outline_rounded,
-                                      size: 18,
-                                    ),
-                                    suffixIcon: IconButton(
-                                      iconSize: 20,
-                                      tooltip: _obscure
-                                          ? 'Show password'
-                                          : 'Hide password',
-                                      onPressed: () => setState(
-                                        () => _obscure = !_obscure,
-                                      ),
-                                      icon: Icon(
-                                        _obscure
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                      ),
-                                    ),
-                                  ),
-                                  validator: (v) {
-                                    final value = v ?? '';
-                                    if (value.isEmpty) {
-                                      return 'Choose a password';
-                                    }
-                                    if (value.length < 8) {
-                                      return 'At least 8 characters';
-                                    }
-                                    if (value.length > 72) {
-                                      return 'At most 72 characters';
-                                    }
-                                    return null;
-                                  },
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _email,
+                                keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
+                                style: TextStyle(
+                                  fontFamily: AppTypography.bodyFamily,
+                                  color: ink,
+                                  fontSize: 14.5,
                                 ),
-                                if (session.error != null) ...[
-                                  const SizedBox(height: 14),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppColors.error.withValues(
-                                          alpha: 0.4,
-                                        ),
-                                      ),
+                                decoration: InputDecoration(
+                                  hintText: 'you@example.com',
+                                  hintStyle: TextStyle(
+                                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.mail_outline_rounded,
+                                    size: 20,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  filled: true,
+                                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: ink, width: 1.8),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: ink, width: 1.8),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2.2),
+                                  ),
+                                ),
+                                validator: (v) {
+                                  final val = v?.trim() ?? '';
+                                  if (val.isEmpty) return 'Enter your email';
+                                  if (!val.contains('@') || !val.contains('.')) {
+                                    return 'Enter a valid email';
+                                  }
+                                  if (val.length > 255) return 'Email is too long';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
+                              // 3. Password Field
+                              Text(
+                                'Password',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: ink,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _password,
+                                obscureText: _obscure,
+                                autofillHints: const [AutofillHints.newPassword],
+                                style: TextStyle(
+                                  fontFamily: AppTypography.bodyFamily,
+                                  color: ink,
+                                  fontSize: 14.5,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Create a password',
+                                  hintStyle: TextStyle(
+                                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 20,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                      size: 20,
+                                      color: const Color(0xFF64748B),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.error_outline_rounded,
-                                          size: 17,
-                                          color: AppColors.error,
-                                        ),
-                                        const SizedBox(width: 9),
-                                        Expanded(
-                                          child: Text(
-                                            session.error!.message,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              color: AppColors.error,
+                                    onPressed: () => setState(() => _obscure = !_obscure),
+                                  ),
+                                  filled: true,
+                                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: ink, width: 1.8),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: ink, width: 1.8),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2.2),
+                                  ),
+                                ),
+                                validator: (v) {
+                                  final val = v ?? '';
+                                  if (val.length < 8) return 'At least 8 characters';
+                                  if (val.length > 72) return 'At most 72 characters';
+                                  final hasLetter = val.contains(RegExp(r'[a-zA-Z]'));
+                                  final hasDigit = val.contains(RegExp(r'[0-9]'));
+                                  if (!hasLetter || !hasDigit) {
+                                    return 'Needs at least 1 letter and 1 number';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '8–72 characters, at least 1 letter and 1 number.',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.bodyFamily,
+                                  fontSize: 11,
+                                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                ),
+                              ),
+
+                              if (session.error != null) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppColors.error, width: 1.5),
+                                  ),
+                                  child: Text(
+                                    session.error!.message,
+                                    style: const TextStyle(fontSize: 12, color: AppColors.error),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 20),
+
+                              // CREATE PLAYER Button
+                              GestureDetector(
+                                onTap: session.busy ? null : _submit,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2563EB),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: ink, width: 2.2),
+                                    boxShadow: [
+                                      BoxShadow(color: ink, offset: const Offset(3, 3)),
+                                    ],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: session.busy
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                        )
+                                      : const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 19),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'CREATE PLAYER ➔',
+                                              style: TextStyle(
+                                                fontFamily: AppTypography.displayFamily,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.8,
+                                                color: Colors.white,
+                                              ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // OR Divider
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                                      thickness: 1.2,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                                    child: Text(
+                                      'OR',
+                                      style: TextStyle(
+                                        fontFamily: AppTypography.displayFamily,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.0,
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                                      thickness: 1.2,
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 24),
-                                GlowCTA(
-                                  label: 'Create player',
-                                  icon: Icons.rocket_launch_outlined,
-                                  trailingIcon: null,
-                                  onPressed: session.busy ? null : _submit,
-                                  isLoading: session.busy,
-                                  semanticsLabel:
-                                      'Create your GameLearnAI player',
-                                ),
-                                const SizedBox(height: 12),
-                                TextButton(
-                                  onPressed: session.busy
-                                      ? null
-                                      : () => context.go(Routes.login),
-                                  child: Text(
-                                    'Already have a player? Sign in →',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? AppColors.primaryBright
-                                          : AppColors.primary,
-                                    ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Already have a player? Sign In Button
+                              GestureDetector(
+                                onTap: () => context.go(Routes.login),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: ink, width: 2),
+                                    boxShadow: [
+                                      BoxShadow(color: ink, offset: const Offset(2.5, 2.5)),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.person_outline_rounded,
+                                        size: 20,
+                                        color: Color(0xFF171923),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                            fontFamily: AppTypography.bodyFamily,
+                                            fontSize: 13.5,
+                                            color: isDark ? Colors.white : const Color(0xFF171923),
+                                          ),
+                                          children: const [
+                                            TextSpan(text: 'Already have a player? '),
+                                            TextSpan(
+                                              text: 'Sign In ➔',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                color: Color(0xFF2563EB),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+
+                      // ── Bottom Curiosity Banner ──
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2D2A1C) : const Color(0xFFFEF9C3),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: ink, width: 2),
+                          boxShadow: [
+                            BoxShadow(color: ink, offset: const Offset(3, 3)),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDE047),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: ink, width: 1.8),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.lightbulb_rounded,
+                                size: 22,
+                                color: Color(0xFF171923),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Same doubts. Greater knowledge.',
+                                    style: TextStyle(
+                                      fontFamily: AppTypography.displayFamily,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: ink,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Turn your curiosity into real skills.',
+                                    style: TextStyle(
+                                      fontFamily: AppTypography.bodyFamily,
+                                      fontSize: 12,
+                                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
               ),

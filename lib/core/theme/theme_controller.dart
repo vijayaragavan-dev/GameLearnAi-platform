@@ -10,15 +10,21 @@ class ThemeController extends Notifier<ThemeMode> {
   // Stored as string: system / light / dark
   @override
   ThemeMode build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final raw = prefs.getString(_kPref);
-    return _fromString(raw);
+    try {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final raw = prefs.getString(_kPref);
+      return _fromString(raw);
+    } catch (_) {
+      return ThemeMode.system;
+    }
   }
 
   Future<void> set(ThemeMode mode) async {
     state = mode;
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_kPref, _toString(mode));
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setString(_kPref, _toString(mode));
+    } catch (_) {}
   }
 
   static ThemeMode _fromString(String? v) {

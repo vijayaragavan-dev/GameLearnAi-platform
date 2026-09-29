@@ -4,6 +4,38 @@ import '../../../../core/error/user_facing_error.dart';
 import '../../../../core/models/content_models.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/providers.dart';
+import '../../../dashboard/providers/dashboard_provider.dart';
+
+/// Tracks topics the user has successfully conquered/completed with score >= 50%.
+/// Stored in SharedPreferences so it persists across app restarts.
+class CompletedTopicsNotifier extends Notifier<Set<String>> {
+  static const _key = 'completed_topic_ids';
+
+  @override
+  Set<String> build() {
+    try {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final list = prefs.getStringList(_key) ?? [];
+      return list.toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> markCompleted(String topicId) async {
+    if (state.contains(topicId)) return;
+    state = {...state, topicId};
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setStringList(_key, state.toList());
+    } catch (_) {}
+  }
+}
+
+final completedTopicsProvider =
+    NotifierProvider<CompletedTopicsNotifier, Set<String>>(
+  CompletedTopicsNotifier.new,
+);
 
 /// Learning-path state for one subject: existing paths (PATH-001), optional
 /// AI metadata from a fresh generation (PATH-002), and generation progress.
@@ -59,6 +91,45 @@ class PathController extends Notifier<PathState> {
   @override
   PathState build() => const PathState(paths: []);
 
+  List<LearningPath> _resolveProgressivePaths(List<LearningPath> rawPaths) {
+    if (rawPaths.isEmpty) return rawPaths;
+    final completedIds = ref.read(completedTopicsProvider);
+    final dash = ref.read(dashboardProvider).data;
+
+    return rawPaths.map((p) {
+      if (p.nodes.isEmpty) return p;
+      final resolvedNodes = <PathNode>[];
+      bool previousCompleted = true; // First node is always unlocked
+
+      for (var i = 0; i < p.nodes.length; i++) {
+        final node = p.nodes[i];
+        final isTopicDone = node.status == 'COMPLETED' ||
+            completedIds.contains(node.topicId) ||
+            (dash?.recentActivity.quizzes.any((q) => q.topicId == node.topicId && q.score >= 50) ?? false) ||
+            (dash?.mastery.recentTopics.any((m) =>
+                m.topicId == node.topicId &&
+                (m.masteryScore >= node.requiredMastery ||
+                 m.masteryLevel == 'MASTERED' ||
+                 m.masteryLevel == 'PROFICIENT')) ?? false);
+
+        String effectiveStatus;
+        if (isTopicDone) {
+          effectiveStatus = 'COMPLETED';
+          previousCompleted = true;
+        } else if (previousCompleted || node.status == 'AVAILABLE' || node.status == 'IN_PROGRESS' || i == 0) {
+          effectiveStatus = 'AVAILABLE';
+          previousCompleted = false;
+        } else {
+          effectiveStatus = 'LOCKED';
+          previousCompleted = false;
+        }
+
+        resolvedNodes.add(node.copyWith(status: effectiveStatus));
+      }
+      return p.copyWith(nodes: resolvedNodes);
+    }).toList();
+  }
+
   Future<void> load() async {
     if (state.loading) return;
     state = state.copyWith(loading: true, generating: false, clearError: true);
@@ -67,8 +138,9 @@ class PathController extends Notifier<PathState> {
           .read(contentRepoProvider)
           .pathsForSubject(subjectId);
       if (!ref.mounted) return;
+      final progressivePaths = _resolveProgressivePaths(paths);
       try {
-        state = state.copyWith(paths: paths, loading: false, clearError: true);
+        state = state.copyWith(paths: progressivePaths, loading: false, clearError: true);
       } catch (_) {}
     } on ApiException catch (e) {
       if (!ref.mounted) return;
@@ -102,10 +174,10 @@ class PathController extends Notifier<PathState> {
       final paths = await ref
           .read(contentRepoProvider)
           .pathsForSubject(subjectId);
-      if (!ref.mounted) return false;
+      final progressivePaths = _resolveProgressivePaths(paths);
       try {
         state = PathState(
-          paths: paths,
+          paths: progressivePaths,
           aiMetadata: result.aiMetadata,
           generating: false,
         );

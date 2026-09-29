@@ -115,6 +115,7 @@ class _CartoonMascotViewState extends State<CartoonMascotView>
           double jump = 0.0;
           double scaleX = 1.0;
           double scaleY = 1.0;
+          double rotation = 0.0;
           bool isCheering = false;
 
           if (_jumpController.isAnimating) {
@@ -126,8 +127,25 @@ class _CartoonMascotViewState extends State<CartoonMascotView>
             blink = 1.0; // Happy closed eyes when jumping
           } else if (widget.mood == MascotMood.celebrating) {
             isCheering = true;
-            jump = -math.sin(idleVal * 4 * math.pi).abs() * 8.0;
+            jump = -math.sin(idleVal * 4 * math.pi).abs() * 10.0;
+            scaleY = 1.0 + math.sin(idleVal * 4 * math.pi).abs() * 0.12;
+            scaleX = 1.0 - math.sin(idleVal * 4 * math.pi).abs() * 0.06;
+            rotation = math.sin(idleVal * 4 * math.pi) * 0.05;
             blink = 0.8;
+          } else if (widget.mood == MascotMood.sad) {
+            // Sad droop & heavy sigh animation
+            jump = 5.0 + math.sin(idleVal * 2 * math.pi) * 2.0; // sunk down lower
+            scaleY = 0.95 + math.sin(idleVal * 2 * math.pi) * 0.02; // squashed/drooped
+            scaleX = 1.04;
+            rotation = math.sin(idleVal * 2 * math.pi) * 0.03 - 0.03; // tilted down
+            blink = 0.5; // drooping eyelids
+          } else if (widget.mood == MascotMood.motivating) {
+            // Energetic determined bob & power hover
+            jump = -math.sin(idleVal * 4 * math.pi).abs() * 6.0;
+            scaleY = 1.0 + math.sin(idleVal * 4 * math.pi) * 0.05;
+            scaleX = 1.0 - math.sin(idleVal * 4 * math.pi) * 0.03;
+            rotation = math.sin(idleVal * 2 * math.pi) * 0.04;
+            blink = 0.2; // sharp focused gaze
           }
 
           return SizedBox(
@@ -135,20 +153,40 @@ class _CartoonMascotViewState extends State<CartoonMascotView>
             height: widget.size * 1.12,
             child: Transform.translate(
               offset: Offset(0, bob + jump),
-              child: Transform.scale(
-                scaleX: scaleX,
-                scaleY: scaleY,
-                alignment: Alignment.bottomCenter,
-                child: CustomPaint(
-                  painter: _CartoonMascotPainter(
-                    character: widget.character,
-                    accessory: widget.accessory,
-                    mood: widget.mood,
-                    waveAngle: wave,
-                    blinkValue: blink,
-                    isCheering: isCheering,
-                  ),
-                ),
+              child: Transform.rotate(
+                angle: rotation,
+                child: Transform.scale(
+                  scaleX: scaleX,
+                  scaleY: scaleY,
+                  alignment: Alignment.bottomCenter,
+                child: widget.character.imageAsset != null
+                    ? Image.asset(
+                        widget.character.imageAsset!,
+                        width: widget.size,
+                        height: widget.size * 1.12,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => CustomPaint(
+                          painter: _CartoonMascotPainter(
+                            character: widget.character,
+                            accessory: widget.accessory,
+                            mood: widget.mood,
+                            waveAngle: wave,
+                            blinkValue: blink,
+                            isCheering: isCheering,
+                          ),
+                        ),
+                      )
+                    : CustomPaint(
+                        painter: _CartoonMascotPainter(
+                          character: widget.character,
+                          accessory: widget.accessory,
+                          mood: widget.mood,
+                          waveAngle: wave,
+                          blinkValue: blink,
+                          isCheering: isCheering,
+                        ),
+                      ),
+                    ),
               ),
             ),
           );

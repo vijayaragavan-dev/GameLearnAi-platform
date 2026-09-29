@@ -10,7 +10,7 @@ import '../../features/avatar/providers/active_mascot_provider.dart';
 import '../../features/avatar/widgets/cartoon_mascot_view.dart';
 
 /// NOVA - the GameLearn AI companion. 2D Cartoon Learning Companion.
-enum NovaMood { idle, thinking, speaking, celebrating, encouraging, error }
+enum NovaMood { idle, thinking, speaking, celebrating, encouraging, error, sad, motivating }
 
 class NovaCompanion extends ConsumerWidget {
   const NovaCompanion({super.key, this.size = 64, this.mood = NovaMood.idle});
@@ -26,6 +26,8 @@ class NovaCompanion extends ConsumerWidget {
       NovaMood.thinking => MascotMood.thinking,
       NovaMood.speaking || NovaMood.encouraging => MascotMood.waving,
       NovaMood.error => MascotMood.focused,
+      NovaMood.sad => MascotMood.sad,
+      NovaMood.motivating => MascotMood.motivating,
       NovaMood.idle => MascotMood.idle,
     };
 

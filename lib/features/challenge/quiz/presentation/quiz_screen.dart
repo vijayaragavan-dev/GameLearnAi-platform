@@ -18,6 +18,8 @@ import '../../../../shared/widgets/game_button.dart';
 import '../../../../app/router.dart';
 import '../../../../shared/widgets/nova_companion.dart';
 import '../../../../shared/widgets/quiz_option.dart';
+import '../../../learning/path/providers/path_provider.dart';
+import '../../../dashboard/providers/dashboard_provider.dart';
 import 'quiz_result_arg.dart';
 
 /// QUIZ-001/002 challenge arena. Correctness is NEVER known to the client
@@ -38,11 +40,37 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   GamificationSnapshot? _preSnapshot;
   bool _submitting = false;
 
+  Quiz _shuffleQuiz(Quiz original) {
+    final shuffledQuestions = List<QuizQuestion>.from(original.questions)..shuffle();
+    final newQuestions = shuffledQuestions.map((q) {
+      final shuffledOptions = List<String>.from(q.options)..shuffle();
+      return QuizQuestion(
+        id: q.id,
+        questionText: q.questionText,
+        options: shuffledOptions,
+        difficulty: q.difficulty,
+      );
+    }).toList();
+    return Quiz(
+      id: original.id,
+      topicId: original.topicId,
+      title: original.title,
+      description: original.description,
+      difficulty: original.difficulty,
+      timeLimitSeconds: original.timeLimitSeconds,
+      questionCount: original.questionCount,
+      questions: newQuestions,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     ref.read(audioManagerProvider).playContext(MusicContext.quiz);
-    _future = ref.read(quizRepoProvider).quizForTopic(widget.topicId);
+    _future = ref
+        .read(quizRepoProvider)
+        .quizForTopic(widget.topicId)
+        .then(_shuffleQuiz);
     _capturePreSnapshot();
   }
 
@@ -59,7 +87,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   void _retry() => setState(() {
     _index = 0;
     _answers.clear();
-    _future = ref.read(quizRepoProvider).quizForTopic(widget.topicId);
+    _future = ref
+        .read(quizRepoProvider)
+        .quizForTopic(widget.topicId)
+        .then(_shuffleQuiz);
   });
 
   Future<void> _finish(Quiz quiz) async {
@@ -71,6 +102,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           (questionId: q.id, selectedAnswer: _answers[q.id]!),
       ]);
 
+      if (result.score >= 50) {
+        await ref
+            .read(completedTopicsProvider.notifier)
+            .markCompleted(quiz.topicId);
+        ref.invalidate(dashboardProvider);
+      }
+
       // Post-submission gamification read for honest deltas.
       final post = await _snapshot();
       final delta = compareSnapshots(_preSnapshot, post);
@@ -79,11 +117,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           .read(audioManagerProvider)
           .play(result.score >= 50 ? Sfx.missionComplete : Sfx.notification);
       if (!mounted) return;
+
+      final dash = ref.read(dashboardProvider).data;
+      final subjectId =
+          dash?.currentSubject?.id ?? dash?.learningPath?.subjectId;
+
       context.pushReplacement(
         '/quiz-result',
         extra: QuizResultArg(
           result: result,
           topicName: quiz.title,
+          topicId: quiz.topicId,
+          subjectId: subjectId,
           xpGained: delta.xpGained,
           leveledUpTo: delta.leveledUpTo,
           newAchievements: delta.newAchievements,
