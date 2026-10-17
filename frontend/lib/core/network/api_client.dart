@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
@@ -44,9 +45,10 @@ class ApiClient {
     if (token != null && token.isNotEmpty) h['Authorization'] = 'Bearer $token';
     // Free-tier ngrok tunnels gate browser traffic behind a warning page;
     // this header tells ngrok the request is programmatic API traffic.
-    // Harmless for non-ngrok hosts; applied centrally so no repository
-    // needs to know about tunnel transports.
-    h['ngrok-skip-browser-warning'] = 'true';
+    // Harmless for non-ngrok hosts. Skipped on web: browsers would force a
+    // CORS pre-flight for this non-simple header, and the backend allow-list
+    // only covers Content-Type, which makes every browser request fail.
+    if (!kIsWeb) h['ngrok-skip-browser-warning'] = 'true';
     return h;
   }
 
