@@ -13,8 +13,8 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
-        <!-- Physical-device LAN validation endpoint (RFC1918, dev only) -->
-        <domain includeSubdomains="true">10.163.124.39</domain>
+        <!-- Physical-device LAN validation endpoint (RFC1918, dev only). -->
+        <domain includeSubdomains="true">10.225.211.39</domain>
     </domain-config>
     <!-- Production: deny cleartext by default (HTTPS required) -->
     <base-config cleartextTrafficPermitted="false">

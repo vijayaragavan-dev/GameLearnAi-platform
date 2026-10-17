@@ -459,7 +459,9 @@ void main() {
       return router;
     }
 
-    testWidgets('processing card is not openable', (tester) async {
+    testWidgets('processing card opens workspace with Prepare action', (
+      tester,
+    ) async {
       final repo = _CountingLabRepository(const [_processingDoc, _readyDoc]);
       await _setSize(tester, 390, 844);
       final router = await pumpLab(tester, repo);
@@ -472,8 +474,17 @@ void main() {
       await tester.tap(find.text('Pending Draft'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      // Still on the lab: processing documents do not navigate.
-      expect(router.state.uri.toString(), Routes.aiStudyLab);
+      // Processing documents open their workspace, where the real
+      // lifecycle state and the Prepare-for-AI action render.
+      expect(
+        router.state.uri.toString(),
+        Routes.aiStudyDocument('doc-processing-9'),
+      );
+      expect(find.text('PROCESSING', skipOffstage: false), findsWidgets);
+      expect(
+        find.text('PREPARE FOR AI', skipOffstage: false),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 

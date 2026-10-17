@@ -84,6 +84,9 @@ abstract final class Routes {
   static const streak = '/streak';
   static const settings = '/settings';
   static const arena = '/arena';
+  /// Mascot companion collection lives on the character screen; the alias
+  /// keeps companion taps routed to the existing canonical destination.
+  static const adminCharacters = '/profile/characters';
   static const realms = '/realms';
   static String realm(String realmKey) => '/realm/$realmKey';
   static const aiStudyLab = '/ai-study-lab';

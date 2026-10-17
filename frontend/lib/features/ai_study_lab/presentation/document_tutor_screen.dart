@@ -51,6 +51,13 @@ class _DocumentTutorScreenState extends ConsumerState<DocumentTutorScreen> {
   final FocusNode _focus = FocusNode();
 
   late Future<StudyDocument?> _docFuture;
+
+  /// Last known backend metadata for this document (cached from the
+  /// header load). Used ONLY to distinguish "document not ready yet"
+  /// from "question lacks evidence" before spending a network call —
+  /// the backend remains authoritative for the actual answer.
+  StudyDocument? _document;
+
   final List<DocumentChatMessage> _messages = [];
   bool _pending = false;
   String? _error;
@@ -60,8 +67,17 @@ class _DocumentTutorScreenState extends ConsumerState<DocumentTutorScreen> {
   @override
   void initState() {
     super.initState();
-    _docFuture = ref.read(studyLabRepoProvider).documentById(widget.documentId);
+    _loadDocument();
     ref.read(audioManagerProvider).playContext(MusicContext.tutor);
+  }
+
+  /// (Re)loads the backend metadata and refreshes the cached copy used
+  /// by the pre-ask lifecycle guard.
+  void _loadDocument() {
+    _docFuture = ref.read(studyLabRepoProvider).documentById(widget.documentId);
+    _docFuture.then((doc) {
+      if (mounted) setState(() => _document = doc);
+    });
   }
 
   @override
@@ -123,6 +139,32 @@ class _DocumentTutorScreenState extends ConsumerState<DocumentTutorScreen> {
       _lastQuestion = question;
     });
     _scrollDown();
+    // Known lifecycle state beats a misleading round-trip: a document
+    // that is still processing (or failed) cannot have retrievable
+    // evidence yet, so say so honestly instead of letting the backend
+    // answer "not enough information". READY/unknown states always go
+    // to the backend, which stays authoritative.
+    final known = _document;
+    if (known != null && known.isProcessing) {
+      if (!mounted) return;
+      setState(() {
+        _pending = false;
+        _notice =
+            'This document is still being prepared for AI. Open the '
+            'workspace and use Prepare for AI, then ask again.';
+      });
+      return;
+    }
+    if (known != null && known.status == DocumentStatus.failed) {
+      if (!mounted) return;
+      setState(() {
+        _pending = false;
+        _notice =
+            'This document failed to process, so Nova has nothing to '
+            'search. Try uploading it again from the Study Lab.';
+      });
+      return;
+    }
     try {
       final result = await ref
           .read(studyLabRepoProvider)
@@ -240,11 +282,7 @@ class _DocumentTutorScreenState extends ConsumerState<DocumentTutorScreen> {
                     return ErrorState(
                       title: err.title,
                       message: err.message,
-                      onRetry: () => setState(() {
-                        _docFuture = ref
-                            .read(studyLabRepoProvider)
-                            .documentById(widget.documentId);
-                      }),
+                      onRetry: () => setState(_loadDocument),
                     );
                   }
                   final doc = snap.data;

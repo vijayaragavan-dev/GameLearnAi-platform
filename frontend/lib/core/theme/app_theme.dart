@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
+import 'app_typography.dart';
 
 /// Global GameLearn AI themes — dark (original futuristic) + genuine light.
 ///
 /// Both derive from the same semantic tokens (AppColors for dark accents,
 /// AppLightColors for light surfaces/text). No per-screen random colors.
+/// The canonical entry theme stays dark to preserve the existing product
+/// identity; the neo-brutalist visual system applies to both themes.
 ThemeData buildGameLearnTheme() => buildGameLearnDarkTheme();
 
 ThemeData buildGameLearnDarkTheme() {
   final base = ThemeData(
     brightness: Brightness.dark,
     useMaterial3: true,
+    fontFamily: AppTypography.bodyFamily,
     scaffoldBackgroundColor: AppColors.background,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primary,
@@ -28,6 +32,7 @@ ThemeData buildGameLearnDarkTheme() {
 
   return base.copyWith(
     textTheme: base.textTheme.apply(
+      fontFamily: AppTypography.bodyFamily,
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     ),
@@ -42,10 +47,11 @@ ThemeData buildGameLearnDarkTheme() {
         statusBarBrightness: Brightness.dark,
       ),
       titleTextStyle: TextStyle(
+        fontFamily: AppTypography.displayFamily,
         fontSize: 17,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
-        letterSpacing: 0.2,
+        letterSpacing: 0.5,
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -158,6 +164,7 @@ ThemeData buildGameLearnLightTheme() {
   final base = ThemeData(
     brightness: Brightness.light,
     useMaterial3: true,
+    fontFamily: AppTypography.bodyFamily,
     scaffoldBackgroundColor: AppLightColors.background,
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
@@ -173,6 +180,7 @@ ThemeData buildGameLearnLightTheme() {
 
   return base.copyWith(
     textTheme: base.textTheme.apply(
+      fontFamily: AppTypography.bodyFamily,
       bodyColor: AppLightColors.textPrimary,
       displayColor: AppLightColors.textPrimary,
     ),
@@ -188,10 +196,11 @@ ThemeData buildGameLearnLightTheme() {
         statusBarBrightness: Brightness.light,
       ),
       titleTextStyle: TextStyle(
+        fontFamily: AppTypography.displayFamily,
         fontSize: 17,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: AppLightColors.textPrimary,
-        letterSpacing: 0.2,
+        letterSpacing: 0.5,
       ),
       iconTheme: IconThemeData(color: AppLightColors.textPrimary),
     ),
@@ -243,43 +252,46 @@ ThemeData buildGameLearnLightTheme() {
       color: AppLightColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppLightColors.border),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppLightColors.border, width: 2.5),
       ),
-      shadowColor: const Color(0x0F0F172A),
+      shadowColor: AppLightColors.border,
     ),
     dividerTheme:
-        const DividerThemeData(color: AppLightColors.border, thickness: 1),
+        const DividerThemeData(color: AppLightColors.border, thickness: 1.5),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppLightColors.surface,
       hintStyle: const TextStyle(color: AppLightColors.textTertiary),
-      labelStyle: const TextStyle(color: AppLightColors.textSecondary),
+      labelStyle: const TextStyle(color: AppLightColors.textSecondary, fontWeight: FontWeight.w700),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppLightColors.border),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppLightColors.border, width: 2.0),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppLightColors.border),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppLightColors.border, width: 2.0),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.error, width: 2.0),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.6),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.error, width: 2.5),
       ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: AppLightColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppLightColors.border, width: 2.5),
+      ),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppLightColors.textPrimary,

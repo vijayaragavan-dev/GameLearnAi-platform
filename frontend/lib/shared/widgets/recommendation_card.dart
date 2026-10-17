@@ -4,6 +4,7 @@ import '../../core/models/dashboard_models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/neo_brutalism.dart';
 import 'game_button.dart';
 import '../../core/utils/formatters.dart';
 
@@ -28,18 +29,23 @@ class RecommendationCard extends StatelessWidget {
     final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            tint.withValues(alpha: isDark ? 0.13 : 0.08),
-            isDark ? AppColors.surfaceElevated : AppLightColors.surface,
-          ],
-        ),
+        color: isDark ? null : Colors.white,
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  tint.withValues(alpha: 0.13),
+                  AppColors.surfaceElevated,
+                ],
+              )
+            : null,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: tint.withValues(alpha: isDark ? 0.4 : 0.3),
+          color: isDark ? tint.withValues(alpha: 0.4) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.0,
         ),
+        boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

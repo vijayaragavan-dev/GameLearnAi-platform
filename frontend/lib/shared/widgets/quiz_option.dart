@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_styles.dart';
+import '../../core/theme/neo_brutalism.dart';
 import 'game_button.dart';
 
 enum QuizOptionState { idle, selected, correct, incorrect }
@@ -26,36 +26,42 @@ class QuizOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.surface : AppLightColors.surface;
+    final surface = isDark ? AppColors.surface : Colors.white;
     final borderIdle =
-        isDark ? AppColors.border : AppLightColors.borderStrong;
+        isDark ? AppColors.border : NeoBrutalColors.ink;
     final inkPrimary =
-        isDark ? AppColors.textPrimary : AppLightColors.textPrimary;
+        isDark ? AppColors.textPrimary : NeoBrutalColors.ink;
     final inkSecondary =
-        isDark ? AppColors.textSecondary : AppLightColors.textSecondary;
+        isDark ? AppColors.textSecondary : NeoBrutalColors.ink;
     final (border, fill, glyphColor, textColor) = switch (state) {
       QuizOptionState.selected => (
-        AppColors.primary,
-        AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
-        AppColors.primaryBright,
+        isDark ? AppColors.primary : NeoBrutalColors.ink,
+        isDark
+            ? AppColors.primary.withValues(alpha: 0.16)
+            : NeoBrutalColors.cardYellow,
+        isDark ? AppColors.primaryBright : NeoBrutalColors.xpYellow,
         inkPrimary,
       ),
       QuizOptionState.correct => (
-        AppColors.success,
-        AppColors.success.withValues(alpha: isDark ? 0.14 : 0.10),
-        AppColors.success,
+        isDark ? AppColors.success : NeoBrutalColors.ink,
+        isDark
+            ? AppColors.success.withValues(alpha: 0.14)
+            : NeoBrutalColors.cardGreen,
+        isDark ? AppColors.success : NeoBrutalColors.growthGreen,
         inkPrimary,
       ),
       QuizOptionState.incorrect => (
-        AppColors.error,
-        AppColors.error.withValues(alpha: isDark ? 0.14 : 0.10),
-        AppColors.error,
+        isDark ? AppColors.error : NeoBrutalColors.ink,
+        isDark
+            ? AppColors.error.withValues(alpha: 0.14)
+            : NeoBrutalColors.cardPink,
+        isDark ? AppColors.error : NeoBrutalColors.error,
         inkPrimary,
       ),
       QuizOptionState.idle => (
         borderIdle,
         surface,
-        isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+        isDark ? AppColors.textTertiary : const Color(0xFFEFEDF3),
         inkSecondary,
       ),
     };
@@ -74,53 +80,72 @@ class QuizOption extends StatelessWidget {
         child: AnimatedContainer(
           duration: reduceMotion ? Duration.zero : AppMotion.fast,
           curve: AppMotion.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: fill,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: border,
-              width: state == QuizOptionState.idle ? 1.2 : 1.8,
+              width: isDark ? (state == QuizOptionState.idle ? 1.2 : 1.8) : 2.5,
             ),
-            boxShadow: state == QuizOptionState.selected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                      blurRadius: 18,
-                    ),
-                  ]
-                : null,
+            boxShadow: isDark
+                ? (state == QuizOptionState.selected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          blurRadius: 18,
+                        ),
+                      ]
+                    : null)
+                : (state == QuizOptionState.idle
+                    ? const [
+                        BoxShadow(
+                          color: NeoBrutalColors.ink,
+                          offset: Offset(2.5, 2.5),
+                          blurRadius: 0,
+                        ),
+                      ]
+                    : const [
+                        BoxShadow(
+                          color: NeoBrutalColors.ink,
+                          offset: Offset(3.5, 3.5),
+                          blurRadius: 0,
+                        ),
+                      ]),
           ),
           child: Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: glyphColor.withValues(alpha: 0.14),
-                  border: Border.all(color: glyphColor.withValues(alpha: 0.5)),
+                  borderRadius: BorderRadius.circular(8),
+                  color: isDark ? glyphColor.withValues(alpha: 0.14) : glyphColor,
+                  border: Border.all(
+                    color: isDark ? glyphColor.withValues(alpha: 0.5) : NeoBrutalColors.ink,
+                    width: isDark ? 1 : 1.5,
+                  ),
                 ),
                 child: state == QuizOptionState.correct
                     ? const Icon(
                         Icons.check_rounded,
-                        size: 15,
-                        color: AppColors.success,
+                        size: 18,
+                        color: Colors.white,
                       )
                     : state == QuizOptionState.incorrect
                     ? const Icon(
                         Icons.close_rounded,
-                        size: 15,
-                        color: AppColors.error,
+                        size: 18,
+                        color: Colors.white,
                       )
                     : Text(
                         String.fromCharCode(65 + index), // A, B, C...
                         style: TextStyle(
-                          fontFamily: AppTypography.displayFamily,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: glyphColor,
+                          fontFamily: NeoBrutalTypography.displayFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? glyphColor : NeoBrutalColors.ink,
                         ),
                       ),
               ),
@@ -133,7 +158,7 @@ class QuizOption extends StatelessWidget {
                     fontSize: 14.5,
                     fontWeight: state == QuizOptionState.idle
                         ? FontWeight.w500
-                        : FontWeight.w600,
+                        : FontWeight.w700,
                     height: 1.35,
                     color: textColor,
                   ),
@@ -169,7 +194,7 @@ class QuestionProgress extends StatelessWidget {
         final isCurrent = i == current;
         return Expanded(
           child: AnimatedContainer(
-            duration: AppMotion.durFor(context, AppMotion.normal),
+            duration: AppMotion.normal,
             curve: AppMotion.easeOut,
             height: 4,
             margin: EdgeInsets.only(right: i == total - 1 ? 0 : 6),

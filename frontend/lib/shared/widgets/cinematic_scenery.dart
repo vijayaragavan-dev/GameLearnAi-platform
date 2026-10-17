@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_styles.dart';
 
 /// Procedural cinematic scenery — the F7 artwork system.
@@ -327,12 +326,10 @@ class _ScenePainter extends CustomPainter {
 
     // Light mode: same composition as a soft daylight tint so card art
     // stays visible without dark glass assumptions.
-    final skyTop = dark ? p.skyTop : const Color(0xFFE8EFF8);
-    final skyBottom = dark
-        ? p.skyBottom
-        : p.portal.withValues(alpha: 0.30);
-    final mFar = dark ? p.mountainFar : const Color(0xFFC9D6EA);
-    final mNear = dark ? p.mountainNear : const Color(0xFF9FB2CC);
+    final skyTop = dark ? p.skyTop : const Color(0xFFF8F7F2);
+    final skyBottom = dark ? p.skyBottom : const Color(0xFFF0EFE9);
+    final mFar = dark ? p.mountainFar : const Color(0xFFE2E0D8);
+    final mNear = dark ? p.mountainNear : const Color(0xFFD3D0C5);
 
     // 1. Sky.
     canvas.drawRect(

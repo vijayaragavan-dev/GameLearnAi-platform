@@ -16,6 +16,8 @@ import 'game_button.dart' show PressableScale;
 ///   PrimaryGameButton, SecondaryGameButton, GhostGameButton,
 ///   GameActionButton, GameChip — see game_button.dart
 
+import '../../core/theme/neo_brutalism.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DANGER GAME BUTTON — destructive/error action
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,20 +67,23 @@ class DangerGameButton extends StatelessWidget {
                     : AppLightColors.lockedSurface)
                 : null,
             borderRadius: BorderRadius.circular(16),
-            border: isDisabled
-                ? Border.all(
-                    color: isDark ? AppColors.border : AppLightColors.border,
-                  )
-                : null,
+            border: Border.all(
+              color: isDark
+                  ? (isDisabled ? AppColors.border : AppLightColors.border)
+                  : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
+            ),
             boxShadow: isDisabled
                 ? null
-                : [
-                    BoxShadow(
-                      color: color.withValues(alpha: isDark ? 0.30 : 0.16),
-                      blurRadius: 22,
-                      spreadRadius: 0,
-                    ),
-                  ],
+                : (isDark
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.30),
+                          blurRadius: 22,
+                          spreadRadius: 0,
+                        ),
+                      ]
+                    : NeoBrutalShadows.hard),
           ),
           child: Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
@@ -167,24 +172,27 @@ class RewardButton extends StatelessWidget {
                     : AppLightColors.lockedSurface)
                 : null,
             borderRadius: BorderRadius.circular(18),
-            border: isDisabled
-                ? Border.all(
-                    color: isDark ? AppColors.border : AppLightColors.border,
-                  )
-                : Border.all(
-                    color: AppColors.xp.withValues(alpha: 0.55),
-                  ),
+            border: Border.all(
+              color: isDark
+                  ? (isDisabled
+                      ? AppColors.border
+                      : AppColors.xp.withValues(alpha: 0.55))
+                  : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
+            ),
             boxShadow: isDisabled
                 ? null
-                : [
-                    BoxShadow(
-                      color: AppColors.xp.withValues(
-                        alpha: isDark ? 0.42 : 0.22,
-                      ),
-                      blurRadius: 28,
-                      spreadRadius: 1,
-                    ),
-                  ],
+                : (isDark
+                    ? [
+                        BoxShadow(
+                          color: AppColors.xp.withValues(
+                            alpha: 0.42,
+                          ),
+                          blurRadius: 28,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : NeoBrutalShadows.hard),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

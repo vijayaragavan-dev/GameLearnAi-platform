@@ -120,53 +120,60 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       final panel = _panels[i];
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Semantics(header: true, child: NovaCompanion(size: 120, mood: panel.$1)),
-                            const SizedBox(height: 44),
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                color: AppColors.primary.withValues(alpha: 0.12),
-                                border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.4),
-                                ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Semantics(header: true, child: NovaCompanion(size: 120, mood: panel.$1)),
+                                  const SizedBox(height: 44),
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(18),
+                                      color: AppColors.primary.withValues(alpha: 0.12),
+                                      border: Border.all(
+                                        color: AppColors.primary.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      panel.$2,
+                                      size: 30,
+                                      color: AppColors.primaryBright,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 30),
+                                  Text(
+                                    panel.$3,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: AppTypography.displayFamily,
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                      color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    panel.$4,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: AppTypography.bodyFamily,
+                                      fontSize: 15,
+                                      height: 1.55,
+                                      color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: Icon(
-                                panel.$2,
-                                size: 30,
-                            color: AppColors.primaryBright,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 30),
-                        Text(
-                          panel.$3,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: AppTypography.displayFamily,
-                            fontSize: 25,
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
-                            color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          panel.$4,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: AppTypography.bodyFamily,
-                            fontSize: 15,
-                            height: 1.55,
-                            color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                      );
                 },
               ),
             ),

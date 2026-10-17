@@ -5,12 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/audio/audio_manager.dart';
 import '../../../core/error/user_facing_error.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
-import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
@@ -42,6 +42,8 @@ class DocumentWorkspaceScreen extends ConsumerStatefulWidget {
 class _DocumentWorkspaceScreenState
     extends ConsumerState<DocumentWorkspaceScreen> {
   late Future<StudyDocument?> _future;
+  bool _indexing = false;
+  String? _indexNotice;
 
   @override
   void initState() {
@@ -56,6 +58,45 @@ class _DocumentWorkspaceScreenState
   void _tap() {
     ref.read(audioManagerProvider).play(Sfx.buttonTap);
     ref.read(hapticsProvider).tap();
+  }
+
+  /// Builds the Qdrant vector index for a still-processing document
+  /// (CHUNKED → INDEXED) so retrieval and Nova answers can use it.
+  /// Honest states only: the refreshed backend metadata decides what
+  /// renders next — nothing is assumed ready here.
+  Future<void> _prepare() async {
+    if (_indexing) return;
+    _tap();
+    setState(() {
+      _indexing = true;
+      _indexNotice = null;
+    });
+    try {
+      final doc = await ref
+          .read(studyLabRepoProvider)
+          .indexDocument(widget.documentId);
+      if (!mounted) return;
+      setState(() {
+        _indexing = false;
+        if (doc == null) {
+          _indexNotice = 'Document services are currently unavailable.';
+        } else {
+          _future = Future.value(doc);
+        }
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _indexing = false;
+        _indexNotice = describeError(e).message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _indexing = false;
+        _indexNotice = 'Something went wrong. Please try again.';
+      });
+    }
   }
 
   /// Honest locked-action dialog with an optional real alternative.
@@ -162,6 +203,9 @@ class _DocumentWorkspaceScreenState
                   onRetry: _retry,
                   onOpenNova: _openNova,
                   onLocked: _unavailable,
+                  onPrepare: _prepare,
+                  indexing: _indexing,
+                  indexNotice: _indexNotice,
                 );
               },
             ),
@@ -178,6 +222,9 @@ class _WorkspaceBody extends StatelessWidget {
     required this.onRetry,
     required this.onOpenNova,
     required this.onLocked,
+    required this.onPrepare,
+    required this.indexing,
+    required this.indexNotice,
   });
 
   final StudyDocument document;
@@ -190,6 +237,16 @@ class _WorkspaceBody extends StatelessWidget {
     VoidCallback? onAction,
   })
   onLocked;
+
+  /// Builds the Qdrant index for a processing document (real backend
+  /// call; see state [_DocumentWorkspaceScreenState._prepare]).
+  final VoidCallback onPrepare;
+
+  /// True while the index call is in flight (Prepare disabled).
+  final bool indexing;
+
+  /// Honest index outcome text (service/boundary failures only).
+  final String? indexNotice;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +270,9 @@ class _WorkspaceBody extends StatelessWidget {
                         document: document,
                         onRetry: onRetry,
                         onOpenNova: onOpenNova,
+                        onPrepare: onPrepare,
+                        indexing: indexing,
+                        indexNotice: indexNotice,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -231,6 +291,9 @@ class _WorkspaceBody extends StatelessWidget {
                       document: document,
                       onRetry: onRetry,
                       onOpenNova: onOpenNova,
+                      onPrepare: onPrepare,
+                      indexing: indexing,
+                      indexNotice: indexNotice,
                     ),
                     const SizedBox(height: 18),
                     _ActionsColumn(document: document, onLocked: onLocked),
@@ -249,11 +312,24 @@ class _OverviewColumn extends StatelessWidget {
     required this.document,
     required this.onRetry,
     required this.onOpenNova,
+    required this.onPrepare,
+    required this.indexing,
+    required this.indexNotice,
   });
 
   final StudyDocument document;
   final VoidCallback onRetry;
   final VoidCallback onOpenNova;
+
+  /// Builds the Qdrant index for a processing document (real backend
+  /// call; see state [_DocumentWorkspaceScreenState._prepare]).
+  final VoidCallback onPrepare;
+
+  /// True while the index call is in flight (Prepare disabled).
+  final bool indexing;
+
+  /// Honest index outcome text (service/boundary failures only).
+  final String? indexNotice;
 
   @override
   Widget build(BuildContext context) {
@@ -316,9 +392,21 @@ class _OverviewColumn extends StatelessWidget {
               ],
               if (doc.isProcessing) ...[
                 const SizedBox(height: 12),
-                const EmptyMiniCard(
-                  text: 'Indexing your document — topics and actions '
-                      'unlock here when it is ready.',
+                // Extraction/chunking/embeddings are done (CHUNKED), but
+                // retrieval needs the Qdrant vector index (INDEXED).
+                // Prepare builds it via a real backend call; the
+                // refreshed backend status decides what renders next.
+                EmptyMiniCard(
+                  text:
+                      indexNotice ??
+                      'Your document is extracted but not searchable yet. '
+                          'Prepare it for AI to unlock Nova answers.',
+                ),
+                const SizedBox(height: 10),
+                SecondaryGameButton(
+                  label: indexing ? 'Preparing…' : 'Prepare for AI',
+                  icon: Icons.auto_awesome_rounded,
+                  onTap: indexing ? null : onPrepare,
                 ),
               ],
               if (doc.status == DocumentStatus.failed) ...[

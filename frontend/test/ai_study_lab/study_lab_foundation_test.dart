@@ -408,7 +408,24 @@ void main() {
 
       expect(find.text('PROCESSING', skipOffstage: false), findsOneWidget);
       expect(
-        find.textContaining('Indexing your document', skipOffstage: false),
+        find.textContaining('not searchable yet', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.text('PREPARE FOR AI', skipOffstage: false),
+        findsOneWidget,
+      );
+      // No service behind the fixture: tapping Prepare reports the
+      // honest unavailable notice instead of faking readiness.
+      await tester.ensureVisible(
+        find.text('PREPARE FOR AI', skipOffstage: false),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('PREPARE FOR AI', skipOffstage: false));
+      await _pump(tester);
+      expect(
+        find.textContaining('currently unavailable', skipOffstage: false),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

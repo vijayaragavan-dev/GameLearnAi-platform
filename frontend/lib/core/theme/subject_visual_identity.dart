@@ -71,7 +71,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _programming = SubjectVisualIdentity(
     iconKey: 'code',
     displayName: 'Programming',
-    accent: Color(0xFF818CF8), // indigo-400
+    accent: Color(0xFF6366F1), // indigo #6366F1
     atmosphereColor: Color(0xFF4338CA),
     gradient: AppGradients.worldProgramming,
     icon: Icons.code_rounded,
@@ -81,7 +81,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _networks = SubjectVisualIdentity(
     iconKey: 'network',
     displayName: 'Computer Networks',
-    accent: Color(0xFF38BDF8), // sky-400
+    accent: Color(0xFF06B6D4), // cyan #06B6D4
     atmosphereColor: Color(0xFF0EA5E9),
     gradient: AppGradients.worldNetworks,
     icon: Icons.hub_rounded,
@@ -91,7 +91,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _dbms = SubjectVisualIdentity(
     iconKey: 'database',
     displayName: 'Database Systems',
-    accent: Color(0xFFFB923C), // orange-400
+    accent: Color(0xFFF59E0B), // amber #F59E0B
     atmosphereColor: Color(0xFFEA580C),
     gradient: AppGradients.worldDatabase,
     icon: Icons.storage_rounded,
@@ -101,8 +101,8 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _os = SubjectVisualIdentity(
     iconKey: 'os',
     displayName: 'Operating Systems',
-    accent: Color(0xFF94A3B8), // slate-400
-    atmosphereColor: Color(0xFF64748B),
+    accent: Color(0xFF64748B), // slate #64748B
+    atmosphereColor: Color(0xFF475569),
     gradient: AppGradients.worldOS,
     icon: Icons.developer_board_rounded,
     motif: 'system_core',
@@ -111,7 +111,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _dataStructures = SubjectVisualIdentity(
     iconKey: 'data_structures',
     displayName: 'Data Structures',
-    accent: Color(0xFF34D399), // emerald-400
+    accent: Color(0xFF10B981), // emerald #10B981
     atmosphereColor: Color(0xFF059669),
     gradient: AppGradients.worldDataStructures,
     icon: Icons.account_tree_rounded,
@@ -124,8 +124,8 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _algorithms = SubjectVisualIdentity(
     iconKey: 'algorithms',
     displayName: 'Algorithms',
-    accent: Color(0xFFA78BFA), // violet-400
-    atmosphereColor: Color(0xFF7C3AED),
+    accent: Color(0xFF7C3AED), // purple #7C3AED
+    atmosphereColor: Color(0xFF6D28D9),
     gradient: AppGradients.worldAlgorithms,
     icon: Icons.functions_rounded,
     motif: 'flow_chart',
@@ -134,8 +134,8 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _oop = SubjectVisualIdentity(
     iconKey: 'oop',
     displayName: 'Object-Oriented Programming',
-    accent: AppColors.secondary,
-    atmosphereColor: AppColors.secondaryDeep,
+    accent: Color(0xFF06B6D4), // cyan #06B6D4
+    atmosphereColor: Color(0xFF0891B2),
     gradient: AppGradients.worldOOP,
     icon: Icons.class_rounded,
     motif: 'object_graph',
@@ -164,7 +164,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _web = SubjectVisualIdentity(
     iconKey: 'web_technologies',
     displayName: 'Web Technologies',
-    accent: Color(0xFF60A5FA), // blue-400
+    accent: Color(0xFF3B82F6), // blue #3B82F6
     atmosphereColor: Color(0xFF1D4ED8),
     gradient: AppGradients.worldWeb,
     icon: Icons.language_rounded,
@@ -174,8 +174,8 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _oose = SubjectVisualIdentity(
     iconKey: 'oose',
     displayName: 'Object-Oriented Software Engineering',
-    accent: AppColors.warning,
-    atmosphereColor: Color(0xFF92400E),
+    accent: Color(0xFF64748B), // slate #64748B
+    atmosphereColor: Color(0xFF475569),
     gradient: AppGradients.worldOOSE,
     icon: Icons.architecture_rounded,
     motif: 'blueprint_stack',
@@ -185,7 +185,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _programmingAlt = SubjectVisualIdentity(
     iconKey: 'programming',
     displayName: 'Programming',
-    accent: Color(0xFF818CF8),
+    accent: Color(0xFF6366F1),
     atmosphereColor: Color(0xFF4338CA),
     gradient: AppGradients.worldProgramming,
     icon: Icons.code_rounded,
@@ -195,7 +195,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _networksAlt = SubjectVisualIdentity(
     iconKey: 'computer_networks',
     displayName: 'Computer Networks',
-    accent: Color(0xFF38BDF8),
+    accent: Color(0xFF06B6D4),
     atmosphereColor: Color(0xFF0EA5E9),
     gradient: AppGradients.worldNetworks,
     icon: Icons.hub_rounded,
@@ -205,7 +205,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _dbmsAlt = SubjectVisualIdentity(
     iconKey: 'dbms',
     displayName: 'Database Systems',
-    accent: Color(0xFFFB923C),
+    accent: Color(0xFFF59E0B),
     atmosphereColor: Color(0xFFEA580C),
     gradient: AppGradients.worldDatabase,
     icon: Icons.storage_rounded,
@@ -215,8 +215,8 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _osAlt = SubjectVisualIdentity(
     iconKey: 'operating_systems',
     displayName: 'Operating Systems',
-    accent: Color(0xFF94A3B8),
-    atmosphereColor: Color(0xFF64748B),
+    accent: Color(0xFF64748B),
+    atmosphereColor: Color(0xFF475569),
     gradient: AppGradients.worldOS,
     icon: Icons.developer_board_rounded,
     motif: 'system_core',
@@ -225,7 +225,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _dsaAlt = SubjectVisualIdentity(
     iconKey: 'dsa',
     displayName: 'Data Structures & Algorithms',
-    accent: Color(0xFF34D399),
+    accent: Color(0xFF10B981),
     atmosphereColor: Color(0xFF059669),
     gradient: AppGradients.worldDataStructures,
     icon: Icons.account_tree_rounded,
@@ -236,7 +236,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _dsShort = SubjectVisualIdentity(
     iconKey: 'ds',
     displayName: 'Data Structures',
-    accent: Color(0xFF34D399),
+    accent: Color(0xFF10B981),
     atmosphereColor: Color(0xFF059669),
     gradient: AppGradients.worldDataStructures,
     icon: Icons.account_tree_rounded,
@@ -246,7 +246,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _dsSubject = SubjectVisualIdentity(
     iconKey: 'subject_ds',
     displayName: 'Data Structures',
-    accent: Color(0xFF34D399),
+    accent: Color(0xFF10B981),
     atmosphereColor: Color(0xFF059669),
     gradient: AppGradients.worldDataStructures,
     icon: Icons.account_tree_rounded,
@@ -256,7 +256,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _sqlAlt = SubjectVisualIdentity(
     iconKey: 'sql',
     displayName: 'Database Systems',
-    accent: Color(0xFFFB923C),
+    accent: Color(0xFFF59E0B),
     atmosphereColor: Color(0xFFEA580C),
     gradient: AppGradients.worldDatabase,
     icon: Icons.storage_rounded,
@@ -276,7 +276,7 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _webAlt = SubjectVisualIdentity(
     iconKey: 'subject_web',
     displayName: 'Web Technologies',
-    accent: Color(0xFF60A5FA),
+    accent: Color(0xFF3B82F6),
     atmosphereColor: Color(0xFF1D4ED8),
     gradient: AppGradients.worldWeb,
     icon: Icons.language_rounded,
@@ -286,17 +286,18 @@ abstract final class SubjectVisualRegistry {
   static const SubjectVisualIdentity _javaAlt = SubjectVisualIdentity(
     iconKey: 'java',
     displayName: 'Object-Oriented Programming',
-    accent: AppColors.secondary,
-    atmosphereColor: AppColors.secondaryDeep,
+    accent: Color(0xFF06B6D4),
+    atmosphereColor: Color(0xFF0891B2),
     gradient: AppGradients.worldOOP,
     icon: Icons.class_rounded,
     motif: 'object_graph',
   );
 
-  static const SubjectVisualIdentity _ooseAlt = SubjectVisualIdentity(    iconKey: 'software_engineering',
+  static const SubjectVisualIdentity _ooseAlt = SubjectVisualIdentity(
+    iconKey: 'software_engineering',
     displayName: 'Object-Oriented Software Engineering',
-    accent: AppColors.warning,
-    atmosphereColor: Color(0xFF92400E),
+    accent: Color(0xFF64748B),
+    atmosphereColor: Color(0xFF475569),
     gradient: AppGradients.worldOOSE,
     icon: Icons.architecture_rounded,
     motif: 'blueprint_stack',

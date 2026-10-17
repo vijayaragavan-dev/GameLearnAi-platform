@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/neo_brutalism.dart';
 
 /// Hexagonal level badge with the level number.
 class LevelBadge extends StatelessWidget {
@@ -67,22 +67,32 @@ class DifficultyBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: isDark ? color.withValues(alpha: 0.14) : color.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: isDark ? color.withValues(alpha: 0.5) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.0,
+        ),
+        boxShadow: isDark ? null : const [
+          BoxShadow(
+            color: NeoBrutalColors.ink,
+            offset: Offset(2, 2),
+            blurRadius: 0,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_iconFor(difficulty), size: 11, color: color),
+          Icon(_iconFor(difficulty), size: 11, color: isDark ? color : NeoBrutalColors.ink),
           const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
               fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
-              color: color,
+              color: isDark ? color : NeoBrutalColors.ink,
             ),
           ),
         ],
@@ -119,22 +129,31 @@ class StreakChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: active
-                ? AppColors.streak.withValues(alpha: 0.16)
+                ? (isDark ? AppColors.streak.withValues(alpha: 0.16) : Colors.white)
                 : (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh),
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
-              color: active
-                  ? AppColors.streak.withValues(alpha: 0.55)
-                  : (isDark ? AppColors.border : AppLightColors.border),
+              color: isDark
+                  ? (active ? AppColors.streak.withValues(alpha: 0.55) : AppColors.border)
+                  : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
             ),
-            boxShadow: active
-                ? [
+            boxShadow: isDark
+                ? (active
+                    ? [
+                        BoxShadow(
+                          color: AppColors.streak.withValues(alpha: 0.28),
+                          blurRadius: 14,
+                        ),
+                      ]
+                    : null)
+                : const [
                     BoxShadow(
-                      color: AppColors.streak.withValues(alpha: 0.28),
-                      blurRadius: 14,
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(2.5, 2.5),
+                      blurRadius: 0,
                     ),
-                  ]
-                : null,
+                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -204,9 +223,21 @@ class XPBadge extends StatelessWidget {
           vertical: compact ? 4 : 5,
         ),
         decoration: BoxDecoration(
-          color: AppColors.xp.withValues(alpha: isDark ? 0.14 : 0.12),
+          color: isDark ? AppColors.xp.withValues(alpha: 0.14) : NeoBrutalColors.xpYellow,
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: AppColors.xp.withValues(alpha: 0.45)),
+          border: Border.all(
+            color: isDark ? AppColors.xp.withValues(alpha: 0.45) : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.0,
+          ),
+          boxShadow: isDark
+              ? null
+              : const [
+                  BoxShadow(
+                    color: NeoBrutalColors.ink,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -214,7 +245,7 @@ class XPBadge extends StatelessWidget {
             Icon(
               Icons.star_rounded,
               size: compact ? 13 : 14,
-              color: AppColors.xp,
+              color: isDark ? AppColors.xp : NeoBrutalColors.ink,
             ),
             const SizedBox(width: 4),
             Text(
@@ -224,7 +255,7 @@ class XPBadge extends StatelessWidget {
                 fontSize: compact ? 11 : 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
-                color: isDark ? AppColors.xp : const Color(0xFF92400E),
+                color: isDark ? AppColors.xp : NeoBrutalColors.ink,
               ),
             ),
           ],
@@ -259,8 +290,8 @@ class CategoryChip extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: AppMotion.durFor(context, AppMotion.fast),
-          curve: AppMotion.easeOut,
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(

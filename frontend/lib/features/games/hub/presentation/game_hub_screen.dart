@@ -10,6 +10,8 @@ import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/game_visual_identity.dart';
+import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../shared/widgets/brutal_widgets.dart';
 import '../../../../shared/widgets/app_backgrounds.dart';
 import '../../../../shared/widgets/cinematic_scenery.dart';
 import '../../../../shared/widgets/game_surfaces.dart';
@@ -902,12 +904,17 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
             child: AnimatedContainer(
               duration: AppMotion.fast,
               curve: AppMotion.easeOut,
+              transform: isDark
+                  ? null
+                  : Matrix4.translationValues(_pressed ? 2.0 : 0.0, _pressed ? 2.0 : 0.0, 0.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.xl),
-                boxShadow: [
-                  BoxShadow(color: widget.identity.accent.withValues(alpha: isDark ? (_hovered ? 0.22 : 0.16) : 0.09), blurRadius: _hovered ? 28 : 22, offset: const Offset(0, 10)),
-                  if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 6)),
-                ],
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(color: widget.identity.accent.withValues(alpha: _hovered ? 0.22 : 0.16), blurRadius: _hovered ? 28 : 22, offset: const Offset(0, 10)),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 6)),
+                      ]
+                    : (_pressed ? NeoBrutalShadows.hardPressed : NeoBrutalShadows.hardLg),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -916,14 +923,11 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [widget.identity.accent.withValues(alpha: 0.18), AppColors.surfaceElevated]
-                            : [widget.identity.accent.withValues(alpha: 0.08), AppLightColors.surface],
+                      color: isDark ? AppColors.surfaceElevated : NeoBrutalColors.cardWarmCream,
+                      border: Border.all(
+                        color: isDark ? widget.identity.accent.withValues(alpha: _hovered ? 0.55 : 0.38) : NeoBrutalColors.ink,
+                        width: isDark ? 1.4 : 2.5,
                       ),
-                      border: Border.all(color: widget.identity.accent.withValues(alpha: _hovered ? 0.55 : 0.38), width: 1.4),
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: Column(
@@ -933,14 +937,52 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: AppColors.xp.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(999), border: Border.all(color: AppColors.xp.withValues(alpha: 0.32))),
-                              child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.star_rounded, size: 12, color: AppColors.xp), SizedBox(width: 4), Text('FEATURED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.xp))]),
+                              decoration: BoxDecoration(
+                                color: NeoBrutalColors.xpYellow,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: NeoBrutalColors.ink, width: isDark ? 1.0 : 2.0),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star_rounded, size: 12, color: NeoBrutalColors.ink),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'FEATURED',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1,
+                                      color: NeoBrutalColors.ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(color: widget.identity.accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(widget.identity.icon, size: 11, color: widget.identity.accent), const SizedBox(width: 4), Text(widget.identity.category.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: widget.identity.accent))]),
+                              decoration: BoxDecoration(
+                                color: isDark ? widget.identity.accent.withValues(alpha: 0.12) : NeoBrutalColors.pastelPurple,
+                                borderRadius: BorderRadius.circular(999),
+                                border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 1.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(widget.identity.icon, size: 11, color: isDark ? widget.identity.accent : NeoBrutalColors.ink),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    widget.identity.category.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                      color: isDark ? widget.identity.accent : NeoBrutalColors.ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             const Spacer(),
                             Icon(Icons.auto_awesome_rounded, size: 16, color: widget.identity.accent.withValues(alpha: 0.9)),
@@ -956,8 +998,13 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(18),
                                 gradient: widget.identity.gradient,
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-                                boxShadow: [BoxShadow(color: widget.identity.accent.withValues(alpha: 0.28), blurRadius: 14)],
+                                border: Border.all(
+                                  color: isDark ? Colors.white.withValues(alpha: 0.18) : NeoBrutalColors.ink,
+                                  width: isDark ? 1.0 : 2.5,
+                                ),
+                                boxShadow: isDark
+                                    ? [BoxShadow(color: widget.identity.accent.withValues(alpha: 0.28), blurRadius: 14)]
+                                    : const [BoxShadow(color: NeoBrutalColors.ink, offset: Offset(2.5, 2.5))],
                               ),
                               child: Center(child: Icon(widget.identity.icon, size: 30, color: Colors.white)),
                             ),
@@ -997,16 +1044,12 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
                         const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
-                          child: FilledButton.icon(
-                            onPressed: widget.available ? widget.onTap : null,
-                            icon: Icon(widget.available ? Icons.play_arrow_rounded : Icons.hourglass_empty_rounded, size: 18),
-                            label: Text(widget.available ? 'PLAY FEATURED' : 'COMING SOON', style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: widget.available ? widget.identity.accent : AppColors.lockedSurface,
-                              foregroundColor: widget.available ? Colors.white : AppColors.textTertiary,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
+                          child: BrutalButton(
+                            label: widget.available ? 'PLAY FEATURED' : 'COMING SOON',
+                            icon: widget.available ? Icons.play_arrow_rounded : Icons.hourglass_empty_rounded,
+                            onTap: widget.available ? widget.onTap : null,
+                            color: widget.available ? NeoBrutalColors.cobaltBlue : AppColors.lockedSurface,
+                            textColor: widget.available ? Colors.white : AppColors.textTertiary,
                           ),
                         ),
                       ],
@@ -1020,6 +1063,25 @@ class _FeaturedArcadeCardState extends State<_FeaturedArcadeCard> {
       ),
     );
   }
+}
+
+Color _gamePastelBackground(GameType type) {
+  return switch (type) {
+    GameType.quizBattle => const Color(0xFFFFF8E7),
+    GameType.memoryMatch => const Color(0xFFE7FAFE),
+    GameType.puzzleArena => const Color(0xFFF0EEFF),
+    GameType.bossBattle => const Color(0xFFFFEFEF),
+    GameType.speedRun => const Color(0xFFFFF3E0),
+    GameType.debugArena => const Color(0xFFE8F8F0),
+    GameType.unlockCode => const Color(0xFFFFFDE7),
+    GameType.connectivityLab => const Color(0xFFE0F7FA),
+    GameType.conceptBuilder => const Color(0xFFF3E5F5),
+    GameType.sequenceMaster => const Color(0xFFE8EAF6),
+    GameType.targetChallenge => const Color(0xFFFFF8E1),
+    GameType.mysteryCase => const Color(0xFFEDE7F6),
+    GameType.snakeAndLadder => const Color(0xFFFFF8E7),
+    GameType.dragDrop => const Color(0xFFF0EEFF),
+  };
 }
 
 class _ArcadeGameCard extends StatefulWidget {
@@ -1069,17 +1131,25 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
             child: AnimatedContainer(
               duration: AppMotion.fast,
               curve: AppMotion.easeOut,
+              transform: isDark
+                  ? null
+                  : Matrix4.translationValues(_pressed ? 2.0 : 0.0, _pressed ? 2.0 : 0.0, 0.0),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
+                color: isDark ? Theme.of(context).colorScheme.surface : _gamePastelBackground(widget.def.type),
                 borderRadius: BorderRadius.circular(AppRadius.xl),
-                border: Border.all(color: identity.accent.withValues(alpha: _hovered ? 0.55 : 0.30), width: _hovered ? 1.3 : 1),
-                boxShadow: [
-                  if (isDark) BoxShadow(color: identity.accent.withValues(alpha: _hovered ? 0.18 : 0.10), blurRadius: _hovered ? 20 : 14, offset: const Offset(0, 6)),
-                  if (!isDark && _hovered) BoxShadow(color: identity.accent.withValues(alpha: 0.12), blurRadius: 18, offset: const Offset(0, 6)),
-                ],
+                border: Border.all(
+                  color: isDark ? identity.accent.withValues(alpha: _hovered ? 0.55 : 0.30) : NeoBrutalColors.ink,
+                  width: isDark ? (_hovered ? 1.3 : 1.0) : 2.5,
+                ),
+                boxShadow: isDark
+                    ? [
+                        if (_hovered)
+                          BoxShadow(color: identity.accent.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 6)),
+                      ]
+                    : (_pressed ? NeoBrutalShadows.hardPressed : NeoBrutalShadows.hard),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
+                borderRadius: BorderRadius.circular(AppRadius.xl - 2.5),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1105,11 +1175,13 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                               height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.16),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.28), width: 1.2),
-                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 10, offset: const Offset(0, 4))],
+                                color: Colors.white,
+                                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.28) : NeoBrutalColors.ink, width: isDark ? 1.2 : 2.5),
+                                boxShadow: isDark
+                                    ? [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 10, offset: const Offset(0, 4))]
+                                    : const [BoxShadow(color: NeoBrutalColors.ink, offset: Offset(2, 2))],
                               ),
-                              child: Icon(identity.icon, size: 26, color: Colors.white),
+                              child: Icon(identity.icon, size: 26, color: isDark ? Colors.white : NeoBrutalColors.ink),
                             ),
                           ),
                           Positioned(
@@ -1117,8 +1189,12 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                             left: 10,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.white.withValues(alpha: 0.22))),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(identity.icon, size: 10, color: Colors.white), const SizedBox(width: 4), Text(identity.category.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: Colors.white))]),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.black.withValues(alpha: 0.22) : NeoBrutalColors.pastelYellow,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.22) : NeoBrutalColors.ink, width: isDark ? 1.0 : 1.5),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(identity.icon, size: 10, color: isDark ? Colors.white : NeoBrutalColors.ink), const SizedBox(width: 4), Text(identity.category.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: isDark ? Colors.white : NeoBrutalColors.ink))]),
                             ),
                           ),
                           Positioned(
@@ -1126,7 +1202,11 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                             right: 10,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(color: (widget.available ? AppColors.success : AppColors.textTertiary).withValues(alpha: 0.92), borderRadius: BorderRadius.circular(6)),
+                              decoration: BoxDecoration(
+                                color: (widget.available ? AppColors.success : AppColors.textTertiary).withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(6),
+                                border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 1.5),
+                              ),
                               child: Text(widget.available ? 'AVAILABLE' : 'SOON', style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: Colors.white)),
                             ),
                           ),
@@ -1171,9 +1251,16 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 9),
                                   decoration: BoxDecoration(
-                                    color: widget.available ? identity.accent : AppColors.lockedSurface,
+                                    color: widget.available
+                                        ? (isDark ? identity.accent : NeoBrutalColors.cobaltBlue)
+                                        : AppColors.lockedSurface,
                                     borderRadius: BorderRadius.circular(10),
-                                    boxShadow: widget.available ? [BoxShadow(color: identity.accent.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                                    border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 2),
+                                    boxShadow: widget.available
+                                        ? (isDark
+                                            ? [BoxShadow(color: identity.accent.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 4))]
+                                            : const [BoxShadow(color: NeoBrutalColors.ink, offset: Offset(2, 2))])
+                                        : null,
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1190,11 +1277,12 @@ class _ArcadeGameCardState extends State<_ArcadeGameCard> {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+                                  color: isDark ? AppColors.surfaceElevated : Colors.white,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: isDark ? AppColors.border : AppLightColors.border),
+                                  border: Border.all(color: isDark ? AppColors.border : NeoBrutalColors.ink, width: isDark ? 1.0 : 2.0),
+                                  boxShadow: isDark ? null : const [BoxShadow(color: NeoBrutalColors.ink, offset: Offset(2, 2))],
                                 ),
-                                child: Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
+                                child: Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? AppColors.textTertiary : NeoBrutalColors.ink),
                               ),
                             ],
                           ),

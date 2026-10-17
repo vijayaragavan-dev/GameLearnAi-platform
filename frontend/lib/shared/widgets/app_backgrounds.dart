@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/neo_brutalism.dart';
 
 /// GameLearn AI atmospheric background system.
 ///
@@ -61,18 +62,9 @@ class AtmosphericBackground extends StatelessWidget {
     final secondary = secondaryGlow ?? AppColors.secondary;
 
     if (!isDark) {
-      // Light: clean, premium, subtle gradient wash
-      return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppLightColors.backgroundElevated,
-              AppLightColors.background,
-            ],
-          ),
-        ),
+      // Light: Neo-Brutalist Warm Cream paper canvas
+      return const ColoredBox(
+        color: NeoBrutalColors.canvas,
       );
     }
 

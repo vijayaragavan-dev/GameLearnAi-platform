@@ -202,8 +202,38 @@ void main() {
     });
   });
 
-  group('practice seam stays unavailable', () {
-    test('generation and evaluation have no backend', () async {
+  group('index', () {
+    test('posts to the index endpoint and maps refreshed metadata', () async {
+      http.BaseRequest? seen;
+      final repo = _repo((request) async {
+        seen = request;
+        return http.Response(jsonEncode(_meta('INDEXED')), 200);
+      });
+      final doc = await repo.indexDocument('doc-1');
+      expect(seen?.url.path, '/api/v1/documents/doc-1/index');
+      expect(seen?.method, 'POST');
+      expect(doc, isNotNull);
+      expect(doc!.status, DocumentStatus.ready);
+      expect(doc.title, 'algebra.pdf');
+    });
+
+    test('401 rethrows, 404/422 throw honestly', () async {
+      Future<StudyDocument?> run(int code) => _repo(
+        (_) async => http.Response(
+          jsonEncode({'errorCode': 'X', 'message': 'Nope'}),
+          code,
+        ),
+      ).indexDocument('doc-1');
+      await expectLater(
+        run(401),
+        throwsA(isA<UnauthorizedException>()),
+      );
+      await expectLater(run(404), throwsA(isA<NotFoundException>()));
+      await expectLater(run(400), throwsA(isA<ValidationException>()));
+    });
+  });
+
+  group('practice seam stays unavailable', () {    test('generation and evaluation have no backend', () async {
       final repo = _repo((_) async => http.Response('{}', 200));
       expect(
         await repo.generateDocumentPractice(

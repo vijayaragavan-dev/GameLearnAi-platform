@@ -65,11 +65,11 @@ class _PressableState extends State<Pressable> {
           onLongPress: widget.onLongPress,
           child: AnimatedScale(
             scale: effectiveScale,
-            duration: AppMotion.durFor(context, AppMotion.press),
+            duration: AppMotion.press,
             curve: AppMotion.easeOut,
             child: AnimatedOpacity(
               opacity: _pressed ? widget.opacity : 1.0,
-              duration: AppMotion.durFor(context, AppMotion.press),
+              duration: AppMotion.press,
               curve: AppMotion.easeOut,
               child: widget.child,
             ),

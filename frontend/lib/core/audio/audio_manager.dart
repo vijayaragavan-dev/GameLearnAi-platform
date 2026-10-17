@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
@@ -18,7 +18,8 @@ enum Sfx {
   nodeUnlock('sfx_node.wav'),
   streakContinue('sfx_streak.wav'),
   notification('sfx_notification.wav'),
-  typingFast('sfx/keyboard_typing_faast.wav');
+  typingFast('sfx/keyboard_typing_faast.wav'),
+  lifeLoss('life_loss.wav');
 
   const Sfx(this.asset);
 
@@ -373,6 +374,23 @@ class AudioManager {
         }
       }
       await _safeDisposePlayer(p);
+    }
+  }
+
+  /// Adaptive result outcome audio cue based on player's score:
+  /// - Failed (< 50%): Sound downs! Stops upbeat music, plays defeat/loss cue (Sfx.lifeLoss).
+  /// - Moderate (50% - 79%): Motivation cue (Sfx.missionComplete / Sfx.streakContinue).
+  /// - Good (>= 80%): Full celebration fanfare (MusicContext.celebration + Sfx.levelUp).
+  Future<void> playResultOutcomeAudio({required double score}) async {
+    if (score < 50.0) {
+      await stopMusic();
+      await play(Sfx.lifeLoss);
+    } else if (score < 80.0) {
+      await stopMusic();
+      await play(Sfx.missionComplete);
+    } else {
+      await playContext(MusicContext.celebration);
+      await play(Sfx.levelUp);
     }
   }
 

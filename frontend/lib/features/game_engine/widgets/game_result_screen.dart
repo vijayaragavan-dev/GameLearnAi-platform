@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
-import '../../../core/audio/audio_manager.dart' show MusicContext;
 import '../../../core/gamification_delta.dart';
 import '../../../core/models/gamification_models.dart';
 import '../../../core/providers.dart';
@@ -13,11 +12,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/game_visual_identity.dart';
 import '../../../core/intelligence/learner_intelligence.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
-import '../../../core/theme/game_visual_identity.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/celebrations.dart';
 import '../../../shared/widgets/game_button.dart';
@@ -25,6 +25,7 @@ import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../../shared/widgets/xp_bar.dart';
 import '../../gamification/models/game_result_models.dart';
+import '../../avatar/widgets/floating_result_mascot.dart';
 import '../models/game_models.dart';
 
 /// Premium result screen for all games. Displays score/accuracy/xp/combo/time with game identity.
@@ -55,9 +56,14 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
   @override
   void initState() {
     super.initState();
-    ref.read(audioManagerProvider).playContext(MusicContext.celebration);
+    final acc = widget.result.accuracy;
+    ref.read(audioManagerProvider).playResultOutcomeAudio(score: acc);
+    if (acc >= 80) {
+      ref.read(hapticsProvider).celebrate();
+    } else if (acc >= 50) {
+      ref.read(hapticsProvider).tap();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _celebrate());
-    ref.read(hapticsProvider).celebrate();
     _submitResultPersistent();
   }
 
@@ -176,7 +182,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
           ),
           if (isDark) ...[
             Positioned(top: -30, right: -20, child: GlowOrb(color: identity.accent, size: 240, opacity: 0.10)),
-            Positioned(bottom: 100, left: -40, child: GlowOrb(color: AppColors.secondary, size: 200, opacity: 0.06)),
+            const Positioned(bottom: 100, left: -40, child: GlowOrb(color: AppColors.secondary, size: 200, opacity: 0.06)),
           ],
           ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -189,16 +195,33 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [identity.accent.withValues(alpha: isDark ? 0.14 : 0.07), Theme.of(context).colorScheme.surface]),
+                        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(color: identity.accent.withValues(alpha: isDark ? 0.28 : 0.18)),
+                        border: Border.all(
+                          color: isDark ? identity.accent.withValues(alpha: 0.28) : NeoBrutalColors.ink,
+                          width: isDark ? 1.0 : 2.0,
+                        ),
+                        boxShadow: isDark ? null : const [
+                          BoxShadow(
+                            color: NeoBrutalColors.ink,
+                            offset: Offset(2, 2),
+                            blurRadius: 0,
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
                           Container(
                             width: 32,
                             height: 32,
-                            decoration: BoxDecoration(shape: BoxShape.circle, gradient: identity.gradient, border: Border.all(color: Colors.white.withValues(alpha: 0.18))),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: identity.gradient,
+                              border: Border.all(
+                                color: isDark ? Colors.white.withValues(alpha: 0.18) : NeoBrutalColors.ink,
+                                width: isDark ? 1.0 : 2.0,
+                              ),
+                            ),
                             child: Icon(identity.icon, size: 18, color: Colors.white),
                           ),
                           const SizedBox(width: 10),
@@ -206,15 +229,19 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(r.config.type.displayName.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: identity.accent)),
+                                Text(r.config.type.displayName.toUpperCase(), style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: isDark ? identity.accent : NeoBrutalColors.cobaltBlue)),
                                 Text(r.config.topicName ?? r.config.topicId, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
                               ],
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh, borderRadius: BorderRadius.circular(999), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
-                            child: Text(r.config.difficulty.displayName.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: isDark ? AppColors.border : NeoBrutalColors.ink, width: isDark ? 1 : 1.5),
+                            ),
+                            child: Text(r.config.difficulty.displayName.toUpperCase(), style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: isDark ? AppColors.textTertiary : NeoBrutalColors.ink)),
                           ),
                         ],
                       ),
@@ -228,12 +255,17 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: isVictory
-                              ? (isDark ? [identity.accent.withValues(alpha: 0.16), AppColors.surfaceElevated] : [identity.accent.withValues(alpha: 0.07), AppLightColors.surface])
-                              : (isDark ? [AppColors.error.withValues(alpha: 0.10), AppColors.surfaceElevated] : [AppColors.error.withValues(alpha: 0.06), AppLightColors.surface]),
+                              ? (isDark ? [identity.accent.withValues(alpha: 0.16), AppColors.surfaceElevated] : [Colors.white, const Color(0xFFFAF8FE)])
+                              : (isDark ? [AppColors.error.withValues(alpha: 0.10), AppColors.surfaceElevated] : [Colors.white, const Color(0xFFFFF0F0)]),
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.xl),
-                        border: Border.all(color: (isVictory ? identity.accent : AppColors.error).withValues(alpha: isDark ? 0.32 : 0.20), width: 1.2),
-                        boxShadow: [BoxShadow(color: (isVictory ? identity.accent : AppColors.error).withValues(alpha: isDark ? 0.14 : 0.06), blurRadius: 20, offset: const Offset(0, 8))],
+                        border: Border.all(
+                          color: isDark ? (isVictory ? identity.accent : AppColors.error).withValues(alpha: 0.32) : NeoBrutalColors.ink,
+                          width: isDark ? 1.2 : 2.5,
+                        ),
+                        boxShadow: isDark
+                            ? [BoxShadow(color: (isVictory ? identity.accent : AppColors.error).withValues(alpha: 0.14), blurRadius: 20, offset: const Offset(0, 8))]
+                            : NeoBrutalShadows.hardLg,
                       ),
                       child: Column(
                         children: [
@@ -241,16 +273,19 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: (isVictory ? AppColors.success : AppColors.error).withValues(alpha: 0.14),
+                              color: (isVictory ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.14 : 0.25),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: (isVictory ? AppColors.success : AppColors.error).withValues(alpha: 0.32)),
+                              border: Border.all(
+                                color: isDark ? (isVictory ? AppColors.success : AppColors.error).withValues(alpha: 0.32) : NeoBrutalColors.ink,
+                                width: isDark ? 1.0 : 2.0,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(isVictory ? Icons.emoji_events_rounded : Icons.replay_rounded, size: 14, color: isVictory ? AppColors.success : AppColors.error),
                                 const SizedBox(width: 6),
-                                Text(isVictory ? 'VICTORY' : 'MISSION COMPLETE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: isVictory ? AppColors.success : (isDark ? AppColors.textSecondary : AppLightColors.textSecondary))),
+                                Text(isVictory ? 'VICTORY' : 'MISSION COMPLETE', style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: isVictory ? AppColors.success : (isDark ? AppColors.textSecondary : NeoBrutalColors.ink))),
                               ],
                             ),
                           ),
@@ -347,7 +382,9 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                         child: Text(r.config.topicName!, textAlign: TextAlign.center, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 17, fontWeight: FontWeight.w700)),
                       ),
                     ],
-                    const SizedBox(height: 18),
+                    // Floating Mascot Reaction Companion
+                    FloatingResultMascot(score: r.accuracy),
+                    const SizedBox(height: 6),
                     // Metrics grid — real data only
                     Row(
                       children: [
@@ -363,28 +400,40 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [AppColors.xp.withValues(alpha: isDark ? 0.12 : 0.07), isDark ? AppColors.surfaceElevated : AppLightColors.surface]),
+                        color: isDark ? AppColors.surfaceElevated : NeoBrutalColors.cardYellow,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(color: AppColors.xp.withValues(alpha: isDark ? 0.32 : 0.20)),
-                        boxShadow: isDark ? [BoxShadow(color: AppColors.xp.withValues(alpha: 0.10), blurRadius: 14, offset: const Offset(0, 4))] : null,
+                        border: Border.all(
+                          color: isDark ? AppColors.xp.withValues(alpha: 0.32) : NeoBrutalColors.ink,
+                          width: isDark ? 1.0 : 2.5,
+                        ),
+                        boxShadow: isDark
+                            ? [BoxShadow(color: AppColors.xp.withValues(alpha: 0.10), blurRadius: 14, offset: const Offset(0, 4))]
+                            : NeoBrutalShadows.hard,
                       ),
                       child: Row(
                         children: [
-                          const NovaCompanion(size: 44, mood: NovaMood.celebrating),
+                          NovaCompanion(
+                            size: 44,
+                            mood: r.accuracy < 50
+                                ? NovaMood.sad
+                                : (r.accuracy < 80
+                                    ? NovaMood.motivating
+                                    : NovaMood.celebrating),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('XP EARNED', style: TextStyle(fontSize: 10.5, letterSpacing: 2, fontWeight: FontWeight.w800, color: AppColors.xp)),
+                                Text('XP EARNED', style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w800, color: isDark ? AppColors.xp : NeoBrutalColors.ink)),
                                 const SizedBox(height: 3),
                                 if (d != null && d.xpGained > 0)
-                                  Text('+${d.xpGained} XP', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.xp))
+                                  Text('+${d.xpGained} XP', style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 26, fontWeight: FontWeight.w800, color: isDark ? AppColors.xp : NeoBrutalColors.ink))
                                 else if (r.xpEarned > 0)
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('+${r.xpEarned} XP', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.xp)),
+                                      Text('+${r.xpEarned} XP', style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 26, fontWeight: FontWeight.w800, color: isDark ? AppColors.xp : NeoBrutalColors.ink)),
                                       if (r.config.type != GameType.quizBattle && r.config.type != GameType.speedRun)
                                         const Text('Local preview • Quiz games award real XP', style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
                                     ],
@@ -417,7 +466,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                     _AdaptiveResultInsight(result: r),
                     const SizedBox(height: 22),
                     // What's next — premium actions with contextual navigation (no dead-end)
-                    Text("WHAT'S NEXT?", style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary)),
+                    Text("WHAT'S NEXT?", style: TextStyle(fontFamily: NeoBrutalTypography.displayFamily, fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: isDark ? AppColors.textTertiary : NeoBrutalColors.ink)),
                     const SizedBox(height: 10),
                     if (widget.onReplay != null)
                       SecondaryGameButton(label: 'Play again', icon: Icons.replay_rounded, onTap: widget.onReplay!),
@@ -432,7 +481,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                           final sid = r.config.subjectId;
                           final sname = r.config.subjectName;
                           if (sid != null && sid.isNotEmpty) {
-                            context.go(Routes.gameHub(r.config.topicId, subjectId: sid, subjectName: sname), extra: r.config.topicName);
+                            context.push(Routes.gameHub(r.config.topicId, subjectId: sid, subjectName: sname), extra: r.config.topicName);
                           } else {
                             context.go(Routes.home);
                           }
@@ -457,7 +506,7 @@ class _GameResultScreenState extends ConsumerState<GameResultScreen>
                         label: 'Back to arena • ${r.config.subjectName ?? 'World'}',
                         icon: Icons.stadium_rounded,
                         expanded: true,
-                        onTap: () => context.go(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
+                        onTap: () => context.push(Routes.gameHub(r.config.topicId, subjectId: r.config.subjectId, subjectName: r.config.subjectName), extra: r.config.topicName),
                       ),
                     ],
                   ],
@@ -514,11 +563,21 @@ class _ResultStanding extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
-                color: isDark ? AppColors.border : AppLightColors.border,
+                color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                width: isDark ? 1.0 : 2.0,
               ),
+              boxShadow: isDark
+                  ? null
+                  : const [
+                      BoxShadow(
+                        color: NeoBrutalColors.ink,
+                        offset: Offset(2, 2),
+                        blurRadius: 0,
+                      ),
+                    ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,7 +645,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     Dashboard? dash;
     try {
-      dash = ref.watch(dashboardProvider).data as Dashboard?;
+      dash = ref.watch(dashboardProvider).data;
     } catch (_) {
       return const SizedBox.shrink();
     }
@@ -597,7 +656,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
     final isWeak = intel.weakTopics.any((w) => w.topicId == result.config.topicId);
     final isStrong = intel.strongTopics.any((s) => s.topicId == result.config.topicId);
     // Overall (not topic) mastery: label it honestly.
-    String masteryLine = 'Overall mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
+    final masteryLine = 'Overall mastery ${intel.overallMastery.round()}% • ${intel.trend.replaceAll('_', ' ')}';
     String nextLine;
     if (isWeak && result.accuracy < 60) {
       nextLine = 'This concept needs a little more practice — try an easier challenge or ask Tutor.';
@@ -615,9 +674,25 @@ class _AdaptiveResultInsight extends ConsumerWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+          decoration: BoxDecoration(
+            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: isDark ? AppColors.border : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.0,
+            ),
+            boxShadow: isDark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(2, 2),
+                      blurRadius: 0,
+                    ),
+                  ],
+          ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [Icon(Icons.psychology_rounded, size: 14, color: AppColors.primary), const SizedBox(width: 6), Text('YOUR PERFORMANCE INSIGHT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.primary))]),
+            const Row(children: [Icon(Icons.psychology_rounded, size: 14, color: AppColors.primary), SizedBox(width: 6), Text('YOUR PERFORMANCE INSIGHT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.primary))]),
             const SizedBox(height: 8),
             Text(masteryLine, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
             const SizedBox(height: 4),
@@ -635,7 +710,7 @@ class _AdaptiveResultInsight extends ConsumerWidget {
                 if (isWeak) {
                   context.push(Routes.tutorWithContext(topicId: result.config.topicId, topicName: result.config.topicName, focus: result.config.topicName));
                 } else if (result.config.subjectId != null) {
-                  context.go(Routes.gameHub(result.config.topicId, subjectId: result.config.subjectId, subjectName: result.config.subjectName), extra: result.config.topicName);
+                  context.push(Routes.gameHub(result.config.topicId, subjectId: result.config.subjectId, subjectName: result.config.subjectName), extra: result.config.topicName);
                 } else {
                   context.go(Routes.home);
                 }
@@ -655,17 +730,36 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppColors.border : AppLightColors.border)),
-        child: Column(
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(height: 6),
-            Text(label, style: const TextStyle(fontSize: 9, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
-            const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 16, fontWeight: FontWeight.w700)),
-          ],
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? AppColors.border : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.0,
         ),
-      );
+        boxShadow: isDark
+            ? null
+            : const [
+                BoxShadow(
+                  color: NeoBrutalColors.ink,
+                  offset: Offset(2, 2),
+                  blurRadius: 0,
+                ),
+              ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 9, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
+          const SizedBox(height: 2),
+          Text(value, style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 16, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
 }

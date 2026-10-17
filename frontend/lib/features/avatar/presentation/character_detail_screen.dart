@@ -6,7 +6,6 @@ import '../../../core/error/user_facing_error.dart';
 import '../../../core/models/avatar_models.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
@@ -322,7 +321,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                         PrimaryGameButton(
                           label: 'Continue learning',
                           icon: Icons.school_rounded,
-                          onTap: () => context.go('/subjects'),
+                          onTap: () => context.push('/subjects'),
                         ),
                       ],
                     ),

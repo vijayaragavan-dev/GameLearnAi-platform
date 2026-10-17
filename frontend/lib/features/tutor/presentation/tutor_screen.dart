@@ -13,13 +13,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/nova_companion.dart';
-import '../../../shared/widgets/pressable.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../subjects/domain/canonical_worlds.dart' show WorldCatalog;
 import '../../subjects/domain/world_context.dart' show subjectByIdProvider;
@@ -189,11 +189,47 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDark ? null : NeoBrutalColors.cream,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.canPop() ? context.pop() : null,
-          icon: const Icon(Icons.arrow_back_rounded),
+        backgroundColor: isDark ? null : NeoBrutalColors.cream,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: InkWell(
+            onTap: () => context.canPop() ? context.pop() : null,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceElevated : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                  width: isDark ? 1 : 2,
+                ),
+                boxShadow: isDark
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: NeoBrutalColors.ink,
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20),
+            ),
+          ),
         ),
+        bottom: isDark
+            ? null
+            : const PreferredSize(
+                preferredSize: Size.fromHeight(2.5),
+                child: Divider(
+                  height: 2.5,
+                  thickness: 2.5,
+                  color: NeoBrutalColors.ink,
+                ),
+              ),
         titleSpacing: 0,
         title: Row(
           children: [
@@ -202,25 +238,77 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'NOVA TUTOR',
-                  style: TextStyle(fontSize: 14.5, letterSpacing: 1),
+                Text(
+                  'STUDY BUDDY',
+                  style: TextStyle(
+                    fontFamily: NeoBrutalTypography.displayFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: isDark ? AppColors.textPrimary : NeoBrutalColors.ink,
+                  ),
                 ),
                 Text(
-                  'AI learning companion',
+                  'Your smart learning assistant',
                   style: TextStyle(
-                    fontSize: 10.5,
-                    color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppLightColors.textSecondary,
                   ),
                 ),
               ],
             ),
           ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: NeoBrutalColors.tutorCyan.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: NeoBrutalColors.cobaltBlue,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ONLINE',
+                      style: TextStyle(
+                        fontFamily: NeoBrutalTypography.displayFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: isDark ? AppColors.textPrimary : NeoBrutalColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
-          const Positioned.fill(child: AtmosphericBackground()),
+          if (isDark) const Positioned.fill(child: AtmosphericBackground()),
           SafeArea(
             child: FocusTraversalGroup(
               policy: OrderedTraversalPolicy(),
@@ -246,7 +334,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'NOVA TUTOR',
+                                  'STUDY BUDDY',
                                   style: TextStyle(
                                     fontFamily: AppTypography.displayFamily,
                                     fontSize: 17,
@@ -413,19 +501,17 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
                 child: Container(
-                  // Premium input dock — glowing Nova-bordered bar from the
-                  // reference. Wraps the existing field + send button;
-                  // behavior, hints and limits are unchanged.
-                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                   decoration: BoxDecoration(
                     color: isDark
                         ? AppColors.surfaceElevated.withValues(alpha: 0.92)
-                        : AppLightColors.surface,
-                    borderRadius: BorderRadius.circular(28),
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: AppColors.secondary.withValues(
-                        alpha: isDark ? 0.45 : 0.35,
-                      ),
+                      color: isDark
+                          ? AppColors.secondary.withValues(alpha: 0.45)
+                          : NeoBrutalColors.ink,
+                      width: isDark ? 1.0 : 2.5,
                     ),
                     boxShadow: isDark
                         ? [
@@ -437,7 +523,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                               offset: const Offset(0, 4),
                             ),
                           ]
-                        : null,
+                        : NeoBrutalShadows.hard,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -449,54 +535,58 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                           maxLines: 4,
                           minLines: 1,
                           maxLength: _maxQuestionChars,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
-                        onChanged: (v) => _typingController.onChanged(v),
-                        enabled: !_sending,
-                        style: TextStyle(
-                          fontFamily: AppTypography.bodyFamily,
-                          fontSize: 14.5,
-                          color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Ask Nova about your topic...',
-                          counterText: '',
-                          filled: true,
-                          fillColor: isDark ? AppColors.surfaceElevated : AppLightColors.surface,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 13,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
+                          onChanged: (v) => _typingController.onChanged(v),
+                          enabled: !_sending,
+                          style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
+                            fontSize: 14.5,
+                            color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(22),
-                            borderSide: BorderSide(
-                              color: isDark ? AppColors.border : AppLightColors.border,
+                          decoration: InputDecoration(
+                            hintText: "Ask a question about what you're learning...",
+                            counterText: '',
+                            filled: true,
+                            fillColor: isDark
+                                ? AppColors.surfaceElevated
+                                : const Color(0xFFF4F3F8),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 11,
                             ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(22),
-                            borderSide: BorderSide(
-                              color: isDark ? AppColors.border : AppLightColors.border,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                                width: isDark ? 1 : 2,
+                              ),
                             ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(22),
-                            borderSide: const BorderSide(
-                              color: AppColors.secondary,
-                              width: 1.4,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                                width: isDark ? 1 : 2,
+                              ),
                             ),
-                          ),
-                          hintStyle: TextStyle(
-                            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.secondary : NeoBrutalColors.cobaltBlue,
+                                width: 2,
+                              ),
+                            ),
+                            hintStyle: TextStyle(
+                              color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    _SendButton(onTap: _send, busy: _sending),
-                  ],
+                      const SizedBox(width: 8),
+                      _SendButton(onTap: _send, busy: _sending),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ],
           ),
@@ -566,18 +656,24 @@ class _SuggestedActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Pressable(
-      onTap: onTap,
-      semanticsLabel: 'Ask Nova: $label',
-      child: Container(
+    return Semantics(
+      button: true,
+      label: 'Ask Nova: $label',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark
                 ? AppColors.surfaceElevated.withValues(alpha: 0.8)
-                : AppLightColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: accent.withValues(alpha: isDark ? 0.45 : 0.35),
+              color: isDark
+                  ? accent.withValues(alpha: 0.45)
+                  : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.0,
             ),
             boxShadow: isDark
                 ? [
@@ -587,7 +683,13 @@ class _SuggestedActionCard extends StatelessWidget {
                       offset: const Offset(0, 4),
                     ),
                   ]
-                : null,
+                : const [
+                    BoxShadow(
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(2, 2),
+                      blurRadius: 0,
+                    ),
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,18 +702,20 @@ class _SuggestedActionCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
+                  fontFamily: NeoBrutalTypography.displayFamily,
                   fontSize: 12.5,
                   height: 1.35,
                   fontWeight: FontWeight.w700,
                   color: isDark
                       ? AppColors.textPrimary
-                      : AppLightColors.textPrimary,
+                      : NeoBrutalColors.ink,
                 ),
               ),
             ],
           ),
         ),
-      );
+      ),
+    );
   }
 }
 
@@ -624,75 +728,171 @@ class _MessageTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLearner = bubble.role == 'LEARNER';
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (isLearner) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+          ),
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.primaryDeep.withValues(alpha: 0.85)
+                : NeoBrutalColors.cobaltBlue,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+              topRight: Radius.zero,
+            ),
+            border: Border.all(
+              color: isDark ? Colors.transparent : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
+            ),
+            boxShadow: isDark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(3, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
+          ),
+          child: Text(
+            bubble.text,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Align(
-      alignment: isLearner ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
         ),
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        padding: !isLearner
-            ? const EdgeInsets.fromLTRB(12, 12, 14, 12)
-            : const EdgeInsets.fromLTRB(14, 11, 14, 11),
-        decoration: BoxDecoration(
-          gradient: isLearner
-              ? null
-              : LinearGradient(
-                  colors: isDark
-                      ? [
-                          AppColors.secondary.withValues(alpha: 0.1),
-                          AppColors.surfaceElevated,
-                        ]
-                      : [
-                          AppColors.secondary.withValues(alpha: 0.08),
-                          AppLightColors.surface,
-                        ],
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              margin: const EdgeInsets.only(top: 2, right: 10),
+              decoration: BoxDecoration(
+                color: NeoBrutalColors.tutorCyan,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                  width: isDark ? 1 : 2,
                 ),
-          color: isLearner
-              ? AppColors.primaryDeep.withValues(alpha: 0.75)
-              : (isDark ? null : AppLightColors.surface),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(AppRadius.lg),
-            topRight: const Radius.circular(AppRadius.lg),
-            bottomLeft: Radius.circular(isLearner ? AppRadius.lg : 6),
-            bottomRight: Radius.circular(isLearner ? 6 : AppRadius.lg),
-          ),
-          border: Border.all(
-            color: isLearner
-                ? Colors.transparent
-                : (bubble.refused || bubble.degraded
-                      ? AppColors.warning.withValues(alpha: 0.4)
-                      : AppColors.secondary.withValues(alpha: 0.3)),
-          ),
-        ),
-        child: !isLearner
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const NovaCompanion(size: 26, mood: NovaMood.speaking),
-                  const SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      bubble.text,
-                      style: TextStyle(
-                        fontFamily: AppTypography.bodyFamily,
-                        fontSize: 13.8,
-                        height: 1.5,
-                        color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                boxShadow: isDark
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: NeoBrutalColors.ink,
+                          offset: Offset(1.5, 1.5),
+                          blurRadius: 0,
+                        ),
+                      ],
+              ),
+              child: const Icon(
+                Icons.smart_toy_rounded,
+                size: 20,
+                color: NeoBrutalColors.ink,
+              ),
+            ),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceElevated : Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                    topLeft: Radius.zero,
+                  ),
+                  border: Border.all(
+                    color: isDark
+                        ? (bubble.refused || bubble.degraded
+                            ? AppColors.warning
+                            : AppColors.border)
+                        : NeoBrutalColors.ink,
+                    width: isDark ? 1.0 : 2.5,
+                  ),
+                  boxShadow: isDark ? null : NeoBrutalShadows.hard,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: NeoBrutalColors.tutorCyan.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.auto_stories_rounded,
+                            size: 12,
+                            color: NeoBrutalColors.cobaltBlue,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'NOVA MENTOR',
+                            style: TextStyle(
+                              fontFamily: NeoBrutalTypography.displayFamily,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: isDark
+                                  ? AppColors.textPrimary
+                                  : NeoBrutalColors.ink,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              )
-            : Text(
-                bubble.text,
-                style: const TextStyle(
-                  fontFamily: AppTypography.bodyFamily,
-                  fontSize: 13.8,
-                  height: 1.45,
-                  color: Colors.white,
+                    Text(
+                      bubble.text,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        height: 1.5,
+                        fontWeight: FontWeight.w400,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : NeoBrutalColors.ink,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -790,31 +990,47 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Pressable(
-      onTap: busy ? null : onTap,
-      semanticsLabel: busy ? 'Sending' : 'Send message',
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: busy
-              ? null
-              : const LinearGradient(
-                  colors: [AppColors.secondaryDeep, AppColors.secondary],
+    return Semantics(
+      button: true,
+      label: busy ? 'Sending' : 'Send message',
+      child: GestureDetector(
+        onTap: busy ? null : onTap,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: busy
+                ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh)
+                : (isDark ? AppColors.primary : NeoBrutalColors.cobaltBlue),
+            border: Border.all(
+              color: isDark ? AppColors.border : NeoBrutalColors.ink,
+              width: isDark ? 1 : 2.5,
+            ),
+            boxShadow: isDark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(3, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
+          ),
+          child: busy
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(
+                  Icons.send_rounded,
+                  size: 20,
+                  color: Colors.white,
                 ),
-          color: busy ? (isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh) : null,
         ),
-        child: busy
-            ? const Padding(
-                padding: EdgeInsets.all(13),
-                child: CircularProgressIndicator(strokeWidth: 2.2),
-              )
-            : const Icon(
-                Icons.send_rounded,
-                size: 19,
-                color: AppColors.textOnColor,
-              ),
       ),
     );
   }
@@ -841,7 +1057,23 @@ class _TutorContextPanel extends ConsumerWidget {
       return Container(
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+        decoration: BoxDecoration(
+          color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: isDark ? AppColors.border : NeoBrutalColors.ink,
+            width: isDark ? 1 : 2,
+          ),
+          boxShadow: isDark
+              ? null
+              : const [
+                  BoxShadow(
+                    color: NeoBrutalColors.ink,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [Container(width: 28, height: 28, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.secondary.withValues(alpha: 0.14)), child: const Icon(Icons.psychology_rounded, size: 16, color: AppColors.secondary)), const SizedBox(width: 8), Text('LEARNING FOCUS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.secondary)), const Spacer(), if (initialFocus != null) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)), child: Text(initialFocus!.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.warning)))]),
           if (world != null) ...[
@@ -877,7 +1109,23 @@ class _TutorContextPanel extends ConsumerWidget {
           return Container(
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
+            decoration: BoxDecoration(
+              color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                width: isDark ? 1 : 2,
+              ),
+              boxShadow: isDark
+                  ? null
+                  : const [
+                      BoxShadow(
+                        color: NeoBrutalColors.ink,
+                        offset: Offset(2, 2),
+                        blurRadius: 0,
+                      ),
+                    ],
+            ),
             child: Row(children: [const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.secondary), const SizedBox(width: 8), Expanded(child: Text('Build your learning profile by completing a few activities.', style: TextStyle(fontSize: 12, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)))]),
           );
         }

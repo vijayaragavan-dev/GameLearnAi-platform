@@ -84,6 +84,18 @@ abstract class StudyLabRepository {
     required String questionId,
     required String selectedAnswer,
   });
+
+  /// Index one owned document for AI use (RAG Phase F boundary).
+  ///
+  /// Uploads land as CHUNKED (extraction/chunking/embeddings only);
+  /// retrieval, Nova answers, and READY status need the Qdrant vector
+  /// index, which this call builds via
+  /// `POST /api/v1/documents/{id}/index`. Returns the refreshed
+  /// document (READY when the backend reports INDEXED), or null when
+  /// no document service is connected. Real backend failures surface
+  /// as exceptions handled by the existing app-wide error patterns
+  /// (never raw errors to the learner).
+  Future<StudyDocument?> indexDocument(String documentId);
 }
 
 /// RAG-FE-1 placeholder: no document service exists yet.
@@ -138,4 +150,9 @@ class EmptyStudyLabRepository implements StudyLabRepository {
   }) async => const PracticeEvaluationUnavailable(
     "Practice evaluation isn't connected yet.",
   );
+
+  /// No document service exists: null (never a fabricated document).
+  /// Callers render the honest service-unavailable state.
+  @override
+  Future<StudyDocument?> indexDocument(String documentId) async => null;
 }

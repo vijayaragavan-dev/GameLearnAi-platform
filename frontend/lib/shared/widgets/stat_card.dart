@@ -4,6 +4,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_styles.dart';
 
+import '../../core/theme/neo_brutalism.dart';
+
 /// Compact stat tile used across streak/progress/profile.
 class StatCard extends StatelessWidget {
   const StatCard({
@@ -25,10 +27,13 @@ class StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: tint.withValues(alpha: 0.35)),
-        boxShadow: isDark ? null : AppShadows.elevated(alpha: 0.05),
+        border: Border.all(
+          color: isDark ? tint.withValues(alpha: 0.35) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.0,
+        ),
+        boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

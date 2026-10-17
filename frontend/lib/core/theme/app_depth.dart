@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_styles.dart';
+import 'neo_brutalism.dart';
 
 /// GameLearn AI visual depth hierarchy.
 ///
@@ -38,46 +39,55 @@ abstract final class AppDepth {
               offset: const Offset(0, 3),
             ),
           ]
-        : AppShadows.elevated(alpha: 0.04);
+        : NeoBrutalShadows.hardSm;
   }
 
   // ── Level 2: Standard card ────────────────────────────────────────────────
   /// Standard card shadow — game cards, subject cards, list items.
   static List<BoxShadow> card(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? AppShadows.drop() : AppShadows.elevated(alpha: 0.06);
+    return isDark ? AppShadows.drop() : NeoBrutalShadows.hard;
   }
 
   // ── Level 3: Featured card ────────────────────────────────────────────────
   /// Featured / highlighted card — hero items, current path node, spotlight.
   static List<BoxShadow> featured(BuildContext context, Color accent) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return [
-      BoxShadow(
-        color: accent.withValues(alpha: isDark ? 0.28 : 0.12),
-        blurRadius: 28,
-        offset: const Offset(0, 10),
-      ),
-      if (isDark)
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.28),
-          blurRadius: 14,
-          offset: const Offset(0, 5),
-        ),
-    ];
+    return isDark
+        ? [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.28),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.28),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ]
+        : NeoBrutalShadows.hardLg;
   }
 
   // ── Level 4: Modal / overlay ──────────────────────────────────────────────
   /// Modal, bottom sheet, dialog — heavy shadow for overlay surfaces.
   static List<BoxShadow> modal(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.55 : 0.18),
-        blurRadius: 48,
-        offset: const Offset(0, 20),
-      ),
-    ];
+    return isDark
+        ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.55),
+              blurRadius: 48,
+              offset: const Offset(0, 20),
+            ),
+          ]
+        : const [
+            BoxShadow(
+              color: NeoBrutalColors.ink,
+              offset: Offset(6, 6),
+              blurRadius: 0,
+            ),
+          ];
   }
 
   // ── Level 5: Reward / critical ────────────────────────────────────────────
@@ -85,18 +95,26 @@ abstract final class AppDepth {
   /// Use at most once per screen; only for truly earned moments.
   static List<BoxShadow> reward(BuildContext context, Color accent) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return [
-      BoxShadow(
-        color: accent.withValues(alpha: isDark ? 0.50 : 0.22),
-        blurRadius: 40,
-        spreadRadius: 2,
-      ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.12),
-        blurRadius: 24,
-        offset: const Offset(0, 12),
-      ),
-    ];
+    return isDark
+        ? [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.50),
+              blurRadius: 40,
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.40),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ]
+        : const [
+            BoxShadow(
+              color: NeoBrutalColors.ink,
+              offset: Offset(5, 5),
+              blurRadius: 0,
+            ),
+          ];
   }
 }
 
@@ -160,7 +178,8 @@ class DepthContainer extends StatelessWidget {
           border: Border.all(
             color: isDark
                 ? AppColors.border
-                : AppLightColors.border,
+                : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.5,
           ),
         ),
         child: child,

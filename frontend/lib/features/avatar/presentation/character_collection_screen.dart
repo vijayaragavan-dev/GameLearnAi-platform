@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/router.dart';
 import '../../../core/models/avatar_models.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../../../shared/widgets/app_backgrounds.dart';
+import '../../../shared/widgets/brutal_widgets.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
-import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/game_surfaces.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../avatar/providers/avatar_providers.dart';
@@ -158,7 +158,6 @@ class _CollectionHeader extends StatelessWidget {
   final int credits;
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FeaturedSurface(
       accent: AppColors.primary,
       padding: const EdgeInsets.all(16),
@@ -230,10 +229,30 @@ class _NextUnlockCard extends StatelessWidget {
 class _CompletedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.xp.withValues(alpha: 0.15), Theme.of(context).colorScheme.surface]), borderRadius: BorderRadius.circular(AppRadius.xl), border: Border.all(color: AppColors.xp.withValues(alpha: 0.3))),
-      child: Row(children: [const Icon(Icons.emoji_events_rounded, color: AppColors.xp), const SizedBox(width: 8), Expanded(child: Text('Collection complete — you own every champion!', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.xp)))]),
+      decoration: BoxDecoration(
+        color: isDark ? Theme.of(context).colorScheme.surface : NeoBrutalColors.cardWarmCream,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: isDark ? AppColors.xp.withValues(alpha: 0.3) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
+        ),
+        boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.emoji_events_rounded, color: AppColors.xp),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Collection complete — you own every champion!',
+              style: TextStyle(fontWeight: FontWeight.w800, color: isDark ? AppColors.xp : NeoBrutalColors.ink),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -244,6 +263,7 @@ class _FilterChips extends StatelessWidget {
   final ValueChanged<String> onSelect;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const filters = ['ALL', 'OWNED', 'AVAILABLE', 'LOCKED'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -252,13 +272,32 @@ class _FilterChips extends StatelessWidget {
           for (final f in filters)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(f, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: selected == f ? Colors.white : null)),
-                selected: selected == f,
-                onSelected: (_) => onSelect(f),
-                selectedColor: AppColors.primary,
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                side: BorderSide(color: selected == f ? AppColors.primary : (Theme.of(context).brightness == Brightness.dark ? AppColors.border : AppLightColors.border)),
+              child: BrutalPressable(
+                onTap: () => onSelect(f),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: selected == f
+                        ? NeoBrutalColors.cobaltBlue
+                        : (isDark ? Theme.of(context).colorScheme.surface : Colors.white),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark ? (selected == f ? AppColors.primary : AppColors.border) : NeoBrutalColors.ink,
+                      width: isDark ? 1.0 : 2.0,
+                    ),
+                    boxShadow: isDark ? null : NeoBrutalShadows.hardXs,
+                  ),
+                  child: Text(
+                    f,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: selected == f
+                          ? Colors.white
+                          : (isDark ? AppColors.textPrimary : NeoBrutalColors.ink),
+                    ),
+                  ),
+                ),
               ),
             ),
         ],
@@ -305,16 +344,27 @@ class _CharacterCard extends StatelessWidget {
       'rare' => AppColors.secondary,
       _ => isDark ? AppColors.border : AppLightColors.border,
     };
-    Widget card = Pressable(
-      onTap: () => context.push('/profile/characters/${item.id}'),
-      semanticsLabel: '${item.displayName}, ${item.rarity}, ${item.state.name}',
-      child: Container(
+    Widget card = Semantics(
+      label: '${item.displayName}, ${item.rarity}, ${item.state.name}',
+      button: true,
+      child: GestureDetector(
+        onTap: () => context.push('/profile/characters/${item.id}'),
+        child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: isDark
+                ? Theme.of(context).colorScheme.surface
+                : (isOwned ? NeoBrutalColors.cardWarmCream : Colors.white),
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: isOwned ? borderColor.withValues(alpha: 0.6) : (isDark ? AppColors.border : AppLightColors.border), width: isOwned ? 1.5 : 1),
-            boxShadow: isOwned && isDark ? [BoxShadow(color: borderColor.withValues(alpha: 0.12), blurRadius: 12)] : null,
+            border: Border.all(
+              color: isDark
+                  ? (isOwned ? borderColor.withValues(alpha: 0.6) : AppColors.border)
+                  : NeoBrutalColors.ink,
+              width: isDark ? (isOwned ? 1.5 : 1.0) : 2.5,
+            ),
+            boxShadow: isDark
+                ? (isOwned ? [BoxShadow(color: borderColor.withValues(alpha: 0.12), blurRadius: 12)] : null)
+                : NeoBrutalShadows.hardSm,
           ),
           child: Column(
             children: [
@@ -337,7 +387,12 @@ class _CharacterCard extends StatelessWidget {
                       bottom: -2,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.white, width: 1)),
+                        decoration: BoxDecoration(
+                          color: NeoBrutalColors.emeraldGreen,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: NeoBrutalColors.ink, width: 1.5),
+                          boxShadow: NeoBrutalShadows.hardXs,
+                        ),
                         child: const Text('EQUIPPED', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.6)),
                       ),
                     ),
@@ -351,7 +406,8 @@ class _CharacterCard extends StatelessWidget {
             ],
           ),
         ),
-      );
+      ),
+    );
     if (reduce) return card;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -370,6 +426,7 @@ class _StatePill extends StatelessWidget {
   final int? creditsShort;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (String label, Color color, Color bg) = switch (state) {
       AvatarState.equipped => ('EQUIPPED', AppColors.success, AppColors.success.withValues(alpha: 0.12)),
       AvatarState.owned => ('OWNED', AppColors.primary, AppColors.primary.withValues(alpha: 0.12)),
@@ -379,17 +436,26 @@ class _StatePill extends StatelessWidget {
       AvatarState.locked => ('LOCKED', AppColors.locked, AppColors.locked.withValues(alpha: 0.1)),
       AvatarState.unknown => ('UNKNOWN', AppColors.locked, AppColors.locked.withValues(alpha: 0.1)),
     };
-    if (state == AvatarState.locked && creditCost == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999), border: Border.all(color: color.withValues(alpha: 0.3))),
-        child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: color)),
-      );
-    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999), border: Border.all(color: color.withValues(alpha: 0.3))),
-      child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: color)),
+      decoration: BoxDecoration(
+        color: isDark ? bg : Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isDark ? color.withValues(alpha: 0.3) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 1.5,
+        ),
+        boxShadow: isDark ? null : NeoBrutalShadows.hardXs,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
+          color: isDark ? color : NeoBrutalColors.ink,
+        ),
+      ),
     );
   }
 }
@@ -413,10 +479,26 @@ class _EmptyFilterState extends StatelessWidget {
   final String filter;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.xl), border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppColors.border : AppLightColors.border)),
-      child: Column(children: [Icon(Icons.filter_list_off_rounded, size: 32, color: AppColors.textTertiary), const SizedBox(height: 8), Text('No $filter characters', style: AppTypography.h3(context)), Text('Try another filter.', style: AppTypography.bodySecondary(context))]),
+      decoration: BoxDecoration(
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: isDark ? AppColors.border : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
+        ),
+        boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.filter_list_off_rounded, size: 32, color: AppColors.textTertiary),
+          const SizedBox(height: 8),
+          Text('No $filter characters', style: AppTypography.h3(context)),
+          Text('Try another filter.', style: AppTypography.bodySecondary(context)),
+        ],
+      ),
     );
   }
 }

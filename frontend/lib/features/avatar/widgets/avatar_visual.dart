@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../core/models/avatar_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/avatar_asset_resolver.dart';
@@ -83,23 +82,41 @@ class AvatarVisual extends StatelessWidget {
                   : null,
             ),
             clipBehavior: Clip.antiAlias,
-            child: SvgPicture.asset(
-              assetPath,
-              width: size * 0.92,
-              height: size * 0.92,
-              fit: BoxFit.contain,
-              placeholderBuilder: (ctx) => Center(
-                child: Text(
-                  displayName.isEmpty ? '?' : displayName[0].toUpperCase(),
-                  style: TextStyle(
-                    fontFamily: AppTypography.displayFamily,
-                    fontSize: size * 0.38,
-                    fontWeight: FontWeight.w800,
-                    color: rarityColor,
+            child: assetPath.toLowerCase().endsWith('.png')
+                ? Image.asset(
+                    assetPath,
+                    width: size * 0.92,
+                    height: size * 0.92,
+                    fit: BoxFit.contain,
+                    errorBuilder: (ctx, err, stack) => Center(
+                      child: Text(
+                        displayName.isEmpty ? '?' : displayName[0].toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: AppTypography.displayFamily,
+                          fontSize: size * 0.38,
+                          fontWeight: FontWeight.w800,
+                          color: rarityColor,
+                        ),
+                      ),
+                    ),
+                  )
+                : SvgPicture.asset(
+                    assetPath,
+                    width: size * 0.92,
+                    height: size * 0.92,
+                    fit: BoxFit.contain,
+                    placeholderBuilder: (ctx) => Center(
+                      child: Text(
+                        displayName.isEmpty ? '?' : displayName[0].toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: AppTypography.displayFamily,
+                          fontSize: size * 0.38,
+                          fontWeight: FontWeight.w800,
+                          color: rarityColor,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
           ),
           if (showRarityBadge)
             Positioned(

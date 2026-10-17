@@ -128,6 +128,22 @@ class ApiStudyLabRepository implements StudyLabRepository {
         "Practice evaluation isn't connected yet.",
       );
 
+  /// Builds the Qdrant vector index for one owned document via
+  /// `POST /api/v1/documents/{id}/index` and returns the refreshed
+  /// metadata. Ownership stays server-side (authenticated principal);
+  /// the path id is the only identity sent. 401 rethrows for the
+  /// session handler; every other failure throws its [ApiException]
+  /// so callers can render the honest backend state.
+  @override
+  Future<StudyDocument?> indexDocument(String documentId) async {
+    final json = await _client.postJson(
+      '/api/v1/documents/${Uri.encodeComponent(documentId)}/index',
+      null,
+      timeout: const Duration(seconds: 60),
+    );
+    return _documentFromJson(json);
+  }
+
   static StudyDocument _documentFromJson(Map<String, dynamic> json) {
     final status = _statusFromBackend(json['status'] as String?);
     final contentType = (json['contentType'] as String?) ?? '';

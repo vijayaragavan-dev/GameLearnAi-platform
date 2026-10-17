@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/neo_brutalism.dart';
 import 'app_backgrounds.dart';
 import 'cinematic_scenery.dart';
 import 'nova_companion.dart';
@@ -102,11 +103,18 @@ class CinematicHero extends StatelessWidget {
           border: Border.all(
             color: isDark
                 ? accent.withValues(alpha: 0.38)
-                : AppLightColors.borderStrong,
+                : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.5,
           ),
           boxShadow: isDark
               ? AppShadows.depth3(accent, dark: true)
-              : AppShadows.elevated(alpha: 0.08),
+              : const [
+                  BoxShadow(
+                    color: NeoBrutalColors.ink,
+                    offset: Offset(4, 4),
+                    blurRadius: 0,
+                  ),
+                ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -324,7 +332,8 @@ class GlassPanel extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? glowColor.withValues(alpha: 0.32)
-              : AppLightColors.borderStrong,
+              : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
         ),
         boxShadow: isDark
             ? [
@@ -339,7 +348,13 @@ class GlassPanel extends StatelessWidget {
                   offset: const Offset(0, 4),
                 ),
               ]
-            : AppShadows.elevated(alpha: 0.07),
+            : const [
+                BoxShadow(
+                  color: NeoBrutalColors.ink,
+                  offset: Offset(4, 4),
+                  blurRadius: 0,
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -421,18 +436,31 @@ class GlowCTA extends StatelessWidget {
           curve: AppMotion.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
           decoration: BoxDecoration(
-            gradient:
-                gradient ??
-                const LinearGradient(
-                  colors: [Color(0xFFA855F7), AppColors.primary, Color(0xFF6366F1)],
-                ),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            gradient: isDark
+                ? (gradient ??
+                    const LinearGradient(
+                      colors: [Color(0xFFA855F7), AppColors.primary, Color(0xFF6366F1)],
+                    ))
+                : null,
+            color: isDark ? null : NeoBrutalColors.cobaltBlue,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.22 : 0.0),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.22)
+                  : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
             ),
-            boxShadow: enabled && isDark
-                ? AppShadows.glow(glowColor, alpha: 0.45)
-                : AppShadows.none,
+            boxShadow: enabled
+                ? (isDark
+                    ? AppShadows.glow(glowColor, alpha: 0.45)
+                    : const [
+                        BoxShadow(
+                          color: NeoBrutalColors.ink,
+                          offset: Offset(4, 4),
+                          blurRadius: 0,
+                        ),
+                      ])
+                : null,
           ),
           child: Opacity(
             opacity: enabled ? 1.0 : 0.55,
@@ -507,17 +535,33 @@ class NeonSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isTopicMastery = title.toLowerCase().contains('topic') || accent == AppColors.primary;
+    final isAccuracy = title.toLowerCase().contains('accuracy') || accent == AppColors.secondary;
+    final iconBg = isDark
+        ? accent.withValues(alpha: 0.14)
+        : (isTopicMastery
+            ? const Color(0xFFE0E7FF)
+            : (isAccuracy ? const Color(0xFFCFFAFE) : accent.withValues(alpha: 0.12)));
+    final iconColor = isDark
+        ? accent
+        : (isTopicMastery
+            ? const Color(0xFF4F46E5)
+            : (isAccuracy ? const Color(0xFF0891B2) : accent));
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.14 : 0.10),
+            color: iconBg,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: accent.withValues(alpha: 0.40)),
+            border: Border.all(
+              color: isDark ? accent.withValues(alpha: 0.40) : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 1.5,
+            ),
           ),
-          child: Icon(icon, size: 18, color: accent),
+          child: Icon(icon, size: 18, color: iconColor),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -533,7 +577,7 @@ class NeonSectionHeader extends StatelessWidget {
                   letterSpacing: 1.4,
                   color: isDark
                       ? AppColors.textPrimary
-                      : AppLightColors.textPrimary,
+                      : NeoBrutalColors.ink,
                 ),
               ),
               if (subtitle != null) ...[
@@ -546,7 +590,7 @@ class NeonSectionHeader extends StatelessWidget {
                     fontSize: 12,
                     color: isDark
                         ? AppColors.textSecondary
-                        : AppLightColors.textSecondary,
+                        : NeoBrutalColors.inkSecondary,
                   ),
                 ),
               ],
@@ -718,22 +762,30 @@ class BrandWordmark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: compact ? 38 : 44,
-          height: compact ? 38 : 44,
+          width: compact ? 38 : 48,
+          height: compact ? 38 : 48,
           decoration: BoxDecoration(
-            gradient: AppGradients.brand,
+            color: isDark ? null : NeoBrutalColors.pastelYellow,
+            gradient: isDark ? AppGradients.brand : null,
             borderRadius: BorderRadius.circular(compact ? 12 : 14),
             border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.0),
+              color: isDark ? Colors.white.withValues(alpha: 0.18) : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
             ),
             boxShadow: isDark
                 ? AppShadows.glow(AppColors.primary, alpha: 0.35)
-                : AppShadows.elevated(alpha: 0.10),
+                : const [
+                    BoxShadow(
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(2.5, 2.5),
+                      blurRadius: 0,
+                    ),
+                  ],
           ),
           child: Icon(
             Icons.sports_esports_rounded,
-            size: compact ? 20 : 24,
-            color: Colors.white,
+            size: compact ? 20 : 26,
+            color: isDark ? Colors.white : NeoBrutalColors.ink,
           ),
         ),
         const SizedBox(width: 10),
@@ -742,7 +794,7 @@ class BrandWordmark extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const FittedBox(
+              FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   // Canonical wordmark (single Text widget so responsive
@@ -753,6 +805,7 @@ class BrandWordmark extends StatelessWidget {
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2.2,
+                    color: isDark ? AppColors.textPrimary : NeoBrutalColors.ink,
                   ),
                 ),
               ),
@@ -763,11 +816,11 @@ class BrandWordmark extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 1.8,
                     color: isDark
                         ? AppColors.textTertiary
-                        : AppLightColors.textTertiary,
+                        : NeoBrutalColors.inkSecondary,
                   ),
                 ),
             ],

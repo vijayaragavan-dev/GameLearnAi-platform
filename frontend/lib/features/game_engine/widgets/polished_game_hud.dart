@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../engine/game_combo.dart';
 
 /// Polished, reusable HUD for games that need lives, score, timer, progress, combo.
@@ -38,14 +38,28 @@ class PolishedGameHud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       label: '$gameTitle HUD, progress $progressLabel, score $score, time $timeRemaining',
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.96),
-          border: Border(bottom: BorderSide(color: AppColors.border)),
-          boxShadow: [BoxShadow(color: gameColor.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+          color: isDark ? AppColors.surface.withValues(alpha: 0.96) : NeoBrutalColors.cream,
+          border: Border(
+            bottom: BorderSide(
+              color: isDark ? AppColors.border : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
+            ),
+          ),
+          boxShadow: isDark
+              ? [BoxShadow(color: gameColor.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))]
+              : const [
+                  BoxShadow(
+                    color: NeoBrutalColors.ink,
+                    offset: Offset(0, 3),
+                    blurRadius: 0,
+                  ),
+                ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -54,43 +68,116 @@ class PolishedGameHud extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: gameColor.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadius.pill), border: Border.all(color: gameColor.withValues(alpha: 0.45))),
+                  decoration: BoxDecoration(
+                    color: isDark ? gameColor.withValues(alpha: 0.14) : Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(
+                      color: isDark ? gameColor.withValues(alpha: 0.45) : NeoBrutalColors.ink,
+                      width: isDark ? 1 : 1.5,
+                    ),
+                    boxShadow: isDark
+                        ? null
+                        : const [
+                            BoxShadow(
+                              color: NeoBrutalColors.ink,
+                              offset: Offset(1.5, 1.5),
+                              blurRadius: 0,
+                            ),
+                          ],
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(gameIcon, style: const TextStyle(fontSize: 12)),
                       const SizedBox(width: 4),
-                      Text(gameTitle.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: gameColor)),
+                      Text(
+                        gameTitle.toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: NeoBrutalTypography.displayFamily,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: isDark ? gameColor : NeoBrutalColors.ink,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const Spacer(),
                 Semantics(
                   label: 'Score $score',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star_rounded, size: 18, color: AppColors.xp),
-                      const SizedBox(width: 4),
-                      Text('$score', style: const TextStyle(fontFamily: AppTypography.displayFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.xp)),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceElevated : NeoBrutalColors.cardYellow,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: isDark ? AppColors.xp.withValues(alpha: 0.45) : NeoBrutalColors.ink,
+                        width: isDark ? 1 : 1.5,
+                      ),
+                      boxShadow: isDark
+                          ? null
+                          : const [
+                              BoxShadow(
+                                color: NeoBrutalColors.ink,
+                                offset: Offset(1.5, 1.5),
+                                blurRadius: 0,
+                              ),
+                            ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.star_rounded, size: 16, color: isDark ? AppColors.xp : NeoBrutalColors.ink),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$score',
+                          style: TextStyle(
+                            fontFamily: NeoBrutalTypography.displayFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? AppColors.xp : NeoBrutalColors.ink,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Semantics(
                   label: 'Time remaining $timeRemaining',
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _timerColor(timeRemaining).withValues(alpha: 0.14),
+                      color: isDark ? _timerColor(timeRemaining).withValues(alpha: 0.14) : Colors.white,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: _timerColor(timeRemaining).withValues(alpha: 0.4)),
+                      border: Border.all(
+                        color: isDark ? _timerColor(timeRemaining).withValues(alpha: 0.4) : NeoBrutalColors.ink,
+                        width: isDark ? 1 : 1.5,
+                      ),
+                      boxShadow: isDark
+                          ? null
+                          : const [
+                              BoxShadow(
+                                color: NeoBrutalColors.ink,
+                                offset: Offset(1.5, 1.5),
+                                blurRadius: 0,
+                              ),
+                            ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.timer_outlined, size: 14, color: _timerColor(timeRemaining)),
+                        Icon(Icons.timer_outlined, size: 14, color: isDark ? _timerColor(timeRemaining) : NeoBrutalColors.ink),
                         const SizedBox(width: 5),
-                        Text(timeRemaining, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _timerColor(timeRemaining))),
+                        Text(
+                          timeRemaining,
+                          style: TextStyle(
+                            fontFamily: NeoBrutalTypography.displayFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? _timerColor(timeRemaining) : NeoBrutalColors.ink,
+                          ),
+                        ),
                       ],
                     ),
                   ),

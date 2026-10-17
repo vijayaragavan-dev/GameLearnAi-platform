@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
+import '../../core/theme/neo_brutalism.dart';
 import 'cinematic_scenery.dart';
 
 /// Premium reusable surfaces — single language for all future game screens.
@@ -49,7 +49,8 @@ class GlassPanel extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.14)
-              : AppLightColors.border,
+              : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
         ),
         boxShadow: isDark
             ? [
@@ -59,7 +60,7 @@ class GlassPanel extends StatelessWidget {
                   offset: const Offset(0, 8),
                 ),
               ]
-            : AppShadows.elevated(alpha: 0.06),
+            : NeoBrutalShadows.hard,
       ),
       child: child,
     );
@@ -89,26 +90,29 @@ class ElevatedGamePanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: glowColor != null
-            ? [
-                BoxShadow(
-                  color: glowColor!.withValues(alpha: isDark ? 0.22 : 0.12),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
-                ),
-              ]
-            : (isDark ? AppShadows.drop() : AppShadows.elevated(alpha: 0.07)),
+        boxShadow: isDark
+            ? (glowColor != null
+                ? [
+                    BoxShadow(
+                      color: glowColor!.withValues(alpha: 0.22),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : AppShadows.drop())
+            : NeoBrutalShadows.hard,
       ),
       child: Container(
         padding: padding,
         decoration: BoxDecoration(
           gradient: highlight ? AppGradients.sheen(context) : null,
-          color: highlight ? null : scheme.surface,
+          color: highlight ? null : (isDark ? scheme.surface : Colors.white),
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color:
-                glowColor?.withValues(alpha: 0.35) ??
-                (isDark ? AppColors.border : AppLightColors.border),
+            color: isDark
+                ? (glowColor?.withValues(alpha: 0.35) ?? AppColors.border)
+                : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.5,
           ),
         ),
         child: child,
@@ -140,13 +144,14 @@ class RewardSurface extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.xp.withValues(alpha: intensity),
-            isDark ? AppColors.surfaceElevated : AppLightColors.surface,
+            AppColors.xp.withValues(alpha: isDark ? intensity : 0.16),
+            isDark ? AppColors.surfaceElevated : NeoBrutalColors.cardWarmCream,
           ],
         ),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: AppColors.xp.withValues(alpha: isDark ? 0.35 : 0.22),
+          color: isDark ? AppColors.xp.withValues(alpha: 0.35) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
         ),
         boxShadow: isDark
             ? [
@@ -156,7 +161,7 @@ class RewardSurface extends StatelessWidget {
                   offset: const Offset(0, 6),
                 ),
               ]
-            : null,
+            : NeoBrutalShadows.hard,
       ),
       child: child,
     );
@@ -188,7 +193,8 @@ class AchievementSurface extends StatelessWidget {
               : AppLightColors.lockedSurface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: isDark ? AppColors.border : AppLightColors.border,
+            color: isDark ? AppColors.border : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.0,
           ),
         ),
         child: child,
@@ -197,13 +203,18 @@ class AchievementSurface extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-        boxShadow: AppShadows.glow(
-          AppColors.primary,
-          alpha: isDark ? 0.22 : 0.10,
+        border: Border.all(
+          color: isDark ? AppColors.primary.withValues(alpha: 0.3) : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
         ),
+        boxShadow: isDark
+            ? AppShadows.glow(
+                AppColors.primary,
+                alpha: 0.22,
+              )
+            : NeoBrutalShadows.hard,
       ),
       child: child,
     );
@@ -230,12 +241,15 @@ class StatisticSurface extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: (tint ?? (isDark ? AppColors.border : AppLightColors.border))
-              .withValues(alpha: tint != null ? 0.35 : 1),
+          color: isDark
+              ? (tint ?? AppColors.border).withValues(alpha: tint != null ? 0.35 : 1)
+              : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.0,
         ),
+        boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
       ),
       child: child,
     );
@@ -262,7 +276,9 @@ class HighlightedSurface extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: AppShadows.glow(color, alpha: isDark ? 0.22 : 0.10),
+        boxShadow: isDark
+            ? AppShadows.glow(color, alpha: 0.22)
+            : NeoBrutalShadows.hardLg,
       ),
       child: Container(
         padding: padding,
@@ -270,13 +286,21 @@ class HighlightedSurface extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: isDark ? 0.14 : 0.07),
-              Theme.of(context).colorScheme.surface,
-            ],
+            colors: isDark
+                ? [
+                    color.withValues(alpha: 0.14),
+                    Theme.of(context).colorScheme.surface,
+                  ]
+                : [
+                    color.withValues(alpha: 0.12),
+                    Colors.white,
+                  ],
           ),
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
+          border: Border.all(
+            color: isDark ? color.withValues(alpha: 0.45) : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.5,
+          ),
         ),
         child: child,
       ),
@@ -316,10 +340,10 @@ class _InteractiveSurfaceState extends State<InteractiveSurface> {
     final scheme = Theme.of(context).colorScheme;
     final hoverBorder =
         widget.borderColor ??
-        (isDark ? AppColors.borderStrong : AppLightColors.borderStrong);
+        (isDark ? AppColors.borderStrong : NeoBrutalColors.ink);
     final idleBorder =
         widget.borderColor ??
-        (isDark ? AppColors.border : AppLightColors.border);
+        (isDark ? AppColors.border : NeoBrutalColors.ink);
     return MouseRegion(
       onEnter: widget.onTap == null
           ? null
@@ -339,24 +363,26 @@ class _InteractiveSurfaceState extends State<InteractiveSurface> {
             ? null
             : (_) => setState(() => _pressed = false),
         onTapCancel: () => setState(() => _pressed = false),
-        child: AnimatedScale(
-          scale: _pressed ? AppStates.pressedScale : 1.0,
-          duration: AppMotion.durFor(context, AppMotion.press),
-          curve: AppMotion.easeOut,
-          child: AnimatedContainer(
-            duration: AppMotion.durFor(context, AppMotion.fast),
-            curve: AppMotion.easeOut,
-            padding: widget.padding,
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: _hovered ? hoverBorder : idleBorder),
-              boxShadow: _hovered && widget.enableHoverGlow
-                  ? AppShadows.interactive(AppColors.primary, alpha: 0.14)
-                  : (isDark ? AppShadows.drop() : null),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: isDark
+              ? null
+              : Matrix4.translationValues(_pressed ? 2.0 : 0.0, _pressed ? 2.0 : 0.0, 0.0),
+          padding: widget.padding,
+          decoration: BoxDecoration(
+            color: isDark ? scheme.surface : Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: isDark ? (_hovered ? hoverBorder : idleBorder) : NeoBrutalColors.ink,
+              width: isDark ? 1.0 : 2.5,
             ),
-            child: widget.child,
+            boxShadow: isDark
+                ? (_hovered && widget.enableHoverGlow
+                    ? AppShadows.interactive(AppColors.primary, alpha: 0.14)
+                    : AppShadows.drop())
+                : (_pressed ? NeoBrutalShadows.hardPressed : NeoBrutalShadows.hard),
           ),
+          child: widget.child,
         ),
       ),
     );
@@ -395,19 +421,20 @@ class FeaturedSurface extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: isDark ? 0.28 : 0.12),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
-          ),
-          if (isDark)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.28),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.28),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : NeoBrutalShadows.hardLg,
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -428,8 +455,10 @@ class FeaturedSurface extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(
-            color: accent.withValues(alpha: isDark ? 0.45 : 0.28),
-            width: 1.5,
+            color: isDark
+                ? accent.withValues(alpha: 0.45)
+                : NeoBrutalColors.ink,
+            width: isDark ? 1.5 : 2.5,
           ),
         ),
         child: ClipRRect(
@@ -499,15 +528,17 @@ class GameIdentitySurface extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: showGlow && isDark
-            ? [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.25),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                ),
-              ]
-            : null,
+        boxShadow: isDark
+            ? (showGlow
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                    ),
+                  ]
+                : null)
+            : NeoBrutalShadows.hard,
       ),
       child: Container(
         padding: padding,
@@ -516,13 +547,14 @@ class GameIdentitySurface extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              accent.withValues(alpha: isDark ? 0.12 : 0.05),
-              scheme.surface,
+              accent.withValues(alpha: isDark ? 0.12 : 0.08),
+              isDark ? scheme.surface : Colors.white,
             ],
           ),
           borderRadius: BorderRadius.circular(radius),
           border: Border.all(
-            color: accent.withValues(alpha: isDark ? 0.30 : 0.18),
+            color: isDark ? accent.withValues(alpha: 0.30) : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.5,
           ),
         ),
         child: child,
@@ -557,10 +589,12 @@ class GameChallengeSurface extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(color: accent.withValues(alpha: isDark ? 0.14 : 0.07), blurRadius: 20, offset: const Offset(0, 8)),
-          if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6)),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(color: accent.withValues(alpha: 0.14), blurRadius: 20, offset: const Offset(0, 8)),
+                if (isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6)),
+              ]
+            : NeoBrutalShadows.hard,
       ),
       child: Container(
         padding: padding,
@@ -570,10 +604,13 @@ class GameChallengeSurface extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isDark
                 ? [accent.withValues(alpha: 0.10), AppColors.surfaceElevated, AppColors.surfaceElevated.withValues(alpha: 0.98)]
-                : [accent.withValues(alpha: 0.06), AppLightColors.surface],
+                : [accent.withValues(alpha: 0.08), Colors.white],
           ),
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: accent.withValues(alpha: isDark ? 0.28 : 0.18), width: 1.2),
+          border: Border.all(
+            color: isDark ? accent.withValues(alpha: 0.28) : NeoBrutalColors.ink,
+            width: isDark ? 1.2 : 2.5,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,19 +622,46 @@ class GameChallengeSurface extends StatelessWidget {
                     Container(
                       width: 28,
                       height: 28,
-                      decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.78)])),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent,
+                        border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 2),
+                      ),
                       child: Icon(icon, size: 16, color: Colors.white),
                     ),
                     const SizedBox(width: 8),
                   ],
                   Expanded(
-                    child: Text(title!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: accent)),
+                    child: Text(
+                      title!,
+                      style: TextStyle(
+                        fontFamily: 'SpaceGrotesk',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        color: isDark ? accent : NeoBrutalColors.ink,
+                      ),
+                    ),
                   ),
                   if (subtitle != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(color: isDark ? AppColors.surfaceHigh : AppLightColors.surfaceHigh, borderRadius: BorderRadius.circular(999), border: Border.all(color: isDark ? AppColors.border : AppLightColors.border)),
-                      child: Text(subtitle!, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceHigh : NeoBrutalColors.pastelYellow,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                          width: isDark ? 1.0 : 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.textSecondary : NeoBrutalColors.ink,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -629,18 +693,24 @@ class GameFeedbackSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isCorrect ? AppColors.success : AppColors.error;
-    final useAccent = accent ?? color;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.10 : 0.06),
+        color: isDark
+            ? color.withValues(alpha: 0.10)
+            : (isCorrect ? NeoBrutalColors.pastelGreen : const Color(0xFFFFEAEA)),
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.38 : 0.28), width: 1.2),
-        boxShadow: [
-          BoxShadow(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: isDark ? 0.14 : 0.06), blurRadius: 14, offset: const Offset(0, 4)),
-        ],
+        border: Border.all(
+          color: isDark ? color.withValues(alpha: 0.38) : NeoBrutalColors.ink,
+          width: isDark ? 1.2 : 2.5,
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(color: color.withValues(alpha: 0.14), blurRadius: 14, offset: const Offset(0, 4)),
+              ]
+            : NeoBrutalShadows.hardSm,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,8 +718,16 @@ class GameFeedbackSurface extends StatelessWidget {
           Container(
             width: 28,
             height: 28,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.16), border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.45))),
-            child: Icon(isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: isCorrect ? AppColors.success : AppColors.error),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isCorrect ? AppColors.success : AppColors.error,
+              border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 2),
+            ),
+            child: Icon(
+              isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              size: 16,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(child: child),

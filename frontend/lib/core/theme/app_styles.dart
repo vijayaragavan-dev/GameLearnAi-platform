@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'neo_brutalism.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPACING
@@ -87,18 +88,7 @@ abstract final class AppShadows {
   ];
 
   /// Multi-layer elevated shadow — light theme cards.
-  static List<BoxShadow> elevated({double alpha = 0.08}) => [
-    BoxShadow(
-      color: const Color(0xFF0F172A).withValues(alpha: alpha),
-      blurRadius: 20,
-      offset: const Offset(0, 8),
-    ),
-    BoxShadow(
-      color: const Color(0xFF0F172A).withValues(alpha: alpha * 0.6),
-      blurRadius: 4,
-      offset: const Offset(0, 1),
-    ),
-  ];
+  static List<BoxShadow> elevated({double alpha = 0.08}) => NeoBrutalShadows.hard;
 
   /// Hover shadow — restrained glow on pointer hover.
   static List<BoxShadow> interactive(Color color, {double alpha = 0.18}) => [
@@ -130,7 +120,7 @@ abstract final class AppShadows {
       offset: const Offset(0, 4),
     ),
   ]
-      : elevated(alpha: 0.05);
+      : NeoBrutalShadows.hardSm;
 
   /// Depth-2 card — standard card depth.
   static List<BoxShadow> depth2({bool dark = true}) => dark
@@ -141,22 +131,23 @@ abstract final class AppShadows {
       offset: const Offset(0, 8),
     ),
   ]
-      : elevated(alpha: 0.07);
+      : NeoBrutalShadows.hard;
 
   /// Depth-3 featured — featured/highlighted card.
-  static List<BoxShadow> depth3(Color accent, {bool dark = true}) => [
+  static List<BoxShadow> depth3(Color accent, {bool dark = true}) => dark
+      ? [
     BoxShadow(
-      color: accent.withValues(alpha: dark ? 0.22 : 0.10),
+      color: accent.withValues(alpha: 0.22),
       blurRadius: 28,
       offset: const Offset(0, 10),
     ),
-    if (dark)
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.30),
-        blurRadius: 16,
-        offset: const Offset(0, 6),
-      ),
-  ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.30),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ]
+      : NeoBrutalShadows.hardLg;
 
   /// Depth-4 modal — overlay/dialog shadow.
   static List<BoxShadow> depth4({bool dark = true}) => [
@@ -408,153 +399,176 @@ abstract final class AppGradients {
 
   // ── Game identity gradients (mapped by game family) ───────────────────────
 
-  /// Quiz / battle family — purple energy.
+  // ── Game identity gradients (mapped by game family) ───────────────────────
+
+  /// Quiz / battle family — #243B69 → #DCE7FF (Accent #3B82F6).
   static const LinearGradient gameQuiz = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF4C1D95), AppColors.primary],
+    colors: [Color(0xFF243B69), Color(0xFFDCE7FF)],
   );
 
-  /// Memory / cognitive family — cyan mindscape.
+  /// Memory / cognitive family — #155E63 → #D7F5F3 (Accent #06B6D4).
   static const LinearGradient gameMemory = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF164E63), AppColors.secondary],
+    colors: [Color(0xFF155E63), Color(0xFFD7F5F3)],
   );
 
   /// Speed / arcade family — streak fire.
   static const LinearGradient gameSpeed = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF7C2D12), AppColors.streak],
+    colors: [Color(0xFF7C2D12), Color(0xFFFED7AA)],
   );
 
   /// Debug / logic family — emerald hacker.
   static const LinearGradient gameDebug = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF064E3B), AppColors.success],
+    colors: [Color(0xFF064E3B), Color(0xFFD8F5E9)],
   );
 
   /// Unlock / mystery family — gold vault.
   static const LinearGradient gameMystery = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF78350F), AppColors.xp],
+    colors: [Color(0xFF78350F), Color(0xFFFEF08A)],
   );
 
-  /// Puzzle / builder family — violet architect.
+  /// Puzzle / builder family — #4C2A72 → #E9DFFF (Accent #7C3AED).
   static const LinearGradient gamePuzzle = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF3B0764), Color(0xFF7C3AED)],
+    colors: [Color(0xFF4C2A72), Color(0xFFE9DFFF)],
   );
 
-  /// Boss / combat family — red warrior.
+  /// Boss / combat family — #6B3035 → #FFE0E0 (Accent #EF4444).
   static const LinearGradient gameBoss = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF7F1D1D), AppColors.error],
+    colors: [Color(0xFF6B3035), Color(0xFFFFE0E0)],
   );
 
   /// Connectivity / network family — teal grid.
   static const LinearGradient gameNetwork = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF134E4A), Color(0xFF14B8A6)],
+    colors: [Color(0xFF134E4A), Color(0xFFD8F4F7)],
   );
 
   /// Snake & Ladder — board game amber.
   static const LinearGradient gameBoard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF92400E), Color(0xFFF59E0B)],
+    colors: [Color(0xFF68421E), Color(0xFFF8E5CE)],
   );
 
   // ── World / subject gradients (keyed by subject iconKey) ─────────────────
 
-  /// Programming world — deep code purple.
+  /// Programming world — #25245C → #DDE1FF (Icon #6366F1).
   static const LinearGradient worldProgramming = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1E1B4B), Color(0xFF4338CA)],
+    colors: [Color(0xFF25245C), Color(0xFFDDE1FF)],
   );
 
-  /// Networks world — signal teal.
+  /// Networks world — #124E5B → #D8F4F7 (Icon #06B6D4).
   static const LinearGradient worldNetworks = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF0C4A6E), Color(0xFF0EA5E9)],
+    colors: [Color(0xFF124E5B), Color(0xFFD8F4F7)],
   );
 
-  /// DBMS world — data amber.
+  /// DBMS world — #68421E → #F8E5CE (Icon #F59E0B).
   static const LinearGradient worldDatabase = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF451A03), Color(0xFFF97316)],
+    colors: [Color(0xFF68421E), Color(0xFFF8E5CE)],
   );
 
-  /// OS world — system slate.
+  /// OS world — #303746 → #E2E6ED (Icon #64748B).
   static const LinearGradient worldOS = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1E293B), Color(0xFF64748B)],
+    colors: [Color(0xFF303746), Color(0xFFE2E6ED)],
   );
 
-  /// Data Structures world — emerald algorithm.
+  /// Data Structures world — #145A45 → #D8F5E9 (Icon #10B981).
   static const LinearGradient worldDataStructures = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF064E3B), Color(0xFF10B981)],
+    colors: [Color(0xFF145A45), Color(0xFFD8F5E9)],
   );
 
   /// Algorithms world — violet analysis.
   static const LinearGradient worldAlgorithms = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2E1065), Color(0xFF8B5CF6)],
+    colors: [Color(0xFF2E1065), Color(0xFFE9DFFF)],
   );
 
-  /// OOP world — cyan objects.
+  /// OOP world — #155B70 → #D7F4FA (Icon #06B6D4).
   static const LinearGradient worldOOP = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF164E63), Color(0xFF22D3EE)],
+    colors: [Color(0xFF155B70), Color(0xFFD7F4FA)],
   );
 
   /// AI/ML world — rose intelligence.
   static const LinearGradient worldAIML = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF500724), Color(0xFFF472B6)],
+    colors: [Color(0xFF500724), Color(0xFFFCE7F3)],
   );
 
   /// Data Science world — teal insight.
   static const LinearGradient worldDataScience = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF134E4A), Color(0xFF2DD4BF)],
+    colors: [Color(0xFF134E4A), Color(0xFFCCFBF1)],
   );
 
-  /// Web world — blue browser.
+  /// Web world — #174A7A → #DDEEFF (Icon #3B82F6).
   static const LinearGradient worldWeb = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1E3A8A), Color(0xFF60A5FA)],
+    colors: [Color(0xFF174A7A), Color(0xFFDDEEFF)],
   );
 
-  /// OOSE world — amber architecture.
+  /// OOSE world — #39435A → #E4E8F0 (Icon #64748B).
   static const LinearGradient worldOOSE = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF451A03), Color(0xFFFBBF24)],
+    colors: [Color(0xFF39435A), Color(0xFFE4E8F0)],
+  );
+
+  /// Nova card gradient — #123C46 → #D9F4F5.
+  static const LinearGradient novaCard = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF123C46), Color(0xFFD9F4F5)],
+  );
+
+  /// Progress card gradient — #172554 → #DCE7FF.
+  static const LinearGradient progressCard = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF172554), Color(0xFFDCE7FF)],
+  );
+
+  /// Overall Mastery practice gradient — #7F1D1D → #FFE4E6.
+  static const LinearGradient masteryPractice = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF7F1D1D), Color(0xFFFFE4E6)],
   );
 
   /// Fallback world gradient for unmapped subjects.
   static const LinearGradient worldDefault = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.primaryDeep, AppColors.primary],
+    colors: [Color(0xFF172554), Color(0xFFDCE7FF)],
   );
 }
 

@@ -49,43 +49,52 @@ abstract final class AppColors {
   static const Color surfaceDisabled = Color(0xFF0E1525);
 
   // ── Brand accents (shared across themes) ─────────────────────────────────
-  /// Electric purple — primary brand accent.
-  static const Color primary = Color(0xFF8B5CF6);
+  /// Vibrant cobalt blue — primary action & anchor.
+  static const Color primary = Color(0xFF3B82F6);
 
-  /// Lighter purple — bright variant for selected states, icons.
-  static const Color primaryBright = Color(0xFFA78BFA);
+  /// Lighter cobalt blue — bright variant for selected states, icons.
+  static const Color primaryBright = Color(0xFF60A5FA);
 
-  /// Deep purple — dark variant for gradient starts.
-  static const Color primaryDeep = Color(0xFF5B21B6);
+  /// Deep cobalt blue — dark variant for gradient starts.
+  static const Color primaryDeep = Color(0xFF1D4ED8);
 
-  /// Cyan — secondary accent for energy, info, Nova.
-  static const Color secondary = Color(0xFF22D3EE);
+  /// Bright Cyan — secondary accent for energy, AI diagnostics, Nova Tutor.
+  static const Color secondary = Color(0xFF06B6D4);
 
   /// Deep cyan — dark variant.
-  static const Color secondaryDeep = Color(0xFF0E7490);
+  static const Color secondaryDeep = Color(0xFF0891B2);
+
+  /// Vivid Purple — puzzle, logic, challenges.
+  static const Color purple = Color(0xFF7C3AED);
+
+  /// Light Blue — soft accent for pairing with primary.
+  static const Color lightBlue = Color(0xFFDCE9FF);
 
   // ── Semantic state colors (shared) ────────────────────────────────────────
-  /// Emerald success — correct answers, completion, XP gain.
-  static const Color success = Color(0xFF34D399);
+  /// Emerald green — correct answers, completion, mastery.
+  static const Color success = Color(0xFF10B981);
 
-  /// Amber warning — caution, medium difficulty, streak at risk.
-  static const Color warning = Color(0xFFFBBF24);
+  /// Amber warning / energy — caution, medium difficulty, streak flame.
+  static const Color warning = Color(0xFFF59E0B);
 
-  /// Coral error — incorrect, failed, danger actions.
-  static const Color error = Color(0xFFF87171);
+  /// Coral red error — incorrect, failed, danger actions, needs practice.
+  static const Color error = Color(0xFFEF4444);
 
   /// Sky info — neutral information, hints.
-  static const Color info = Color(0xFF38BDF8);
+  static const Color info = Color(0xFF06B6D4);
 
   /// Deep info.
-  static const Color infoDeep = Color(0xFF075985);
+  static const Color infoDeep = Color(0xFF0891B2);
 
   // ── Reward / gamification accents (shared) ───────────────────────────────
-  /// Gold XP — the reward color. Use sparingly and meaningfully.
-  static const Color xp = Color(0xFFFACC15);
+  /// Gold XP / Game Yellow — the reward, tactile game action, progression color.
+  static const Color xp = Color(0xFFFFD43B);
 
-  /// Streak orange — daily streak flame.
-  static const Color streak = Color(0xFFFB923C);
+  /// Streak flame amber — daily streak flame.
+  static const Color streak = Color(0xFFF59E0B);
+
+  /// Game action yellow.
+  static const Color gameYellow = Color(0xFFFFD43B);
 
   // ── Locked / disabled (dark) ─────────────────────────────────────────────
   static const Color locked = Color(0xFF475569);
@@ -155,47 +164,47 @@ abstract final class AppColors {
 /// Genuine premium light theme palette. Not an inverted dark —
 /// white surfaces, slate text, visible borders, same brand accents.
 abstract final class AppLightColors {
-  // ── Background levels (light) ────────────────────────────────────────────
-  static const Color background = Color(0xFFF1F5F9); // slate-100
-  static const Color backgroundElevated = Color(0xFFE8EFF8);
-  static const Color backgroundDeep = Color(0xFFE2E8F0); // slate-200
-  static const Color backgroundInteractive = Color(0xFFEBF0F9);
+  // ── Background levels (light - Warm Ivory) ─────────────────────────────────
+  static const Color background = Color(0xFFF7F5EF); // Warm Ivory canvas
+  static const Color backgroundElevated = Color(0xFFEFECE3);
+  static const Color backgroundDeep = Color(0xFFE7E3D8);
+  static const Color backgroundInteractive = Color(0xFFEDE9DE);
 
   // ── Surface levels (light) ────────────────────────────────────────────────
-  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surface = Color(0xFFFFFFFF); // Pure White card surface
   static const Color surfaceElevated = Color(0xFFFFFFFF);
-  static const Color surfaceHigh = Color(0xFFE2E8F0);
-  static const Color surfaceInteractive = Color(0xFFF5F8FF);
-  static const Color surfaceSelected = Color(0xFFEEF2FF);
-  static const Color surfaceDisabled = Color(0xFFF8FAFC);
+  static const Color surfaceHigh = Color(0xFFF4F3F8);
+  static const Color surfaceInteractive = Color(0xFFFFF8E7);
+  static const Color surfaceSelected = Color(0xFFDCE9FF); // Soft blue selection
+  static const Color surfaceDisabled = Color(0xFFEFECE3);
 
   // ── Locked (light) ────────────────────────────────────────────────────────
-  static const Color locked = Color(0xFF94A3B8);
-  static const Color lockedSurface = Color(0xFFE2E8F0);
+  static const Color locked = Color(0xFF727785);
+  static const Color lockedSurface = Color(0xFFE7E3D8);
 
   // ── Info (light) ─────────────────────────────────────────────────────────
-  static const Color info = Color(0xFF0EA5E9);
-  static const Color infoDeep = Color(0xFF0369A1);
+  static const Color info = Color(0xFF06B6D4);
+  static const Color infoDeep = Color(0xFF0891B2);
 
-  // ── Border levels (light) ────────────────────────────────────────────────
-  static const Color borderSubtle = Color(0xFFF1F5F9);
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color borderStrong = Color(0xFFCBD5E1);
-  static const Color borderFocus = Color(0xFF8B5CF6);
+  // ── Border levels (light - Deep Ink) ─────────────────────────────────────
+  static const Color borderSubtle = Color(0x33171923);
+  static const Color border = Color(0xFF171923); // Deep Ink #171923 baseline
+  static const Color borderStrong = Color(0xFF171923);
+  static const Color borderFocus = Color(0xFF3B82F6);
 
-  // ── Text (light) ─────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF0F172A); // slate-900
-  static const Color textSecondary = Color(0xFF334155); // slate-700
-  static const Color textTertiary = Color(0xFF64748B); // slate-500
-  static const Color textMuted = Color(0xFF94A3B8); // slate-400
+  // ── Text (light - Ink Black & Slate) ──────────────────────────────────────
+  static const Color textPrimary = Color(0xFF171923); // Ink Black
+  static const Color textSecondary = Color(0xFF596174); // Slate
+  static const Color textTertiary = Color(0xFF596174); // Slate
+  static const Color textMuted = Color(0xFF596174);
   static const Color textDisabled = Color(0xFF94A3B8);
   static const Color textOnColor = Color(0xFFFFFFFF);
   static const Color textOnAccent = Color(0xFFFFFFFF);
 
   // ── Interaction (light) ───────────────────────────────────────────────────
-  static const Color focusRing = Color(0xFF8B5CF6);
-  static const Color overlay = Color(0x3310172A);
-  static const Color scrim = Color(0x590F172A);
+  static const Color focusRing = Color(0xFF3B82F6);
+  static const Color overlay = Color(0x33171923);
+  static const Color scrim = Color(0x59171923);
 }
 
 /// Context-aware color resolution — single source for theme-adaptive values.

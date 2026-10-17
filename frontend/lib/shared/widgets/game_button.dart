@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/neo_brutalism.dart';
 
 /// Press-scale microinteraction wrapper used by all tappable surfaces.
 class PressableScale extends ConsumerStatefulWidget {
@@ -31,8 +32,7 @@ class _PressableScaleState extends ConsumerState<PressableScale> {
 
   @override
   Widget build(BuildContext context) {
-    final reduce = AppMotion.reducedMotion(context);
-    final scale = !reduce && _down ? 0.97 : 1.0;
+    final scale = _down ? 0.97 : 1.0;
     return GestureDetector(
       onTapDown: (_) => setState(() => _down = true),
       onTapCancel: () => setState(() => _down = false),
@@ -45,7 +45,7 @@ class _PressableScaleState extends ConsumerState<PressableScale> {
           : null,
       child: AnimatedScale(
         scale: scale,
-        duration: AppMotion.durFor(context, AppMotion.fast),
+        duration: AppMotion.fast,
         curve: AppMotion.easeOut,
         child: widget.child,
       ),
@@ -90,15 +90,24 @@ class PrimaryGameButton extends StatelessWidget {
         color: isDisabled
             ? (isDark ? AppColors.lockedSurface : AppLightColors.lockedSurface)
             : null,
-        borderRadius: BorderRadius.circular(16),
-        border: isDisabled
-            ? Border.all(
-                color: isDark ? AppColors.border : AppLightColors.border,
-              )
-            : null,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? (isDisabled ? AppColors.border : Colors.transparent)
+              : NeoBrutalColors.ink,
+          width: isDark ? 1.0 : 2.5,
+        ),
         boxShadow: isDisabled
             ? null
-            : AppShadows.glow(color, alpha: isDark ? 0.32 : 0.18),
+            : (isDark
+                ? AppShadows.glow(color, alpha: 0.32)
+                : const [
+                    BoxShadow(
+                      color: NeoBrutalColors.ink,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                    ),
+                  ]),
       ),
       child: Row(
         mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
@@ -188,15 +197,25 @@ class SecondaryGameButton extends StatelessWidget {
           height: 54,
           padding: const EdgeInsets.symmetric(horizontal: 22),
           decoration: BoxDecoration(
-            color: (isDark ? AppColors.surface : AppLightColors.surface)
-                .withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
+            color: isDark ? AppColors.surface.withValues(alpha: 0.9) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDisabled
-                  ? (isDark ? AppColors.border : AppLightColors.border)
-                  : color.withValues(alpha: 0.55),
-              width: 1.2,
+              color: isDark
+                  ? (isDisabled ? AppColors.border : color.withValues(alpha: 0.55))
+                  : NeoBrutalColors.ink,
+              width: isDark ? 1.2 : 2.5,
             ),
+            boxShadow: isDark
+                ? null
+                : (isDisabled
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: NeoBrutalColors.ink,
+                          offset: Offset(3, 3),
+                          blurRadius: 0,
+                        ),
+                      ]),
           ),
           child: Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
@@ -407,20 +426,25 @@ class GameChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return PressableScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.14),
+          color: isDark ? color.withValues(alpha: 0.14) : const Color(0xFFFFD43B),
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
+          border: Border.all(
+            color: isDark ? color.withValues(alpha: 0.45) : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 1.5,
+          ),
+          boxShadow: isDark ? null : NeoBrutalShadows.hardXs,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 13, color: color),
+              Icon(icon, size: 13, color: isDark ? color : NeoBrutalColors.ink),
               const SizedBox(width: 5),
             ],
             // Flexible (loose fit): identical when the label fits;
@@ -434,9 +458,9 @@ class GameChip extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: AppTypography.bodyFamily,
                   fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 1.1,
-                  color: color,
+                  color: isDark ? color : NeoBrutalColors.ink,
                 ),
               ),
             ),

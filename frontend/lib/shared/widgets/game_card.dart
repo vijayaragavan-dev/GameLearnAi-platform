@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_styles.dart';
+import '../../core/theme/neo_brutalism.dart';
 
 enum GameCardVariant {
   standard,
@@ -103,8 +104,11 @@ class GameCard extends StatelessWidget {
                 )
               : null,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: resolvedBorder),
-          boxShadow: shadows,
+          border: Border.all(
+            color: isDark ? resolvedBorder : (borderColor ?? NeoBrutalColors.ink),
+            width: isDark ? 1.0 : 2.5,
+          ),
+          boxShadow: isDark ? shadows : NeoBrutalShadows.hard,
         ),
         child: child,
       ),
@@ -185,10 +189,10 @@ class _InteractiveCardState extends State<InteractiveCard> {
           onTapCancel: () => setState(() => _pressed = false),
           child: AnimatedScale(
             scale: _pressed ? AppStates.pressedScale : 1.0,
-            duration: AppMotion.durFor(context, AppMotion.fast),
+            duration: AppMotion.fast,
             curve: AppMotion.easeOut,
             child: AnimatedContainer(
-              duration: AppMotion.durFor(context, AppMotion.fast),
+              duration: AppMotion.fast,
               curve: AppMotion.easeOut,
               padding: widget.padding,
               decoration: BoxDecoration(
@@ -198,8 +202,21 @@ class _InteractiveCardState extends State<InteractiveCard> {
                           ? AppColors.lockedSurface
                           : AppLightColors.lockedSurface),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: border),
-                boxShadow: shadow,
+                border: Border.all(
+                  color: isDark ? border : NeoBrutalColors.ink,
+                  width: isDark ? 1.0 : 2.5,
+                ),
+                boxShadow: isDark
+                    ? shadow
+                    : (_pressed
+                        ? const [
+                            BoxShadow(
+                              color: NeoBrutalColors.ink,
+                              offset: Offset(1.5, 1.5),
+                              blurRadius: 0,
+                            ),
+                          ]
+                        : NeoBrutalShadows.hard),
               ),
               child: Opacity(
                 opacity: widget.enabled ? 1 : AppStates.disabledOpacity,

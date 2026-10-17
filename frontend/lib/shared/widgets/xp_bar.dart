@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
+import '../../core/theme/neo_brutalism.dart';
 
 /// Animated numeric counter - used for score reveals and XP gains.
 class AnimatedCounter extends StatefulWidget {
@@ -144,13 +145,21 @@ class XPBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark
                     ? AppColors.surfaceHigh
-                    : AppLightColors.surfaceHigh,
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(height),
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.06)
-                      : AppLightColors.borderStrong.withValues(alpha: 0.6),
+                      : NeoBrutalColors.ink,
+                  width: isDark ? 1.0 : 2.0,
                 ),
+                boxShadow: isDark ? null : const [
+                  BoxShadow(
+                    color: NeoBrutalColors.ink,
+                    offset: Offset(1.5, 1.5),
+                    blurRadius: 0,
+                  ),
+                ],
               ),
             ),
             LayoutBuilder(
@@ -163,16 +172,22 @@ class XPBar extends StatelessWidget {
                     width: constraints.maxWidth * value.clamp(0.0, 1.0),
                     height: height,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFB45309), AppColors.xp],
-                      ),
+                      color: isDark ? null : NeoBrutalColors.xpYellow,
+                      gradient: isDark
+                          ? const LinearGradient(
+                              colors: [Color(0xFFB45309), AppColors.xp],
+                            )
+                          : null,
                       borderRadius: BorderRadius.circular(height),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.xp.withValues(alpha: 0.5),
-                          blurRadius: 8,
-                        ),
-                      ],
+                      border: isDark ? null : Border.all(color: NeoBrutalColors.ink, width: 1.5),
+                      boxShadow: isDark
+                          ? [
+                              BoxShadow(
+                                color: AppColors.xp.withValues(alpha: 0.5),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 );

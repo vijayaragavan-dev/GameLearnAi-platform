@@ -9,24 +9,22 @@ import '../../../core/models/content_models.dart';
 import '../../../core/models/dashboard_models.dart';
 import '../../../core/providers.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
-import '../../shell/shell_dock_insets.dart';
 import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../../../core/theme/subject_visual_identity.dart';
-import '../../../shared/widgets/achievement_icon.dart' show SubjectGlyph;
 import '../../../shared/widgets/app_backgrounds.dart';
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_surfaces.dart';
-import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/nova_companion.dart';
+import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/responsive_layout.dart';
-import '../domain/canonical_worlds.dart' show WorldCatalog;
 import '../domain/world_context.dart' show subjectsProvider;
 import 'subject_grouping.dart';
 
@@ -68,7 +66,7 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
     // World landing preserves backend subjectId; the world page resolves
     // the canonical WorldId via WorldCatalog (generic fallback when unmapped).
     final name = Uri.encodeComponent(subject.name);
-    context.go('${Routes.world(subject.id)}?name=$name');
+    context.push('${Routes.world(subject.id)}?name=$name');
   }
 
   void _scan(Subject subject) {
@@ -156,6 +154,11 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
               _selectedCategory,
             );
             final dashboard = ref.watch(dashboardProvider).data;
+            final assessedIds = <String>{
+              ...?dashboard?.assessment.assessedSubjects.map((a) => a.subjectId),
+              if (dashboard?.currentSubject?.id != null) dashboard!.currentSubject!.id,
+              if (dashboard?.learningPath?.subjectId != null) dashboard!.learningPath!.subjectId,
+            };
             final featuredSubject = _featuredWorld(subjects, dashboard, filtered);
             // Premium catalog: atmospheric header + featured world + chips + adaptive grid
             return Stack(
@@ -182,13 +185,8 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                     child: SafeArea(
                       top: true,
                       bottom: false,
-                      // Shell dock clearance: derived from dock geometry +
-                      // SafeArea + gap (ShellDockMetrics), never a magic pad.
                       child: Padding(
-                        padding: EdgeInsets.only(
-                          top: 8,
-                          bottom: ShellDockMetrics.bottomClearance(context),
-                        ),
+                        padding: const EdgeInsets.only(top: 8, bottom: 110),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -234,9 +232,7 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                           if (featuredSubject != null && filtered.length > 1) ...[
                             _FeaturedWorldCard(
                               subject: featuredSubject,
-                              assessed: dashboard?.assessment.assessedSubjects
-                                      .any((a) => a.subjectId == featuredSubject.id) ??
-                                  false,
+                              assessed: assessedIds.contains(featuredSubject.id),
                               onEnter: () => _enter(featuredSubject),
                               onScan: () => _scan(featuredSubject),
                             ),
@@ -280,10 +276,12 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                                 if (isFeatured && filtered.length > 1) {
                                   // Featured already shown above — still show in grid but with compact variant
                                 }
+                                final isAssessed = assessedIds.contains(subject.id);
                                 return PressableWorldCard(
                                   subject: subject,
+                                  isAssessed: isAssessed,
                                   onTap: () => _enter(subject),
-                                  onScan: () => _scan(subject),
+                                  onScan: () => isAssessed ? _enter(subject) : _scan(subject),
                                 );
                               }).toList(),
                             ),
@@ -314,26 +312,26 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
                                     child: const Icon(Icons.code_rounded, size: 16, color: AppColors.primary),
                                   ),
                                   const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Programming covers C · C++ · Java · Python · JavaScript — one world, many languages.',
-                                      style: AppTypography.caption(context),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          // ── DISCOVER / RECOMMENDED (only if real recommendation exists) ──
-                          if (dashboard != null && dashboard.recommendations.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 18),
-                              child: _RecommendedWorldStrip(
-                                dashboard: dashboard,
-                                subjects: subjects,
-                                onEnter: _enter,
-                              ),
-                            ),
-                        ],
+                                   Expanded(
+                                     child: Text(
+                                       'Programming covers C · C++ · Java · Python · JavaScript — one world, many languages.',
+                                       style: AppTypography.caption(context),
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                             ),
+                           // ── DISCOVER / RECOMMENDED (only if real recommendation exists) ──
+                           if (dashboard != null && dashboard.recommendations.isNotEmpty)
+                             Padding(
+                               padding: const EdgeInsets.only(top: 18),
+                               child: _RecommendedWorldStrip(
+                                 dashboard: dashboard,
+                                 subjects: subjects,
+                                 onEnter: _enter,
+                               ),
+                             ),
+                         ],
                       ),
                     ),
                   ),
@@ -367,9 +365,8 @@ class _FeaturedWorldCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final identity = SubjectVisualRegistry.fromIconKey(subject.iconKey);
     final accent = identity.accent;
-    return Pressable(
+    return GestureDetector(
       onTap: onEnter,
-      semanticsLabel: 'Enter world ${subject.name}',
       child: FeaturedSurface(
         accent: accent,
         padding: EdgeInsets.zero,
@@ -381,13 +378,13 @@ class _FeaturedWorldCard extends StatelessWidget {
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [accent.withValues(alpha: 0.22), Colors.transparent]
-                        : [accent.withValues(alpha: 0.08), Colors.transparent],
-                  ),
+                  gradient: isDark
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [accent.withValues(alpha: 0.22), Colors.transparent],
+                        )
+                      : identity.gradient,
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
               ),
@@ -406,17 +403,30 @@ class _FeaturedWorldCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: accent.withValues(alpha: isDark ? 0.18 : 0.12),
+                          color: isDark ? accent.withValues(alpha: 0.18) : Colors.white,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(color: accent.withValues(alpha: 0.35)),
+                          border: Border.all(
+                            color: isDark ? accent.withValues(alpha: 0.35) : NeoBrutalColors.ink,
+                            width: isDark ? 1.0 : 2.0,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(identity.icon, size: 14, color: accent),
+                            Icon(identity.icon, size: 14, color: isDark ? accent : NeoBrutalColors.ink),
                             const SizedBox(width: 6),
                             Flexible(
-                              child: Text('FEATURED WORLD', style: AppTypography.badgeLabel(context, color: accent), overflow: TextOverflow.ellipsis),
+                              child: Text(
+                                'FEATURED WORLD',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: isDark ? accent : NeoBrutalColors.ink,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -424,9 +434,16 @@ class _FeaturedWorldCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: (assessed ? AppColors.success : AppColors.primary).withValues(alpha: 0.14),
+                          color: isDark
+                              ? (assessed ? AppColors.success : AppColors.primary).withValues(alpha: 0.14)
+                              : NeoBrutalColors.lemonYellow,
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: (assessed ? AppColors.success : AppColors.primary).withValues(alpha: 0.30)),
+                          border: Border.all(
+                            color: isDark
+                                ? (assessed ? AppColors.success : AppColors.primary).withValues(alpha: 0.30)
+                                : NeoBrutalColors.ink,
+                            width: isDark ? 1.0 : 2.0,
+                          ),
                         ),
                         child: Text(
                           assessed ? 'IN PROGRESS' : 'NEW WORLD',
@@ -434,7 +451,7 @@ class _FeaturedWorldCard extends StatelessWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
-                            color: assessed ? AppColors.success : accent,
+                            color: isDark ? (assessed ? AppColors.success : accent) : NeoBrutalColors.ink,
                           ),
                         ),
                       ),
@@ -444,19 +461,47 @@ class _FeaturedWorldCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SubjectIcon(iconKey: subject.iconKey, size: 56),
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? accent.withValues(alpha: 0.5) : NeoBrutalColors.ink,
+                            width: 2.0,
+                          ),
+                          boxShadow: isDark ? null : NeoBrutalShadows.hardXs,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(identity.icon, size: 28, color: identity.accent),
+                      ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(subject.name, style: AppTypography.hero(context, size: 20)),
+                            Text(
+                              subject.name,
+                              style: const TextStyle(
+                                fontFamily: AppTypography.displayFamily,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
                             const SizedBox(height: 6),
                             Text(
-                              subject.description.isEmpty ? 'Enter the ${subject.name} world and forge your path' : subject.description,
+                              subject.description.isEmpty
+                                  ? 'Enter the ${subject.name} world and forge your path'
+                                  : subject.description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTypography.bodySecondary(context),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                height: 1.35,
+                                color: Color(0xFFE5E7EB),
+                              ),
                             ),
                           ],
                         ),
@@ -502,10 +547,10 @@ class _FeaturedWorldCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           _WorldCTA(
-                            label: 'SCAN',
-                            icon: Icons.radar_rounded,
+                            label: assessed ? 'VIEW PATH' : 'SCAN',
+                            icon: assessed ? Icons.alt_route_rounded : Icons.radar_rounded,
                             accent: accent,
-                            onTap: onScan,
+                            onTap: assessed ? onEnter : onScan,
                             primary: false,
                           ),
                         ],
@@ -540,38 +585,47 @@ class _WorldCTA extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (primary) {
-      return Pressable(
+      return GestureDetector(
         onTap: onTap,
         child: Container(
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [accent.withValues(alpha: 0.95), accent],
-            ),
+            gradient: isDark
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [accent.withValues(alpha: 0.95), accent],
+                  )
+                : null,
+            color: isDark ? null : NeoBrutalColors.lemonYellow,
             borderRadius: BorderRadius.circular(14),
-            boxShadow: isDark ? [BoxShadow(color: accent.withValues(alpha: 0.28), blurRadius: 18, offset: const Offset(0, 6))] : null,
+            border: Border.all(
+              color: isDark ? Colors.transparent : NeoBrutalColors.ink,
+              width: isDark ? 0 : 2.5,
+            ),
+            boxShadow: isDark
+                ? [BoxShadow(color: accent.withValues(alpha: 0.28), blurRadius: 18, offset: const Offset(0, 6))]
+                : NeoBrutalShadows.hardSm,
           ),
           alignment: Alignment.center,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: Colors.white),
+              Icon(icon, size: 18, color: isDark ? Colors.white : NeoBrutalColors.ink),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: AppTypography.bodyFamily,
+                  style: TextStyle(
+                    fontFamily: AppTypography.displayFamily,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : NeoBrutalColors.ink,
                   ),
                 ),
               ),
@@ -580,22 +634,26 @@ class _WorldCTA extends StatelessWidget {
         ),
       );
     }
-    return Pressable(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withValues(alpha: 0.35)),
+          border: Border.all(
+            color: isDark ? accent.withValues(alpha: 0.35) : NeoBrutalColors.ink,
+            width: isDark ? 1.0 : 2.5,
+          ),
+          boxShadow: isDark ? null : NeoBrutalShadows.hardSm,
         ),
         alignment: Alignment.center,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: accent),
+            Icon(icon, size: 16, color: isDark ? accent : NeoBrutalColors.ink),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
@@ -603,11 +661,11 @@ class _WorldCTA extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: AppTypography.bodyFamily,
+                  fontFamily: AppTypography.displayFamily,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.6,
-                  color: accent,
+                  color: isDark ? accent : NeoBrutalColors.ink,
                 ),
               ),
             ),
@@ -618,86 +676,150 @@ class _WorldCTA extends StatelessWidget {
   }
 }
 
-// ── RECOMMENDED WORLD STRIP (only if real recommendation)
-class _RecommendedWorldStrip extends StatelessWidget {
-  const _RecommendedWorldStrip({
-    required this.dashboard,
-    required this.subjects,
-    required this.onEnter,
-  });
-  final Dashboard dashboard;
-  final List<Subject> subjects;
-  final void Function(Subject) onEnter;
+class WorldVisualPalette {
+  final Color cardBackground;
+  final Color iconBoxColor;
+  final IconData icon;
+  final String subtitle;
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rec = dashboard.recommendations.firstOrNull;
-    if (rec == null || rec.topicName == null || rec.topicName!.isEmpty) return const SizedBox.shrink();
-    // Enter the learner's current world only. Guessing another world
-    // (e.g. subjects.first) would point the recommendation at the wrong
-    // world, so without a resolved current subject show nothing.
-    final currentId = dashboard.currentSubject?.id;
-    Subject? resolved;
-    if (currentId != null && currentId.isNotEmpty) {
-      for (final s in subjects) {
-        if (s.id == currentId) {
-          resolved = s;
-          break;
-        }
-      }
-    }
-    // Final for closure capture below (onEnter tap).
-    final subject = resolved;
-    if (subject == null) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('RECOMMENDED FOR YOU', style: AppTypography.overline(context).copyWith(color: AppColors.secondary)),
-        const SizedBox(height: 8),
-        Pressable(
-          onTap: () => onEnter(subject),
-          semanticsLabel: 'Continue with ${subject.name}',
-          child: GameIdentitySurface(
-            accent: AppColors.secondary,
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                SubjectIcon(iconKey: subject.iconKey, size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Continue with ${subject.name}',
-                        style: AppTypography.h3(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        rec.topicName! + (rec.reason.isNotEmpty ? ' • ${rec.reason}' : ''),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.caption(context),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Icon(Icons.arrow_forward_rounded, size: 16, color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  const WorldVisualPalette({
+    required this.cardBackground,
+    required this.iconBoxColor,
+    required this.icon,
+    required this.subtitle,
+  });
 }
 
-extension on List<RecommendationItem> {
-  RecommendationItem? get firstOrNull => isEmpty ? null : first;
+WorldVisualPalette resolveWorldPalette(Subject subject) {
+  final key = subject.iconKey.toLowerCase();
+  final name = subject.name.toLowerCase();
+
+  // 1. Programming
+  if (key.contains('code') ||
+      key.contains('programming') ||
+      name.contains('programming') ||
+      name.contains('coding')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFF818CF8), // Medium periwinkle blue
+      iconBoxColor: Color(0xFF1E3A8A),   // Dark navy blue
+      icon: Icons.code_rounded,
+      subtitle: 'Explore the world of coding and problem solving.',
+    );
+  }
+  // 2. Computer Networks
+  if (key.contains('network') || name.contains('network')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFF22D3EE), // Cyan / Turquoise
+      iconBoxColor: Color(0xFF0E7490),   // Dark teal
+      icon: Icons.hub_rounded,
+      subtitle: 'Explore the world of communication.',
+    );
+  }
+  // 3. DBMS
+  if (key.contains('dbms') ||
+      key.contains('database') ||
+      key.contains('sql') ||
+      name.contains('database') ||
+      name.contains('dbms')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFFFBBF24), // Warm golden amber
+      iconBoxColor: Color(0xFF78350F),   // Dark amber / brown
+      icon: Icons.storage_rounded,
+      subtitle: 'Explore the world of data management.',
+    );
+  }
+  // 4. Operating Systems
+  if (key.contains('os') ||
+      key.contains('operating') ||
+      name.contains('operating system')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFFC084FC), // Lavender / Soft purple
+      iconBoxColor: Color(0xFF581C87),   // Dark violet / purple
+      icon: Icons.memory_rounded,
+      subtitle: 'Explore the world of system operations.',
+    );
+  }
+  // 5. Data Structures
+  if (key.contains('data_structure') ||
+      key.contains('dsa') ||
+      key.contains('ds') ||
+      name.contains('data structure')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFF4ADE80), // Fresh mint / Emerald green
+      iconBoxColor: Color(0xFF14532D),   // Dark forest green
+      icon: Icons.account_tree_rounded,
+      subtitle: 'Explore the world of efficient problem solving.',
+    );
+  }
+  // 6. Object Oriented Software Engineering
+  if (name.contains('software engineering') ||
+      name.contains('oose') ||
+      key.contains('oose')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFFD8B4FE), // Soft mauve / violet
+      iconBoxColor: Color(0xFF4A044E),   // Dark plum / purple
+      icon: Icons.description_rounded,
+      subtitle: 'Explore requirements, OOAD and UML design.',
+    );
+  }
+  // 7. Object Oriented Programming
+  if (key.contains('oop') ||
+      name.contains('object oriented') ||
+      name.contains('object-oriented')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFF38BDF8), // Vivid sky blue
+      iconBoxColor: Color(0xFF0C4A6E),   // Dark navy blue
+      icon: Icons.view_in_ar_rounded,
+      subtitle: 'Explore the world of OOP fundamentals.',
+    );
+  }
+  // 8. Web Technologies
+  if (key.contains('web') || name.contains('web')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFFF472B6), // Warm pink / rose
+      iconBoxColor: Color(0xFF881337),   // Deep crimson / burgundy
+      icon: Icons.language_rounded,
+      subtitle: 'Explore HTML, CSS, JS and modern web development.',
+    );
+  }
+  // 9. Algorithms
+  if (key.contains('algo') || name.contains('algorithm')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFFA78BFA), // Medium violet
+      iconBoxColor: Color(0xFF3B0764),   // Deep violet
+      icon: Icons.functions_rounded,
+      subtitle: 'Explore design paradigms, DP, and analysis.',
+    );
+  }
+  // 10. AI / ML
+  if (key.contains('ai') ||
+      key.contains('ml') ||
+      name.contains('intelligence') ||
+      name.contains('machine learning')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFFFB7185), // Rose
+      iconBoxColor: Color(0xFF831843),   // Deep magenta
+      icon: Icons.psychology_rounded,
+      subtitle: 'Explore neural networks and intelligent agents.',
+    );
+  }
+  // 11. Data Science
+  if (key.contains('data_science') || name.contains('data science')) {
+    return const WorldVisualPalette(
+      cardBackground: Color(0xFF2DD4BF), // Teal
+      iconBoxColor: Color(0xFF134E4A),   // Deep teal
+      icon: Icons.analytics_rounded,
+      subtitle: 'Explore data modeling, pandas, and analytics.',
+    );
+  }
+
+  // Fallback
+  return const WorldVisualPalette(
+    cardBackground: Color(0xFF818CF8),
+    iconBoxColor: Color(0xFF1E3A8A),
+    icon: Icons.public_rounded,
+    subtitle: 'Explore different worlds and master concepts.',
+  );
 }
 
 class PressableWorldCard extends StatefulWidget {
@@ -706,11 +828,13 @@ class PressableWorldCard extends StatefulWidget {
     required this.subject,
     required this.onTap,
     required this.onScan,
+    this.isAssessed = false,
   });
 
   final Subject subject;
   final VoidCallback onTap;
   final VoidCallback onScan;
+  final bool isAssessed;
 
   @override
   State<PressableWorldCard> createState() => _PressableWorldCardState();
@@ -719,22 +843,15 @@ class PressableWorldCard extends StatefulWidget {
 class _PressableWorldCardState extends State<PressableWorldCard> {
   bool _down = false;
 
-  Color get _tint {
-    // Canonical world accent first (stable per WorldId, scales to 11+
-    // worlds), then visual-registry accent, then neutral brand for unknown
-    // worlds — never index-cycled, never display-name based.
-    final world = WorldCatalog.resolveSubject(widget.subject);
-    if (world != null) return world.accent;
-    final identity = SubjectVisualRegistry.fromIconKey(widget.subject.iconKey);
-    if (identity != SubjectVisualRegistry.fallback) return identity.accent;
-    return AppColors.primary;
-  }
-
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceElevated = Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
+    final palette = resolveWorldPalette(widget.subject);
+    final description = widget.subject.description.isNotEmpty
+        ? widget.subject.description
+        : palette.subtitle;
+
     return Semantics(
       button: true,
       label: '${widget.subject.name} world, tap to enter, scan available',
@@ -746,48 +863,49 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
           onTapUp: (_) => setState(() => _down = false),
           onTap: widget.onTap,
           child: AnimatedScale(
-            scale: _down ? 0.97 : 1,
+            scale: _down ? 0.98 : 1.0,
             duration: reduce ? Duration.zero : AppMotion.fast,
             curve: AppMotion.easeOut,
-            // Bounded column width here (grid cell), so the art thumb can
-            // decide honestly whether it fits without crowding text.
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final showArt =
-                    constraints.maxWidth.isFinite &&
-                    constraints.maxWidth >= 300;
-                return AnimatedContainer(
+            child: AnimatedContainer(
               duration: reduce ? Duration.zero : AppMotion.normal,
               curve: AppMotion.easeOut,
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    _tint.withValues(alpha: _down ? 0.2 : 0.13),
-                    surfaceElevated,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
+                color: isDark ? const Color(0xFF1E232F) : Colors.white,
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: _tint.withValues(alpha: _down ? 0.7 : 0.4),
+                  color: const Color(0xFF171923),
+                  width: 2.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _tint.withValues(alpha: _down ? 0.35 : (isDark ? 0.15 : 0.08)),
-                    blurRadius: _down ? 26 : 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                boxShadow: _down
+                    ? NeoBrutalShadows.hardPressed
+                    : NeoBrutalShadows.hard,
               ),
               child: Row(
                 children: [
-                  SubjectGlyph(iconKey: widget.subject.iconKey, color: _tint),
-                  const SizedBox(width: 15),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: palette.iconBoxColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFF171923),
+                        width: 1.5,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      palette.icon,
+                      size: 26,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           widget.subject.name,
@@ -795,93 +913,86 @@ class _PressableWorldCardState extends State<PressableWorldCard> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: AppTypography.displayFamily,
-                            fontSize: 17.5,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
+                            color: isDark ? Colors.white : const Color(0xFF171923),
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Text(
-                          widget.subject.description.isNotEmpty
-                              ? widget.subject.description
-                              : 'Enter the ${widget.subject.name} world',
+                          description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
                             fontSize: 12.5,
-                            height: 1.35,
-                            color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
+                            height: 1.25,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF596174),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  // Identity artwork — the illustrated world panel from the
-                  // references. Fits single-column phones (≥360px cells)
-                  // and wide grid cells; hidden in narrow cells so text
-                  // and SCAN never crowd.
-                  if (showArt)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: SceneThumb(
-                        palette: scenePaletteForWorld(
-                          widget.subject.iconKey,
-                        ),
-                        seed: seedForKey(widget.subject.id),
-                        icon: SubjectVisualRegistry.fromIconKey(
-                          widget.subject.iconKey,
-                        ).icon,
-                        accent: _tint,
-                        width: 76,
-                        height: 68,
-                        iconSize: 22,
-                        label: '${widget.subject.name} world artwork',
-                      ),
-                    ),
-                  Pressable(
-                    onTap: widget.onScan,
-                    semanticsLabel: 'Scan ${widget.subject.name} knowledge',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 5,
-                      ),
-                        decoration: BoxDecoration(
-                          color: _tint.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _tint.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.radar_rounded, size: 13, color: _tint),
-                            const SizedBox(width: 4),
-                            Text(
-                              'SCAN',
-                              style: TextStyle(
-                                fontSize: 10,
+                  const SizedBox(width: 10),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: widget.isAssessed
+                            ? 'Open ${widget.subject.name} world'
+                            : 'Scan ${widget.subject.name} knowledge',
+                        child: GestureDetector(
+                          onTap: widget.isAssessed ? widget.onTap : widget.onScan,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: widget.isAssessed
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: const Color(0xFF171923),
+                                width: 1.2,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0xFF171923),
+                                  offset: Offset(1, 1),
+                                  blurRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              widget.isAssessed ? 'ACTIVE' : 'NEW',
+                              style: const TextStyle(
+                                fontFamily: AppTypography.displayFamily,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 1,
-                                color: _tint,
+                                letterSpacing: 0.5,
+                                color: Colors.white,
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 15,
-                    color: _tint.withValues(alpha: 0.9),
+                      const SizedBox(height: 8),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 24,
+                        color: isDark ? Colors.white : const Color(0xFF171923),
+                      ),
+                    ],
                   ),
                 ],
               ),
-                );
-              },
             ),
           ),
         ),
@@ -935,20 +1046,21 @@ class _CategoryChips extends StatelessWidget {
                     letterSpacing: 1,
                     color: isSelected
                         ? (isDark ? AppColors.textOnColor : Colors.white)
-                        : (isDark ? AppColors.textSecondary : AppLightColors.textSecondary),
+                        : (isDark ? AppColors.textSecondary : NeoBrutalColors.ink),
                   ),
                 ),
                 selected: isSelected,
                 onSelected: (_) => onSelected(label),
-                selectedColor: AppColors.primary,
-                backgroundColor: Theme.of(context).colorScheme.surface,
+                selectedColor: isDark ? AppColors.primary : NeoBrutalColors.cobaltBlue,
+                backgroundColor: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
                 side: BorderSide(
-                  color: isSelected
-                      ? AppColors.primaryBright
-                      : (isDark ? AppColors.border : AppLightColors.border),
+                  color: isDark
+                      ? (isSelected ? AppColors.primaryBright : AppColors.border)
+                      : NeoBrutalColors.ink,
+                  width: isDark ? 1.0 : 2.0,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 showCheckmark: false,
               ),
@@ -956,6 +1068,97 @@ class _CategoryChips extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+// ── RECOMMENDED WORLD STRIP (only if real recommendation)
+class _RecommendedWorldStrip extends StatelessWidget {
+  const _RecommendedWorldStrip({
+    required this.dashboard,
+    required this.subjects,
+    required this.onEnter,
+  });
+  final Dashboard dashboard;
+  final List<Subject> subjects;
+  final void Function(Subject) onEnter;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rec =
+        dashboard.recommendations.isEmpty ? null : dashboard.recommendations.first;
+    if (rec == null || rec.topicName == null || rec.topicName!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    // Enter the learner's current world only. Guessing another world
+    // (e.g. subjects.first) would point the recommendation at the wrong
+    // world, so without a resolved current subject show nothing.
+    final currentId = dashboard.currentSubject?.id;
+    Subject? resolved;
+    if (currentId != null && currentId.isNotEmpty) {
+      for (final s in subjects) {
+        if (s.id == currentId) {
+          resolved = s;
+          break;
+        }
+      }
+    }
+    // Final for closure capture below (onEnter tap).
+    final subject = resolved;
+    if (subject == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'RECOMMENDED FOR YOU',
+          style: AppTypography.overline(context).copyWith(color: AppColors.secondary),
+        ),
+        const SizedBox(height: 8),
+        Pressable(
+          onTap: () => onEnter(subject),
+          semanticsLabel: 'Continue with ${subject.name}',
+          child: GameIdentitySurface(
+            accent: AppColors.secondary,
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                SubjectIcon(iconKey: subject.iconKey, size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Continue with ${subject.name}',
+                        style: AppTypography.h3(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        rec.topicName! +
+                            (rec.reason.isNotEmpty ? ' • ${rec.reason}' : ''),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 16,
+                  color: isDark
+                      ? AppColors.textTertiary
+                      : AppLightColors.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
