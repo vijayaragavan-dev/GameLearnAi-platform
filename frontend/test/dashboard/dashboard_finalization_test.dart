@@ -421,5 +421,102 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('GAME ZONE'), findsWidgets);
     });
+
+    testWidgets('home groups content and presents each recommendation once', (
+      tester,
+    ) async {
+      await setSize(tester, const Size(390, 844));
+      await tester.pumpWidget(
+        fakeScope(
+          child: const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(disableAnimations: true),
+              child: DashboardScreen(),
+            ),
+          ),
+          handler: (request) {
+            if (request.url.path.endsWith('/dashboard')) {
+              return {'body': activeDashboard()};
+            }
+            if (request.url.path.endsWith('/subjects')) {
+              return {'body': subjects()};
+            }
+            return {'status': 404, 'body': {}};
+          },
+        ),
+      );
+      await settle(tester);
+
+      // Zone order: primary learning action, then one recommendation zone,
+      // then progress, then wins.
+      final brief = tester.getCenter(find.text('ADAPTIVE BRIEF').first).dy;
+      final quests = tester.getCenter(find.text('DAILY QUESTS').first).dy;
+      final radar = tester.getCenter(find.text('MASTERY RADAR').first).dy;
+      expect(brief, lessThan(quests));
+      expect(quests, lessThan(radar));
+
+      // The recommendation source appears in exactly one place: the brief
+      // plus its quest row, never a third "recommended next" card list.
+      expect(find.text('RECOMMENDED NEXT'), findsNothing);
+      expect(find.text('NOVA RECOMMENDS'), findsOneWidget);
+
+      // Real content is still reachable, not dropped.
+      expect(find.text('Control Flow', skipOffstage: false), findsWidgets);
+      expect(find.text('Ready for a challenge.', skipOffstage: false),
+          findsWidgets);
+      expect(find.text('TROPHY ROOM'), findsOneWidget);
+      expect(find.text('CHAMPIONS ARENA'), findsWidgets);
+    });
+
+    testWidgets('home primary recommendation action opens its topic route', (
+      tester,
+    ) async {
+      await setSize(tester, const Size(390, 844));
+      final router = GoRouter(
+        initialLocation: '/home',
+        routes: [
+          GoRoute(path: '/home', builder: (_, _) => const DashboardScreen()),
+          GoRoute(
+            path: '/recommendation',
+            builder: (_, _) => const Scaffold(body: Text('RECOMMENDATION')),
+          ),
+          GoRoute(
+            path: '/quiz/:topicId',
+            builder: (_, _) => const Scaffold(body: Text('QUIZ DESTINATION')),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        fakeScope(
+          child: MaterialApp.router(routerConfig: router),
+          handler: (request) {
+            if (request.url.path.endsWith('/dashboard')) {
+              return {'body': activeDashboard()};
+            }
+            if (request.url.path.endsWith('/subjects')) {
+              return {'body': subjects()};
+            }
+            return {'status': 404, 'body': {}};
+          },
+        ),
+      );
+      await settle(tester);
+
+      final cta = find.text('START RECOMMENDED CHALLENGE').first;
+      expect(cta, findsOneWidget);
+      await tester.ensureVisible(cta);
+      // Bounded pumps: the dashboard runs repeating idle animations, so
+      // pumpAndSettle never completes here.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(cta);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(tester.takeException(), isNull);
+      // The CTA keeps the real recommendation route (no invented path).
+      expect(find.text('RECOMMENDATION'), findsOneWidget);
+      expect(find.byType(DashboardScreen), findsNothing);
+    });
   });
 }

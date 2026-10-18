@@ -287,9 +287,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 800));
       expect(find.textContaining('reveal your mastery radar'), findsOneWidget);
       expect(
-        find.textContaining('Complete a few missions'),
+        find.textContaining(
+          'Complete a few missions to reveal your skill trend.',
+        ),
         findsOneWidget,
       ); // recent accuracy empty
+      expect(
+        find.textContaining(
+          'Complete a few missions to build your learning streak!',
+        ),
+        findsOneWidget,
+      ); // learn streak empty
     });
 
     testWidgets('error state with retry', (tester) async {
@@ -380,6 +388,9 @@ void main() {
       expect(find.textContaining('Strong (2)'), findsOneWidget);
       expect(find.textContaining('Needs Practice (1)'), findsOneWidget);
       // Tap Strong — mastery list shows 2, focus card still shows weak SQL (total SQL =1 from focus)
+      await tester.ensureVisible(find.textContaining('Strong (2)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.textContaining('Strong (2)'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));

@@ -1,6 +1,5 @@
 // F13 — premium stats/analytics visual upgrade: real-data rendering,
 // tier/distribution/delta presentation, states, themes, responsiveness.
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -13,8 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gamelearn_app/core/network/api_client.dart';
 import 'package:gamelearn_app/core/providers.dart';
 import 'package:gamelearn_app/features/progress/presentation/progress_screen.dart';
-import 'package:gamelearn_app/shared/widgets/badges.dart';
-import 'package:gamelearn_app/shared/widgets/xp_bar.dart';
 
 import '../helpers/fake_backend.dart';
 
@@ -237,12 +234,12 @@ void main() {
         tester,
         () => _client(topics: _topics(), quizzes: _quizzes()),
       );
-      expect(find.byType(LevelBadge), findsOneWidget);
-      expect(find.byType(XPBar), findsOneWidget);
-      expect(find.text('LEVEL 04'), findsOneWidget);
-      expect(find.text('120 XP TO NEXT'), findsOneWidget);
-      expect(find.text('7-DAY STREAK'), findsOneWidget);
-      expect(find.text('2 BADGES'), findsOneWidget);
+      expect(find.text('LEVEL'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('120 XP'), findsOneWidget);
+      expect(find.text('TO NEXT LEVEL'), findsOneWidget);
+      expect(find.text('DAY STREAK'), findsOneWidget);
+      expect(find.text('BADGES'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

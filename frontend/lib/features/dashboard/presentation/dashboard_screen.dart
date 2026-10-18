@@ -28,7 +28,7 @@ import '../../../shared/widgets/nova_companion.dart';
 import '../../../shared/widgets/premium_buttons.dart';
 import '../../../shared/widgets/pressable.dart';
 import '../../../shared/widgets/recommendation_card.dart'
-    show DifficultyPill, PriorityPill, RecommendationCard, SectionHeader;
+    show DifficultyPill, PriorityPill, SectionHeader;
 import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/responsive_layout.dart';
 import '../../game_engine/models/game_models.dart';
@@ -318,47 +318,53 @@ class _DashboardBody extends StatelessWidget {
               _staggered(i++, _JourneySection(dashboard: d)),
               const SizedBox(height: 20),
 
-              // ── 3b. ADAPTIVE BRIEF — truthful, backend-driven ──
-              if (_explainableRecommendation(d) != null) ...[
+              // ── ZONE A: ONE RECOMMENDATION SOURCE ──
+              // The backend recommendation list is presented exactly once:
+              // a single primary brief plus the compact quest rows. The
+              // previous build rendered the same items three times
+              // (adaptive brief, "Nova recommends" cards and the learning
+              // intelligence "recommended next" list).
+              if (_explainableRecommendation(d) != null ||
+                  d.recommendations.isNotEmpty) ...[
+                _staggered(i++, const SectionHeader(title: 'Nova recommends')),
+                if (_explainableRecommendation(d) != null)
+                  _staggered(
+                    i++,
+                    _AdaptiveFocusCard(
+                      dashboard: d,
+                      recommendation: _explainableRecommendation(d)!,
+                      onStart: () =>
+                          onOpenRecommendation(_explainableRecommendation(d)!),
+                    ),
+                  ),
+                if (d.recommendations.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  _staggered(
+                    i++,
+                    const SectionHeader(title: 'Daily quests'),
+                  ),
+                  _staggered(
+                    i++,
+                    _QuestsSection(dashboard: d, onOpen: onOpenRecommendation),
+                  ),
+                ],
+                const SizedBox(height: 20),
+              ],
+
+              // ── ZONE B: PROGRESS AT A GLANCE ──
+              _staggered(i++, const SectionHeader(title: 'Mastery radar')),
+              if (d.mastery.recentTopics.isEmpty)
                 _staggered(
                   i++,
-                  _AdaptiveFocusCard(
-                    dashboard: d,
-                    recommendation: _explainableRecommendation(d)!,
-                    onStart: () =>
-                        onOpenRecommendation(_explainableRecommendation(d)!),
+                  const EmptyMiniCard(
+                    text: 'Assess a topic to see your mastery spread here.',
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // ── 3c. NOVA RECOMMENDS — truthful, backend-driven ──
-              if (d.recommendations.isNotEmpty) ...[
-                _staggered(i++, const SectionHeader(title: 'Nova recommends')),
-                ...d.recommendations.take(2).map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _staggered(
-                          i++,
-                          RecommendationCard(
-                            item: item,
-                            compact: true,
-                            onStart: () => onOpenRecommendation(item),
-                          ),
-                        ),
-                      ),
-                    ),
-                const SizedBox(height: 12),
-              ],
-
-              // ── 3d. MASTERY RADAR — real recent topics ──
-              if (d.mastery.recentTopics.isNotEmpty) ...[
-                _staggered(i++, const SectionHeader(title: 'Mastery radar')),
+                )
+              else
                 _staggered(i++, MasteryStrip(topics: d.mastery.recentTopics)),
-                const SizedBox(height: 20),
-              ],
-
-              // ── 3e. LEARNING INTELLIGENCE — adaptive mastery (A5) ──
+              const SizedBox(height: 14),
+              _staggered(i++, _StreakPreview(dashboard: d)),
+              const SizedBox(height: 18),
               _staggered(
                 i++,
                 const SectionHeader(title: 'Learning Intelligence'),
@@ -366,15 +372,8 @@ class _DashboardBody extends StatelessWidget {
               _staggered(i++, const IntelligenceSection()),
               const SizedBox(height: 20),
 
-              // ── 3f. DAILY QUESTS — truthful (real recommendations) ──
-              _staggered(i++, const SectionHeader(title: 'Daily quests')),
-              _staggered(
-                i++,
-                _QuestsSection(dashboard: d, onOpen: onOpenRecommendation),
-              ),
-              const SizedBox(height: 20),
-
-              // ── 3g. TROPHY ROOM — real unlocks only ──
+              // ── ZONE C: WINS & RANKING ──
+              // ── TROPHY ROOM — real unlocks only ──
               if (d.achievements.recentUnlocks.isNotEmpty) ...[
                 _staggered(i++, const SectionHeader(title: 'Trophy room')),
                 _staggered(
@@ -428,11 +427,7 @@ class _DashboardBody extends StatelessWidget {
                 const SizedBox(height: 8),
               ],
 
-              // ── 3h. STREAK — prominence + real data ──
-              _staggered(i++, _StreakPreview(dashboard: d)),
-              const SizedBox(height: 20),
-
-              // ── 3i. CHAMPIONS ARENA — honest rank teaser ──
+              // ── CHAMPIONS ARENA — honest rank teaser ──
               _staggered(i++, const SectionHeader(title: 'Champions Arena')),
               _staggered(i++, const DashboardLeaderboardTeaser()),
               const SizedBox(height: 20),
@@ -2918,14 +2913,28 @@ class _QuestsSection extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        q.reason.isEmpty ? label : q.reason,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              q.reason.isEmpty ? label : q.reason,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppLightColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          // Real backend priority stays visible on every
+                          // recommendation row, not only on the brief.
+                          if (q.priority > 0) ...[
+                            const SizedBox(width: 8),
+                            PriorityPill(priority: q.priority),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -3104,16 +3113,14 @@ class _AdaptiveFocusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mastery = _recommendedMastery;
+final mastery = _recommendedMastery;
     final strongTopics = _strongTopics;
     final tint = _needsPractice ? AppColors.warning : AppColors.secondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final topicName = recommendation.topicName!;
     final difficulty = mastery?.currentDifficulty.isNotEmpty == true
         ? mastery!.currentDifficulty
         : recommendation.recommendedDifficulty;
-    final difficultyLabel = mastery?.currentDifficulty.isNotEmpty == true
-        ? 'CURRENT DIFFICULTY'
-        : 'RECOMMENDED DIFFICULTY';
 
     return GlowCard(
       glowColor: tint,
@@ -3140,38 +3147,112 @@ class _AdaptiveFocusCard extends StatelessWidget {
                 PriorityPill(priority: recommendation.priority),
             ],
           ),
+          // Compact reference layout: the recommended topic is the headline
+          // once, its state/difficulty ride as tags instead of stacked rows,
+          // and the reason stays a single secondary line.
           if (strongTopics.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _FocusLine(
-              label: 'YOU ARE STRONG IN',
-              value: strongTopics
-                  .map(
-                    (topic) =>
-                        '${topic.topicName} (${Formatters.percent(topic.masteryScore)})',
-                  )
-                  .join('  ·  '),
-            ),
-          ],
-          if (_needsPractice) ...[
-            const SizedBox(height: 12),
-            _FocusLine(label: 'NEEDS PRACTICE', value: topicName),
-          ],
-          const SizedBox(height: 12),
-          _FocusLine(label: 'NEXT RECOMMENDED MISSION', value: topicName),
-          if (difficulty.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(
-                  child: _FocusLine(label: difficultyLabel, value: difficulty),
+                Icon(Icons.star_rounded, size: 14, color: tint),
+                const SizedBox(width: 6),
+                Text(
+                  'YOU ARE STRONG IN',
+                  style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w800,
+                    color: tint,
+                  ),
                 ),
-                DifficultyPill(difficulty: difficulty),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    strongTopics
+                        .map(
+                          (topic) =>
+                              '${topic.topicName} (${Formatters.percent(topic.masteryScore)})',
+                        )
+                        .join('  ·  '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.textPrimary
+                          : AppLightColors.textPrimary,
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          _FocusLine(label: 'WHY', value: recommendation.reason),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
+          Text(
+            topicName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: AppTypography.displayFamily,
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+              color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (_needsPractice)
+                _BriefTag(
+                  label: 'NEEDS PRACTICE',
+                  tint: tint,
+                  isDark: isDark,
+                ),
+              _BriefTag(
+                label: 'NEXT RECOMMENDED MISSION',
+                tint: tint,
+                isDark: isDark,
+              ),
+              if (difficulty.isNotEmpty)
+                DifficultyPill(difficulty: difficulty),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'WHY',
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 1.4,
+                  fontWeight: FontWeight.w800,
+                  color: tint,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  recommendation.reason,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.35,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppLightColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Align(
             alignment: Alignment.centerLeft,
             child: GameChip(
@@ -3189,40 +3270,35 @@ class _AdaptiveFocusCard extends StatelessWidget {
   }
 }
 
-class _FocusLine extends StatelessWidget {
-  const _FocusLine({required this.label, required this.value});
+class _BriefTag extends StatelessWidget {
+  const _BriefTag({
+    required this.label,
+    required this.tint,
+    required this.isDark,
+  });
 
   final String label;
-  final String value;
+  final Color tint;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9.5,
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.textTertiary : AppLightColors.textTertiary,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: isDark ? 0.16 : 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tint.withValues(alpha: 0.45), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9.5,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w800,
+          color: tint,
         ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 13,
-            height: 1.35,
-            fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

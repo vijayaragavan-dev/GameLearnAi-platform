@@ -10,7 +10,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_surfaces.dart';
-import '../../../shared/widgets/responsive_layout.dart';
 import '../providers/dashboard_provider.dart';
 
 /// AI-powered learning intelligence — mastery, weak areas, revision, next difficulty, game picks.
@@ -26,7 +25,16 @@ class IntelligenceSection extends ConsumerWidget {
     if (data == null) return const SizedBox.shrink();
 
     final intel = AdaptiveEngine.fromDashboard(data);
-    final recs = AdaptiveEngine.recommendations(intel, data.recommendations);
+
+    // Revision entries that are already surfaced as focus areas would render
+    // the same topic (and the same tutor action) a second time, so the
+    // revision list only carries topics the focus list does not show.
+    final weakTopicIds = {
+      for (final w in intel.weakTopics) w.topicId,
+    };
+    final revisionOnly = intel.revisionQueue
+        .where((rev) => !weakTopicIds.contains(rev.topicId))
+        .toList(growable: false);
 
     // Insufficient data truthful state
     if (intel.insufficientData) {
@@ -87,38 +95,6 @@ class IntelligenceSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Recommended next action
-        if (recs.isNotEmpty) ...[
-          Text('RECOMMENDED NEXT', style: AppTypography.overline(context)),
-          const SizedBox(height: 8),
-          for (final r in recs.take(2))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: GameCard(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                child: Row(
-                  children: [
-                    Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.22))), child: const Icon(Icons.auto_awesome_rounded, size: 18, color: AppColors.primary)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(r.title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
-                        const SizedBox(height: 2),
-                        Text(r.reason, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
-                        const SizedBox(height: 4),
-                        Wrap(spacing: 6, children: [
-                          Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)), child: Text(r.difficulty, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primary))),
-                          if (r.gameType != null) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)), child: Text(r.gameType!.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.secondary))),
-                        ]),
-                      ]),
-                    ),
-                    const SizedBox(width: 8),
-                    GameChip(label: r.actionLabel.toUpperCase(), icon: Icons.play_arrow_rounded, onTap: () => _handleRecTap(context, r)),
-                  ],
-                ),
-              ),
-            ),
-        ],
         // Weak areas / strong areas
         if (intel.weakTopics.isNotEmpty) ...[
           const SizedBox(height: 4),
@@ -131,7 +107,7 @@ class IntelligenceSection extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.error.withValues(alpha: 0.25))),
                 child: Row(children: [
-                  Icon(Icons.warning_rounded, size: 16, color: AppColors.error),
+                  const Icon(Icons.warning_rounded, size: 16, color: AppColors.error),
                   const SizedBox(width: 8),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(w.topicName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
@@ -155,12 +131,12 @@ class IntelligenceSection extends ConsumerWidget {
               ),
           ]),
         ],
-        // Revision queue
-        if (intel.revisionQueue.isNotEmpty) ...[
+        // Revision queue (only topics not already listed as focus areas)
+        if (revisionOnly.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text('REVISION PRIORITY', style: AppTypography.overline(context)),
           const SizedBox(height: 8),
-          for (final rev in intel.revisionQueue)
+          for (final rev in revisionOnly)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Container(
@@ -200,33 +176,80 @@ class IntelligenceSection extends ConsumerWidget {
               ),
             ),
         ],
-        // Recommended games
+        // Recommended games — compact rows: the full card grid duplicated the
+        // Game zone further down the same page.
         if (intel.recommendedGames.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text('PERSONALIZED GAMES', style: AppTypography.overline(context)),
           const SizedBox(height: 8),
-          AdaptiveGrid(
-            compact: 1,
-            medium: 2,
-            expanded: 2,
-            wide: 3,
-            spacing: 10,
-            children: [
-              for (final g in intel.recommendedGames)
-                GameCard(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(g.gameType.toUpperCase().replaceAll('_', ' '), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppColors.primary)),
-                    const SizedBox(height: 4),
-                    Text(g.topicName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : AppLightColors.textPrimary)),
-                    const SizedBox(height: 4),
-                    Text(g.reason, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary : AppLightColors.textSecondary)),
-                    const SizedBox(height: 8),
-                    SecondaryGameButton(label: 'Play ${g.gameType}', icon: Icons.play_arrow_rounded, onTap: () => context.push(Routes.gameHub(g.topicId), extra: g.topicName)),
-                  ]),
+          for (final g in intel.recommendedGames.take(3))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                  ),
                 ),
-            ],
-          ),
+                child: Row(children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: const Icon(
+                      Icons.sports_esports_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          g.gameType.toUpperCase().replaceAll('_', ' '),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          g.topicName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : AppLightColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GameChip(
+                    label: 'PLAY',
+                    icon: Icons.play_arrow_rounded,
+                    color: AppColors.primary,
+                    onTap: () => context.push(
+                      Routes.gameHub(g.topicId),
+                      extra: g.topicName,
+                    ),
+                  ),
+                ]),
+              ),
+            ),
         ],
         // AI Tutor suggestion
         const SizedBox(height: 12),
@@ -245,21 +268,5 @@ class IntelligenceSection extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  void _handleRecTap(BuildContext context, AdaptiveRecommendation r) {
-    if (r.topicId != null) {
-      if (r.gameType != null) {
-        // Global arena entry: recommendations carry no subject, so no
-        // subject scope is passed. (Passing the topic name as subjectName
-        // here previously risked mis-scoping the arena when a topic name
-        // happened to match a world display name.)
-        context.push(Routes.gameHub(r.topicId!), extra: r.topicName);
-      } else {
-        context.push(Routes.topic(r.topicId!));
-      }
-    } else {
-      context.push(Routes.subjects);
-    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gamelearn_app/core/models/avatar_models.dart';
 import 'package:gamelearn_app/core/network/api_client.dart';
 import 'package:gamelearn_app/features/avatar/data/avatar_repository.dart';
@@ -9,6 +10,7 @@ import 'package:gamelearn_app/features/avatar/presentation/character_detail_scre
 import 'package:gamelearn_app/features/avatar/providers/avatar_providers.dart';
 import 'package:gamelearn_app/core/providers.dart';
 import 'package:gamelearn_app/core/theme/app_theme.dart';
+import 'package:gamelearn_app/core/utils/avatar_asset_resolver.dart';
 
 class FakeAvatarRepo extends AvatarRepository {
   FakeAvatarRepo({this.collectionResponse, this.catalogResponse, this.profileResponse, this.throwError}) : super(ApiClient());
@@ -204,6 +206,127 @@ void main() {
       await tester.pumpWidget(ProviderScope(overrides: [avatarRepoProvider.overrideWithValue(fake)], child: MaterialApp(theme: buildGameLearnDarkTheme(), home: const CharacterCollectionScreen())));
       await tester.pumpAndSettle();
       expect(find.byType(Semantics), findsWidgets);
+    });
+
+    testWidgets('collection filters split owned / available / locked from '
+        'real item state', (tester) async {
+      final fake = FakeAvatarRepo()..collectionResponse = sampleCollection();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [avatarRepoProvider.overrideWithValue(fake)],
+          child: MaterialApp(
+            theme: buildGameLearnDarkTheme(),
+            home: const CharacterCollectionScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Future<void> tapFilter(String label) async {
+        final chip = find.text(label).first;
+        await tester.ensureVisible(chip);
+        await tester.pumpAndSettle();
+        await tester.tap(chip);
+        await tester.pumpAndSettle();
+      }
+
+      // ALL: the whole catalogue.
+      expect(find.text('Nova Spark'), findsWidgets);
+      expect(find.text('Lumen Coder', skipOffstage: false), findsWidgets);
+      expect(find.text('Algo Sage', skipOffstage: false), findsWidgets);
+
+      // OWNED: only owned items (Nova Spark equipped, Lumen Coder owned).
+      await tapFilter('OWNED');
+      expect(find.text('Lumen Coder', skipOffstage: false), findsWidgets);
+      expect(find.text('Net Ranger', skipOffstage: false), findsNothing);
+
+      // AVAILABLE: not owned yet but claimable/purchasable (Net Ranger,
+      // Claimable Epic). An owned character is deliberately excluded.
+      await tapFilter('AVAILABLE');
+      expect(find.text('Claimable Epic', skipOffstage: false), findsWidgets);
+      expect(find.text('Lumen Coder', skipOffstage: false), findsNothing);
+
+      // LOCKED: not owned and not eligible (Algo Sage, Oracle).
+      await tapFilter('LOCKED');
+      expect(find.text('Algo Sage', skipOffstage: false), findsWidgets);
+      expect(find.text('Lumen Coder', skipOffstage: false), findsNothing);
+
+      // Back to ALL restores the full grid.
+      await tapFilter('ALL');
+      expect(find.text('Net Ranger', skipOffstage: false), findsWidgets);
+    });
+
+    testWidgets('next-unlock view action routes to the character detail path', (
+      tester,
+    ) async {
+      final fake = FakeAvatarRepo()..collectionResponse = sampleCollection();
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const CharacterCollectionScreen(),
+          ),
+          GoRoute(
+            path: '/profile/characters/:avatarId',
+            builder: (_, state) => Scaffold(
+              body: Text('DETAIL ${state.pathParameters['avatarId']}'),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [avatarRepoProvider.overrideWithValue(fake)],
+          child: MaterialApp.router(
+            theme: buildGameLearnDarkTheme(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final view = find.text('VIEW').first;
+      expect(view, findsOneWidget);
+      await tester.ensureVisible(view);
+      await tester.pumpAndSettle();
+      await tester.tap(view);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // The chip uses the real detail route shape for the next-unlock item
+      // (fixture: 'Claimable Epic', id 6).
+      expect(find.text('DETAIL 6'), findsOneWidget);
+    });
+
+    testWidgets('avatars resolve to bundled assets for every seeded key', (
+      tester,
+    ) async {
+      final fake = FakeAvatarRepo()..collectionResponse = sampleCollection();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [avatarRepoProvider.overrideWithValue(fake)],
+          child: MaterialApp(
+            theme: buildGameLearnDarkTheme(),
+            home: const CharacterCollectionScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Unknown keys fall back to the default asset instead of rendering a
+      // blank avatar.
+      expect(
+        resolveAvatarAsset('characters/initiates_spark'),
+        'assets/images/mascot_robot.png',
+      );
+      expect(
+        resolveAvatarAsset('characters/mascot_panda'),
+        'assets/images/mascot_panda.png',
+      );
+      expect(
+        resolveAvatarAsset('characters/bao_panda'),
+        'assets/images/mascot_panda.png',
+      );
     });
   });
 

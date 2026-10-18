@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gamelearn_app/core/utils/avatar_asset_resolver.dart';
 
@@ -22,9 +24,20 @@ void main() {
     });
 
     test('L8-28 asset path integrity', () {
+      // Reference resolver keeps two local forms: the vector catalogue under
+      // assets/characters/ and the first-party mascot artwork under
+      // assets/images/. Nothing may resolve outside the bundle.
       for (final asset in allKnownAvatarAssets) {
-        expect(asset, startsWith('assets/characters/'));
-        expect(asset, endsWith('.svg'));
+        expect(asset, isNot(contains('http')));
+        expect(
+          asset,
+          anyOf(
+            startsWith('assets/characters/'),
+            startsWith('assets/images/'),
+          ),
+        );
+        expect(asset, anyOf(endsWith('.svg'), endsWith('.png')));
+        expect(File(asset).existsSync(), isTrue, reason: 'missing $asset');
       }
     });
 

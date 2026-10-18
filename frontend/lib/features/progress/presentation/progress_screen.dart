@@ -13,16 +13,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/neo_brutalism.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/adaptive_next_action.dart';
-import '../../../shared/widgets/badges.dart';
-import '../../../shared/widgets/cinematic_scenery.dart';
 import '../../../shared/widgets/cinematic_surfaces.dart';
 import '../../../shared/widgets/feedback.dart';
 import '../../../shared/widgets/game_button.dart';
 import '../../../shared/widgets/game_card.dart';
-import '../../../shared/widgets/game_surfaces.dart';
-import '../../../shared/widgets/xp_bar.dart';
 import '../../../shared/widgets/recommendation_card.dart'
     show SectionHeader, DifficultyPill;
 import '../../../shared/widgets/stat_card.dart';
@@ -162,107 +159,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       ),
                       child: Column(
                         children: [
-                          // ── Cinematic stats header (reference: level band
-                          // + tagline). All values are the same backend reads
-                          // used below — identity strip, not a second source.
-                          FeaturedSurface(
-                            accent: AppColors.primary,
-                            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                            scene: ScenePalette.violet,
-                            sceneSeed: seedForKey(profile.displayName),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'YOUR PROGRESS',
-                                            style: TextStyle(
-                                              fontFamily:
-                                                  AppTypography.displayFamily,
-                                              fontSize: 21,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 1.2,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Track your progress. See your growth.',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              color: Theme.of(
-                                                    context,
-                                                  ).brightness ==
-                                                  Brightness.dark
-                                                  ? AppColors.textSecondary
-                                                  : AppLightColors
-                                                        .textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    const NeonQuote(
-                                      text:
-                                          'PROGRESS\nTURNS EFFORT\nINTO MASTERY',
-                                      fontSize: 10,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                // Player-status progression band — LevelBadge +
-                                // sanctioned XPBar (same backend reads as the
-                                // cards below) + streak/badge identity chips.
-                                Row(
-                                  children: [
-                                    Semantics(
-                                      label:
-                                          'Level ${summary.currentLevel}, ${Formatters.count(summary.totalXp)} XP',
-                                      child: LevelBadge(
-                                        level: summary.currentLevel,
-                                        size: 58,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: XPBar(
-                                        currentLevel: summary.currentLevel,
-                                        totalXp: summary.totalXp,
-                                        xpToNextLevel:
-                                            summary.xpToNextLevel,
-                                        showLabels: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    _StatChip(
-                                      icon: Icons
-                                          .local_fire_department_rounded,
-                                      label:
-                                          '${streak.currentStreakDays}-DAY STREAK',
-                                      color: AppColors.streak,
-                                    ),
-                                    _StatChip(
-                                      icon: Icons.emoji_events_rounded,
-                                      label:
-                                          '${summary.unlockedAchievements} BADGES',
-                                      color: AppColors.xp,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                          // 1. YOUR PROGRESS — comic hero (port from
+                          // reference): level band, XP bar, identity chips.
+                          // Same backend reads as the cards below.
+                          _YourProgressHero(
+                            summary: summary,
+                            streak: streak,
                           ),
                           const SizedBox(height: 18),
                           // At-a-glance numbers live in the hero band above
@@ -619,6 +521,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             ),
                           ],
 
+                          // —— LEARN STREAK (reference section 4)
+                          const SizedBox(height: 18),
+                          const NeonSectionHeader(
+                            icon: Icons.local_fire_department_rounded,
+                            title: 'Learn streak',
+                            subtitle: 'Consistency builds true skill',
+                            accent: AppColors.streak,
+                          ),
+                          const SizedBox(height: 12),
+                          _LearnStreakCard(streak: streak),
+
+                          // —— MASTERY DISTRIBUTION (A8)
+                          const SizedBox(height: 18),
                           // ── MASTERY DISTRIBUTION (A8)
                           const SizedBox(height: 18),
                           _MasteryDistribution(topics: topics),
@@ -645,7 +560,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: AppColors.primary.withValues(alpha: 0.14))),
-                                child: Row(children: [const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary), const SizedBox(width: 8), Expanded(child: Text('Historical trend requires 3+ completed activities. Your current view shows the latest available state.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)))]),
+                                child: const Row(children: [Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary), SizedBox(width: 8), Expanded(child: Text('Historical trend requires 3+ completed activities. Your current view shows the latest available state.', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)))]),
                               ),
                             ),
                         ],
@@ -662,136 +577,981 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 }
 
-class _MasteryCore extends StatelessWidget {
-  const _MasteryCore({required this.mastery, required this.topicCount});
+class _YourProgressHero extends StatelessWidget {
+  const _YourProgressHero({
+    required this.summary,
+    required this.streak,
+  });
 
-  /// Backend-provided overall mastery (0–100). Never fabricated.
-  final double mastery;
+  final GamificationSummary summary;
+  final StreakState streak;
 
-  /// Backend-provided count of tracked topics for the subtitle.
-  final int topicCount;
+  // ------------------------------------------------------------
+  // GAMELEARN AI - COMIC / NEO-BRUTALIST COLORS
+  // ------------------------------------------------------------
 
-  /// Tier vocabulary mirrors the app's mastery language; cutoffs match
-  /// AdaptiveEngine (80/60/40) exactly.
-  (String label, Color tint) _tier() {
-    if (mastery >= AdaptiveEngine.masteredThreshold) {
-      return ('MASTERED', AppColors.xp);
+  static const Color _blue = Color(0xFF2563EB);
+
+  static const Color _yellow = Color(0xFFFFD43B);
+  static const Color _red = Color(0xFFEF4444);
+
+  static const Color _white = Color(0xFFFFFFFF);
+  static const Color _ink = Color(0xFF171717);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: _blue,
+
+        // Thick comic outline
+        border: Border.all(
+          color: _ink,
+          width: 3.5,
+        ),
+
+        borderRadius: BorderRadius.circular(28),
+
+        // Hard neo-brutalist shadow
+        boxShadow: const [
+          BoxShadow(
+            color: _ink,
+            blurRadius: 0,
+            offset: Offset(6, 7),
+          ),
+        ],
+      ),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // =====================================================
+          // HEADER
+          // =====================================================
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // YOUR PROGRESS
+                    const Text(
+                      'YOUR PROGRESS',
+                      style: TextStyle(
+                        fontFamily: AppTypography.displayFamily,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                        height: 0.95,
+                        color: _white,
+
+                        // Strong comic outline
+                        shadows: [
+                          Shadow(
+                            color: _ink,
+                            offset: Offset(2, 2),
+                          ),
+                          Shadow(
+                            color: _ink,
+                            offset: Offset(-1, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 7),
+
+                    const Text(
+                      'Track your progress. See your growth.',
+                      style: TextStyle(
+                        fontFamily: AppTypography.bodyFamily,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                        color: _white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // Comic underline
+                    Container(
+                      width: 105,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: _yellow,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // =================================================
+              // COMIC QUOTE
+              // =================================================
+
+              const _ComicQuote(
+                text: 'PROGRESS\nTURNS EFFORT\nINTO MASTERY',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // =====================================================
+          // LEVEL + XP
+          // =====================================================
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Semantics(
+                label:
+                    'Level ${summary.currentLevel}, ${Formatters.count(summary.totalXp)} XP',
+                child: _ComicLevelBadge(
+                  level: summary.currentLevel,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: _ComicXPSection(
+                  currentLevel: summary.currentLevel,
+                  totalXp: summary.totalXp,
+                  xpToNextLevel: summary.xpToNextLevel ?? 0,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // =====================================================
+          // STATS
+          // =====================================================
+
+          Row(
+            children: [
+              Expanded(
+                child: _ComicStatChip(
+                  icon: Icons.local_fire_department_rounded,
+                  value: '${streak.currentStreakDays}',
+                  label: 'DAY STREAK',
+                  color: _red,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: _ComicStatChip(
+                  icon: Icons.emoji_events_rounded,
+                  value: '${summary.unlockedAchievements}',
+                  label: 'BADGES',
+                  color: _yellow,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ============================================================================
+// COMIC QUOTE
+// ============================================================================
+
+class _ComicQuote extends StatelessWidget {
+  const _ComicQuote({
+    required this.text,
+  });
+
+  final String text;
+
+  static const Color _yellow = Color(0xFFFFD43B);
+  static const Color _ink = Color(0xFF171717);
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: -0.025,
+      child: Container(
+        constraints: const BoxConstraints(
+          maxWidth: 125,
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          10,
+          9,
+          10,
+          9,
+        ),
+        decoration: BoxDecoration(
+          color: _yellow,
+
+          border: Border.all(
+            color: _ink,
+            width: 2.5,
+          ),
+
+          borderRadius: BorderRadius.circular(8),
+
+          boxShadow: const [
+            BoxShadow(
+              color: _ink,
+              blurRadius: 0,
+              offset: Offset(3, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontFamily: AppTypography.displayFamily,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w900,
+            height: 1.15,
+            letterSpacing: 0.4,
+            color: _ink,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ============================================================================
+// COMIC LEVEL BADGE
+// ============================================================================
+
+class _ComicLevelBadge extends StatelessWidget {
+  const _ComicLevelBadge({
+    required this.level,
+  });
+
+  final int level;
+
+  static const Color _blue = Color(0xFF3B82F6);
+  static const Color _cyan = Color(0xFF22D3EE);
+  static const Color _white = Color(0xFFFFFFFF);
+  static const Color _ink = Color(0xFF171717);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _blue,
+
+        border: Border.all(
+          color: _ink,
+          width: 3,
+        ),
+
+        boxShadow: const [
+          BoxShadow(
+            color: _ink,
+            blurRadius: 0,
+            offset: Offset(3, 4),
+          ),
+        ],
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _blue,
+          border: Border.all(
+            color: _cyan,
+            width: 3,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'LEVEL',
+              style: TextStyle(
+                fontFamily: AppTypography.displayFamily,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: _white,
+              ),
+            ),
+
+            const SizedBox(height: 1),
+
+            Text(
+              '$level',
+              style: const TextStyle(
+                fontFamily: AppTypography.displayFamily,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                height: 0.9,
+                color: _white,
+                shadows: [
+                  Shadow(
+                    color: _ink,
+                    offset: Offset(1.5, 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+// ============================================================================
+// COMIC XP SECTION
+// ============================================================================
+
+class _ComicXPSection extends StatelessWidget {
+  const _ComicXPSection({
+    required this.currentLevel,
+    required this.totalXp,
+    required this.xpToNextLevel,
+  });
+
+  final int currentLevel;
+  final int totalXp;
+  final int xpToNextLevel;
+
+  static const Color _yellow = Color(0xFFFFD43B);
+  static const Color _white = Color(0xFFFFFFFF);
+  static const Color _ink = Color(0xFF171717);
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate a safe visual progress value.
+    //
+    // We keep the existing XP data untouched.
+    // This only controls how much of the bar is filled.
+    final int safeNextXp = xpToNextLevel <= 0 ? 1 : xpToNextLevel;
+
+    final double progress =
+        (totalXp / safeNextXp).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // =========================================================
+        // XP LABEL
+        // =========================================================
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '$xpToNextLevel XP',
+              style: const TextStyle(
+                fontFamily: AppTypography.displayFamily,
+                fontSize: 21,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: _yellow,
+                shadows: [
+                  Shadow(
+                    color: _ink,
+                    offset: Offset(1.5, 1.5),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 5),
+
+            const Expanded(
+              child: Text(
+                'TO NEXT LEVEL',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: AppTypography.displayFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  color: _white,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 7),
+
+        // =========================================================
+        // XP BAR
+        // =========================================================
+
+        Container(
+          height: 19,
+          decoration: BoxDecoration(
+            color: _ink,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _ink,
+              width: 2,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: progress,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: _yellow,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        // =========================================================
+        // XP VALUES
+        // =========================================================
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${totalXp - xpToNextLevel > 0 ? totalXp - xpToNextLevel : 0} XP',
+              style: const TextStyle(
+                fontFamily: AppTypography.bodyFamily,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: _white,
+              ),
+            ),
+
+            Text(
+              '$totalXp XP',
+              style: const TextStyle(
+                fontFamily: AppTypography.bodyFamily,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: _white,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+
+// ============================================================================
+// COMIC STAT CHIP
+// ============================================================================
+
+class _ComicStatChip extends StatelessWidget {
+  const _ComicStatChip({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  static const Color _white = Color(0xFFFFFFFF);
+  static const Color _ink = Color(0xFF171717);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(
+        minHeight: 67,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: _white,
+
+        border: Border.all(
+          color: _ink,
+          width: 2.5,
+        ),
+
+        borderRadius: BorderRadius.circular(16),
+
+        boxShadow: [
+          BoxShadow(
+            color: color,
+            blurRadius: 0,
+            offset: const Offset(4, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // =======================================================
+          // ICON
+          // =======================================================
+
+          Container(
+            width: 43,
+            height: 43,
+            decoration: BoxDecoration(
+              color: color,
+              border: Border.all(
+                color: _ink,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              icon,
+              size: 25,
+              color: _ink,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // =======================================================
+          // VALUE + LABEL
+          // =======================================================
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: AppTypography.displayFamily,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    height: 0.9,
+                    color: _ink,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: AppTypography.bodyFamily,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
+                    color: _ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+/// ── 2. OVERALL MASTERY ──────────────────────────────────────────────────────
+
+class _LearnStreakCard extends StatefulWidget {
+  const _LearnStreakCard({required this.streak});
+
+  final StreakState streak;
+
+  @override
+  State<_LearnStreakCard> createState() => _LearnStreakCardState();
+}
+
+class _LearnStreakCardState extends State<_LearnStreakCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _scaleAnimation;
+  bool _tapped = false;
+  int? _selectedDayIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    if (widget.streak.currentStreakDays > 0) {
+      _pulseController.repeat(reverse: true);
     }
-    if (mastery >= AdaptiveEngine.proficientThreshold) {
-      return ('PROFICIENT', AppColors.success);
-    }
-    if (mastery >= AdaptiveEngine.developingThreshold) {
-      return ('DEVELOPING', AppColors.warning);
-    }
-    return ('NEEDS PRACTICE', AppColors.error);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _onCardTap() {
+    setState(() {
+      _tapped = !_tapped;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final (tierLabel, tint) = _tier();
-    return Semantics(
-      label: 'Overall mastery ${Formatters.percent(mastery)}, tier $tierLabel',
-      child: GameChallengeSurface(
-        accent: tint,
-        title: 'OVERALL MASTERY',
-        icon: Icons.radar_rounded,
-        subtitle: '$topicCount TRACKED',
-        child: Row(
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: isDark ? AppShadows.glow(tint, alpha: 0.30) : null,
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: mastery / 100),
-                    duration: AppMotion.durFor(
-                      context,
-                      AppMotion.celebration,
-                    ),
-                    curve: AppMotion.easeOut,
-                    builder: (context, v, _) => CircularProgressIndicator(
-                      value: v.clamp(0, 1),
-                      strokeWidth: 9,
-                      strokeCap: StrokeCap.round,
-                      color: tint,
-                      backgroundColor: isDark
-                          ? AppColors.surfaceHigh
-                          : AppLightColors.surfaceHigh,
-                    ),
+    final currentStreak = widget.streak.currentStreakDays;
+    final longestStreak = widget.streak.longestStreakDays;
+    final weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    // In a 7-day week, compute which days are active based on currentStreak
+    final activeDaysCount = currentStreak.clamp(0, 7);
+
+    return PressableScale(
+      onTap: _onCardTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? Theme.of(context).cardTheme.color : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(
+            color: isDark
+                ? AppColors.streak.withValues(alpha: 0.45)
+                : NeoBrutalColors.ink,
+            width: isDark ? 1.5 : 2.5,
+          ),
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: AppColors.streak.withValues(alpha: 0.25),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        Formatters.percent(mastery),
-                        style: const TextStyle(
-                          fontFamily: AppTypography.displayFamily,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
+                ]
+              : NeoBrutalShadows.hard,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Flame Icon + Streak numbers + Best streak badge
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.streak.withValues(alpha: 0.18)
+                              : const Color(0xFFFEF3C7),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color:
+                                isDark ? AppColors.streak : NeoBrutalColors.ink,
+                            width: isDark ? 1.5 : 2.5,
+                          ),
+                          boxShadow: isDark ? null : NeoBrutalShadows.hardXs,
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.local_fire_department_rounded,
+                            size: 26,
+                            color: currentStreak > 0
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFF9CA3AF),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '$currentStreak',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.displayFamily,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? Colors.white
+                                      : NeoBrutalColors.ink,
+                                  height: 1.0,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  currentStreak == 1
+                                      ? 'DAY STREAK'
+                                      : 'DAYS STREAK',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: AppTypography.displayFamily,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.0,
+                                    color: currentStreak > 0
+                                        ? const Color(0xFFF59E0B)
+                                        : (isDark
+                                            ? AppColors.textTertiary
+                                            : NeoBrutalColors.inkSecondary),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            currentStreak > 0
+                                ? 'Keep learning daily!'
+                                : 'Start your streak today!',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: AppTypography.bodyFamily,
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : NeoBrutalColors.inkSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // Best Streak Pill
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.surfaceHigh
+                        : NeoBrutalColors.pastelYellow,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isDark ? AppColors.border : NeoBrutalColors.ink,
+                      width: isDark ? 1.0 : 1.5,
+                    ),
+                    boxShadow: isDark ? null : NeoBrutalShadows.hardXs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.emoji_events_rounded,
+                        size: 13,
+                        color: Color(0xFFD97706),
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        'MASTERY',
+                        'BEST: $longestStreak',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontFamily: AppTypography.displayFamily,
+                          fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 2,
+                          letterSpacing: 0.8,
                           color: isDark
-                              ? AppColors.textTertiary
-                              : AppLightColors.textTertiary,
+                              ? AppColors.textPrimary
+                              : NeoBrutalColors.ink,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      color: tint.withValues(alpha: isDark ? 0.14 : 0.10),
-                      border: Border.all(
-                        color: tint.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Text(
-                      // Suffixed so the tier band never collides with the
-                      // backend level pills rendered on topic cards.
-                      '$tierLabel TIER',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                        color: tint,
-                      ),
+            const SizedBox(height: 16),
+
+            // 7-Day Interactive Weekday Tracker
+            Row(
+              children: [
+                for (var i = 0; i < 7; i++) ...[
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        final isActive = i < activeDaysCount;
+                        final isSelected = _selectedDayIndex == i;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedDayIndex =
+                                  _selectedDayIndex == i ? null : i;
+                            });
+                          },
+                          child: AnimatedScale(
+                            scale: isSelected ? 1.15 : 1.0,
+                            duration: const Duration(milliseconds: 180),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: isActive
+                                        ? (isDark
+                                            ? AppColors.streak
+                                            : NeoBrutalColors.lemonYellow)
+                                        : (isDark
+                                            ? AppColors.surfaceHigh
+                                            : const Color(0xFFF3F4F6)),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isActive
+                                          ? NeoBrutalColors.ink
+                                          : (isDark
+                                              ? AppColors.border
+                                              : const Color(0xFFD1D5DB)),
+                                      width: isActive ? 1.8 : 1.2,
+                                    ),
+                                    boxShadow: isActive && !isDark
+                                        ? NeoBrutalShadows.hardXs
+                                        : null,
+                                  ),
+                                  child: Center(
+                                    child: isActive
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            size: 15,
+                                            color: NeoBrutalColors.ink,
+                                          )
+                                        : Text(
+                                            weekdays[i],
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  AppTypography.displayFamily,
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark
+                                                  ? AppColors.textTertiary
+                                                  : const Color(0xFF9CA3AF),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  weekdayNames[i],
+                                  style: TextStyle(
+                                    fontFamily: AppTypography.bodyFamily,
+                                    fontSize: 9,
+                                    fontWeight: isActive
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: isActive
+                                        ? (isDark
+                                            ? AppColors.textPrimary
+                                            : NeoBrutalColors.ink)
+                                        : (isDark
+                                            ? AppColors.textTertiary
+                                            : const Color(0xFF9CA3AF)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Across every assessed topic.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppLightColors.textSecondary,
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Motivational Banner / Feedback
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.surfaceHigh
+                    : (currentStreak > 0
+                        ? const Color(0xFFFEF3C7)
+                        : const Color(0xFFF3F4F6)),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.border
+                      : (currentStreak > 0
+                          ? NeoBrutalColors.ink
+                          : const Color(0xFFD1D5DB)),
+                  width: isDark ? 1.0 : 1.5,
+                ),
+                boxShadow: !isDark && currentStreak > 0
+                    ? NeoBrutalShadows.hardXs
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    currentStreak > 0
+                        ? Icons.local_fire_department_rounded
+                        : Icons.explore_rounded,
+                    size: 16,
+                    color: currentStreak > 0
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF6B7280),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      currentStreak > 0
+                          ? '🔥 You\'re on fire! Keep learning today to maintain your streak!'
+                          : 'Complete a few missions to build your learning streak!',
+                      style: TextStyle(
+                        fontFamily: AppTypography.bodyFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : (currentStreak > 0
+                                ? NeoBrutalColors.ink
+                                : NeoBrutalColors.inkSecondary),
+                      ),
                     ),
                   ),
                 ],
@@ -804,6 +1564,787 @@ class _MasteryCore extends StatelessWidget {
   }
 }
 
+/// ── HELPER CHIP & INDICATOR ────────────────────────────────────────────────
+class _MasteryCore extends StatefulWidget {
+  const _MasteryCore({
+    required this.mastery,
+    required this.topicCount,
+  });
+
+  /// Backend-provided overall mastery (0–100). Never fabricated.
+  final double mastery;
+
+  /// Backend-provided count of tracked topics for the subtitle.
+  final int topicCount;
+
+  @override
+  State<_MasteryCore> createState() => _MasteryCoreState();
+}
+
+class _MasteryCoreState extends State<_MasteryCore> {
+  bool _tapped = false;
+
+  (String label, Color tint) _tier() {
+    if (widget.mastery >= AdaptiveEngine.masteredThreshold) {
+      return (
+        'MASTERED',
+        const Color(0xFF10B981),
+      );
+    }
+
+    if (widget.mastery >= AdaptiveEngine.proficientThreshold) {
+      return (
+        'PROFICIENT',
+        AppColors.primary,
+      );
+    }
+
+    if (widget.mastery >= AdaptiveEngine.developingThreshold) {
+      return (
+        'DEVELOPING',
+        AppColors.warning,
+      );
+    }
+
+    return (
+      'NEEDS PRACTICE',
+      AppColors.error,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final (tierLabel, tint) = _tier();
+
+    final needsPractice =
+        !isDark && widget.mastery < 50;
+
+    // ==========================================================
+    // COMIC / NEO-BRUTALIST COLORS
+    // ==========================================================
+
+    const ink = Color(0xFF171717);
+    const white = Color(0xFFFFFFFF);
+
+    const blue = Color(0xFF2563EB);
+    const yellow = Color(0xFFFFD43B);
+
+    const green = Color(0xFF10B981);
+    const red = Color(0xFFEF4444);
+    const orange = Color(0xFFF97316);
+
+    final Color mainColor = needsPractice
+        ? red
+        : blue;
+
+    final Color activeColor = widget.mastery >=
+            AdaptiveEngine.masteredThreshold
+        ? green
+        : widget.mastery >=
+                AdaptiveEngine.proficientThreshold
+            ? blue
+            : widget.mastery >=
+                    AdaptiveEngine.developingThreshold
+                ? orange
+                : red;
+
+    return Semantics(
+      label:
+          'Overall mastery ${Formatters.percent(widget.mastery)}, tier $tierLabel',
+
+      child: PressableScale(
+        onTap: () {
+          setState(() {
+            _tapped = !_tapped;
+          });
+        },
+
+        child: Container(
+          padding: const EdgeInsets.all(16),
+
+          decoration: BoxDecoration(
+            // ==================================================
+            // MAIN CARD
+            // ==================================================
+
+            color: isDark
+                ? Theme.of(context).cardTheme.color
+                : mainColor,
+
+            borderRadius: BorderRadius.circular(28),
+
+            border: Border.all(
+              color: isDark
+                  ? activeColor.withValues(alpha: 0.7)
+                  : ink,
+              width: isDark ? 1.5 : 3.5,
+            ),
+
+            // Hard comic shadow instead of soft glow
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: activeColor.withValues(
+                        alpha: 0.25,
+                      ),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : const [
+                    BoxShadow(
+                      color: ink,
+                      blurRadius: 0,
+                      offset: Offset(6, 7),
+                    ),
+                  ],
+          ),
+
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+
+            children: [
+              // =================================================
+              // HEADER
+              // =================================================
+
+              Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.center,
+
+                children: [
+                  // ---------------------------------------------
+                  // RADAR ICON
+                  // ---------------------------------------------
+
+                  Container(
+                    width: 42,
+                    height: 42,
+
+                    decoration: BoxDecoration(
+                      color: white,
+
+                      border: Border.all(
+                        color: ink,
+                        width: 2.5,
+                      ),
+
+                      borderRadius:
+                          BorderRadius.circular(12),
+
+                      boxShadow: const [
+                        BoxShadow(
+                          color: ink,
+                          blurRadius: 0,
+                          offset: Offset(3, 3),
+                        ),
+                      ],
+                    ),
+
+                    child: Icon(
+                      Icons.radar_rounded,
+                      size: 24,
+                      color: mainColor,
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // ---------------------------------------------
+                  // TITLE
+                  // ---------------------------------------------
+
+                  Expanded(
+                    child: Text(
+                      'OVERALL MASTERY',
+
+                      style: TextStyle(
+                        fontFamily:
+                            AppTypography.displayFamily,
+
+                        fontSize: 18,
+
+                        fontWeight:
+                            FontWeight.w900,
+
+                        letterSpacing: 1.0,
+
+                        height: 1,
+
+                        color: isDark
+                            ? Colors.white
+                            : white,
+
+                        shadows: const [
+                          Shadow(
+                            color: ink,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // ---------------------------------------------
+                  // TRACKED BADGE
+                  // ---------------------------------------------
+
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+
+                    decoration: BoxDecoration(
+                      color: yellow,
+
+                      border: Border.all(
+                        color: ink,
+                        width: 2.5,
+                      ),
+
+                      borderRadius:
+                          BorderRadius.circular(999),
+
+                      boxShadow: const [
+                        BoxShadow(
+                          color: ink,
+                          blurRadius: 0,
+                          offset: Offset(3, 3),
+                        ),
+                      ],
+                    ),
+
+                    child: Text(
+                      '${widget.topicCount} TRACKED',
+
+                      style: const TextStyle(
+                        fontFamily:
+                            AppTypography.displayFamily,
+
+                        fontSize: 9,
+
+                        fontWeight:
+                            FontWeight.w900,
+
+                        letterSpacing: 0.6,
+
+                        color: ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              // =================================================
+              // MASTERY + TIER
+              // =================================================
+
+              Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.center,
+
+                children: [
+                  // =============================================
+                  // MASTERY CIRCLE
+                  // =============================================
+
+                  AnimatedScale(
+                    scale: _tapped ? 1.08 : 1.0,
+
+                    duration:
+                        const Duration(
+                      milliseconds: 200,
+                    ),
+
+                    child: Container(
+                      width: 128,
+                      height: 128,
+
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+
+                        color: white,
+
+                        border: Border.all(
+                          color: ink,
+                          width: 3.5,
+                        ),
+
+                        boxShadow: const [
+                          BoxShadow(
+                            color: ink,
+                            blurRadius: 0,
+                            offset: Offset(5, 6),
+                          ),
+                        ],
+                      ),
+
+                      child: Stack(
+                        alignment:
+                            Alignment.center,
+
+                        children: [
+                          // -------------------------------------
+                          // PROGRESS RING
+                          // -------------------------------------
+
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(
+                              begin: 0,
+                              end:
+                                  widget.mastery / 100,
+                            ),
+
+                            duration:
+                                AppMotion.durFor(
+                              context,
+                              AppMotion.celebration,
+                            ),
+
+                            curve:
+                                AppMotion.easeOut,
+
+                            builder:
+                                (
+                              context,
+                              v,
+                              _,
+                            ) {
+                              return SizedBox(
+                                width: 108,
+                                height: 108,
+
+                                child:
+                                    CircularProgressIndicator(
+                                  value:
+                                      v.clamp(
+                                    0.0,
+                                    1.0,
+                                  ),
+
+                                  strokeWidth: 10,
+
+                                  strokeCap:
+                                      StrokeCap.round,
+
+                                  color: mainColor,
+
+                                  backgroundColor:
+                                      const Color(
+                                    0xFFE5E7EB,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // -------------------------------------
+                          // PERCENTAGE
+                          // -------------------------------------
+
+                          Column(
+                            mainAxisSize:
+                                MainAxisSize.min,
+
+                            children: [
+                              Text(
+                                Formatters.percent(
+                                  widget.mastery,
+                                ),
+
+                                style: const TextStyle(
+                                  fontFamily:
+                                      AppTypography
+                                          .displayFamily,
+
+                                  fontSize: 27,
+
+                                  fontWeight:
+                                      FontWeight.w900,
+
+                                  height: 0.95,
+
+                                  color: ink,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 5,
+                              ),
+
+                              const Text(
+                                'MASTERY',
+
+                                style: TextStyle(
+                                  fontFamily:
+                                      AppTypography
+                                          .displayFamily,
+
+                                  fontSize: 9,
+
+                                  fontWeight:
+                                      FontWeight.w900,
+
+                                  letterSpacing: 1.8,
+
+                                  color: ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 18),
+
+                  // =============================================
+                  // TIER INFORMATION
+                  // =============================================
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+
+                      children: [
+                        // ---------------------------------------
+                        // TIER BADGE
+                        // ---------------------------------------
+
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 8,
+                          ),
+
+                          decoration: BoxDecoration(
+                            color: white,
+
+                            border: Border.all(
+                              color: ink,
+                              width: 2.5,
+                            ),
+
+                            borderRadius:
+                                BorderRadius.circular(
+                              11,
+                            ),
+
+                            boxShadow: const [
+                              BoxShadow(
+                                color: ink,
+                                blurRadius: 0,
+                                offset: Offset(3, 4),
+                              ),
+                            ],
+                          ),
+
+                          child: Row(
+                            mainAxisSize:
+                                MainAxisSize.min,
+
+                            children: [
+                              Icon(
+                                Icons
+                                    .bar_chart_rounded,
+
+                                size: 22,
+
+                                color: activeColor,
+                              ),
+
+                              const SizedBox(
+                                width: 7,
+                              ),
+
+                              Flexible(
+                                child: Text(
+                                  '$tierLabel TIER',
+
+                                  overflow:
+                                      TextOverflow
+                                          .ellipsis,
+
+                                  style:
+                                      const TextStyle(
+                                    fontFamily:
+                                        AppTypography
+                                            .displayFamily,
+
+                                    fontSize: 11,
+
+                                    fontWeight:
+                                        FontWeight.w900,
+
+                                    letterSpacing:
+                                        0.7,
+
+                                    color: ink,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // ---------------------------------------
+                        // MAIN MESSAGE
+                        // ---------------------------------------
+
+                        Text(
+                          needsPractice
+                              ? 'KEEP TRAINING.'
+                              : 'KEEP BUILDING.',
+
+                          style: const TextStyle(
+                            fontFamily:
+                                AppTypography
+                                    .displayFamily,
+
+                            fontSize: 21,
+
+                            fontWeight:
+                                FontWeight.w900,
+
+                            height: 0.95,
+
+                            letterSpacing: 0.4,
+
+                            color: white,
+
+                            shadows: [
+                              Shadow(
+                                color: ink,
+                                offset: Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 7),
+
+                        Text(
+                          'Across every assessed topic.',
+
+                          style: TextStyle(
+                            fontFamily:
+                                AppTypography
+                                    .bodyFamily,
+
+                            fontSize: 12,
+
+                            fontWeight:
+                                FontWeight.w700,
+
+                            height: 1.3,
+
+                            color: isDark
+                                ? AppColors
+                                    .textSecondary
+                                : white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              // =================================================
+              // BOTTOM STATUS CARD
+              // =================================================
+
+              Container(
+                width: double.infinity,
+
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 9,
+                ),
+
+                decoration: BoxDecoration(
+                  color: white,
+
+                  border: Border.all(
+                    color: ink,
+                    width: 2.5,
+                  ),
+
+                  borderRadius:
+                      BorderRadius.circular(15),
+
+                  boxShadow: const [
+                    BoxShadow(
+                      color: ink,
+                      blurRadius: 0,
+                      offset: Offset(3, 4),
+                    ),
+                  ],
+                ),
+
+                child: Row(
+                  children: [
+                    // -------------------------------------------
+                    // STATUS ICON
+                    // -------------------------------------------
+
+                    Container(
+                      width: 43,
+                      height: 43,
+
+                      decoration: BoxDecoration(
+                        color: needsPractice
+                            ? red
+                            : green,
+
+                        border: Border.all(
+                          color: ink,
+                          width: 2,
+                        ),
+
+                        borderRadius:
+                            BorderRadius.circular(
+                          11,
+                        ),
+                      ),
+
+                      child: Icon(
+                        needsPractice
+                            ? Icons
+                                .local_fire_department_rounded
+                            : Icons.check_rounded,
+
+                        size: 25,
+
+                        color: white,
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // -------------------------------------------
+                    // STATUS TEXT
+                    // -------------------------------------------
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
+                        children: [
+                          Text(
+                            needsPractice
+                                ? 'KEEP GOING!'
+                                : 'GREAT WORK!',
+
+                            style: const TextStyle(
+                              fontFamily:
+                                  AppTypography
+                                      .displayFamily,
+
+                              fontSize: 15,
+
+                              fontWeight:
+                                  FontWeight.w900,
+
+                              letterSpacing: 0.5,
+
+                              color: ink,
+                            ),
+                          ),
+
+                          const SizedBox(height: 2),
+
+                          Text(
+                            needsPractice
+                                ? 'Complete challenges to improve your mastery.'
+                                : 'Keep completing challenges to improve your mastery.',
+
+                            maxLines: 2,
+
+                            overflow:
+                                TextOverflow.ellipsis,
+
+                            style: const TextStyle(
+                              fontFamily:
+                                  AppTypography
+                                      .bodyFamily,
+
+                              fontSize: 10.5,
+
+                              fontWeight:
+                                  FontWeight.w700,
+
+                              height: 1.25,
+
+                              color: Color(
+                                0xFF374151,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // -------------------------------------------
+                    // ARROW
+                    // -------------------------------------------
+
+                    Container(
+                      width: 40,
+                      height: 40,
+
+                      decoration:
+                          const BoxDecoration(
+                        color: yellow,
+
+                        shape: BoxShape.circle,
+
+                        border:
+                            Border.fromBorderSide(
+                          BorderSide(
+                            color: ink,
+                            width: 2.5,
+                          ),
+                        ),
+                      ),
+
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 21,
+                        color: ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+/// ── 3. TOPIC MASTERY FILTER CHIPS ──────────────────────────────────────────
 class _MasteryDistribution extends StatelessWidget {
   const _MasteryDistribution({required this.topics});
   final List<RecentTopicMastery> topics;
@@ -816,7 +2357,7 @@ class _MasteryDistribution extends StatelessWidget {
     final total = topics.length;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (total == 0) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SectionHeader(title: 'Mastery distribution'), const SizedBox(height: 8), const EmptyMiniCard(text: 'Complete more learning activities to unlock deeper mastery insights.')]);
+      return const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [SectionHeader(title: 'Mastery distribution'), SizedBox(height: 8), EmptyMiniCard(text: 'Complete more learning activities to unlock deeper mastery insights.')]);
     }
     final segments = [
       (mastered, 'Mastered', AppColors.xp),
@@ -923,7 +2464,7 @@ class _GamePerformance extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (quizzes.isEmpty) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SectionHeader(title: 'Game performance'), const SizedBox(height: 8), const EmptyMiniCard(text: 'No game activity yet. Play a game to see your performance.')]);
+      return const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [SectionHeader(title: 'Game performance'), SizedBox(height: 8), EmptyMiniCard(text: 'No game activity yet. Play a game to see your performance.')]);
     }
     // Show recent quiz performance as proxy for game performance (real data only)
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1319,55 +2860,6 @@ class _MasteryCard extends StatelessWidget {
 
 /// Compact identity metric chip for the stats header band — icon + text,
 /// never color alone. Values mirror the cards below (same backend reads).
-class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Semantics(
-      label: label,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.14 : 0.10),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Trend indicator — icon + text, accessible, backend-authoritative.
 class _TrendIndicator extends StatelessWidget {
   const _TrendIndicator({required this.trend});
 

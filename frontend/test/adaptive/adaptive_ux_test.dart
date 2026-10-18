@@ -77,6 +77,8 @@ void main() {
         find.text('RECENT_DECLINE_REMEDIATION: Recent results dropped.'),
         findsWidgets,
       );
+      // The brief and its quest row both surface the real backend priority;
+      // each recommendation is rendered once per presentation, not per card.
       expect(find.text('P1'), findsNWidgets(2));
       expect(find.text('P4'), findsOneWidget);
     });
